@@ -1,0 +1,8 @@
+node_modules
+dist
+.env
+.git
+.vscode
+npm-debug.log
+.mcp.json
+.claude/

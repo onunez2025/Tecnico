@@ -5,17 +5,14 @@ import {
     Plus,
     Edit2,
     Trash2,
-    AlertCircle,
     Check,
     ChevronUp,
     ChevronDown,
     ChevronRight,
     Activity,
     ShieldCheck,
-    AppWindow,
     Database,
     XCircle,
-    Layout,
     Save,
     Sliders
 } from 'lucide-react';
@@ -45,8 +42,6 @@ export default function UsersPage() {
     const [managements, setManagements] = useState<Management[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    // [FIX FE-H3] Add loadError state to surface failures to the user
-    const [loadError, setLoadError] = useState<string | null>(null);
     const { hasPermission } = useAuth();
     const { confirm, alert } = useDialog();
 
@@ -83,7 +78,6 @@ export default function UsersPage() {
 
     const loadData = async () => {
         setIsLoading(true);
-        setLoadError(null);
         try {
             const [usersData, mgmtData, rolesData] = await Promise.all([
                 UsersService.getUsers(),
@@ -95,15 +89,9 @@ export default function UsersPage() {
             setRoles(rolesData);
         } catch (error) {
             console.error('Failed to load users data:', error);
-            // [FIX FE-H3] Surface error to the user instead of swallowing it
-            setLoadError('No se pudo cargar la información. Verifica tu conexión e intenta de nuevo.');
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchTerm(e.target.value);
     };
 
     const toggleApp = (appCode: string) => {
@@ -128,7 +116,6 @@ export default function UsersPage() {
 
     const filteredUsers = users
         .filter(user =>
-            (user.apps || 'TEC').split(',').some(a => a.trim().toUpperCase() === 'TEC') &&
             (user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -181,7 +168,7 @@ export default function UsersPage() {
         });
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError(null);
         try {
@@ -249,46 +236,85 @@ export default function UsersPage() {
                             <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                             <span className="text-sm font-medium text-muted-foreground mt-4 tracking-[0.2em]">Sincronizando identidades...</span>
                         </div>
+                    ) : filteredUsers.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-20 opacity-60">
+                            <Activity className="w-12 h-12 text-muted-foreground/20" />
+                            <p className="text-sm font-medium text-muted-foreground italic mt-3">No se encontraron identidades para el filtro seleccionado</p>
+                        </div>
                     ) : (
-                        <table className="w-full text-sm text-left border-collapse table-fixed min-w-[1000px]">
-                            <thead className="sticky top-0 z-20 bg-muted/90 backdrop-blur-md">
-                                <tr className="border-b border-border">
-                                    <ResizableHeader columnId="usuario" width={widths.usuario} onResizeStart={onResizeStart} className="px-6 py-4">
-                                        <div className="flex items-center justify-between gap-2 group/header cursor-pointer" onClick={() => handleSort('username')}>
-                                            <span className="font-bold text-sm text-foreground tracking-tight">Responsable / ID</span>
-                                            <SortIcon column="username" sortBy={sortBy} sortOrder={sortOrder} />
+                        <>
+                            {/* Mobile: card list */}
+                            <div className="md:hidden divide-y divide-border">
+                                {filteredUsers.map((user) => (
+                                    <div key={user.id} className="p-4 flex items-start gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-extrabold text-xs border border-primary/20 shadow-inner shrink-0">
+                                            {user.username?.substring(0, 2).toUpperCase()}
                                         </div>
-                                    </ResizableHeader>
-                                    <ResizableHeader columnId="email" width={widths.email} onResizeStart={onResizeStart} className="px-6 py-4">
-                                        <div className="flex items-center justify-between gap-2 group/header cursor-pointer" onClick={() => handleSort('email')}>
-                                            <span className="font-bold text-sm text-foreground tracking-tight">Correo Corporativo</span>
-                                            <SortIcon column="email" sortBy={sortBy} sortOrder={sortOrder} />
-                                        </div>
-                                    </ResizableHeader>
-                                    <ResizableHeader columnId="rol" width={widths.rol} onResizeStart={onResizeStart} className="px-6 py-4">
-                                        <div className="flex items-center justify-between gap-2 group/header cursor-pointer" onClick={() => handleSort('rol')}>
-                                            <span className="font-bold text-sm text-foreground tracking-tight">Perfil de Seguridad</span>
-                                            <SortIcon column="rol" sortBy={sortBy} sortOrder={sortOrder} />
-                                        </div>
-                                    </ResizableHeader>
-                                    <ResizableHeader columnId="apps" width={widths.apps} onResizeStart={onResizeStart} className="px-6 py-4 text-center">
-                                        <span className="font-bold text-sm text-foreground tracking-tight">Alcance Ecosistema</span>
-                                    </ResizableHeader>
-                                    <th className="px-6 py-4 w-28 bg-muted/30 text-right italic font-medium text-[10px] text-muted-foreground uppercase tracking-widest">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border">
-                                {filteredUsers.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={5} className="px-6 py-20 text-center opacity-60">
-                                            <div className="flex flex-col items-center gap-3">
-                                                <Activity className="w-12 h-12 text-muted-foreground/20" />
-                                                <p className="text-sm font-medium text-muted-foreground italic">No se encontraron identidades para el filtro seleccionado</p>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="font-bold text-foreground text-sm truncate">{toTitleCase(user.full_name || user.username)}</span>
+                                                {!user.is_active && (
+                                                    <span className="text-[9px] font-bold text-red-500 uppercase tracking-widest shrink-0">Suspendido</span>
+                                                )}
                                             </div>
-                                        </td>
+                                            <div className="text-[10px] text-muted-foreground font-mono opacity-60">ID: {user.username}</div>
+                                            <div className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</div>
+                                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black border bg-secondary/50 text-secondary-foreground border-border">
+                                                    <ShieldCheck className="w-3 h-3 text-primary/60" />
+                                                    {user.role_name || 'Invitado'}
+                                                </span>
+                                                {(user.apps || 'TEC').split(',').map(app => (
+                                                    <span key={app} className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary/5 text-primary border border-primary/10 uppercase">
+                                                        {app.trim()}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        {hasPermission('tec.config.users') && (
+                                            <div className="flex flex-col gap-1 shrink-0">
+                                                <button onClick={() => handleEdit(user)} className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-all">
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+                                                <button onClick={() => handleDelete(user.id)} className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Desktop: table */}
+                            <table className="hidden md:table w-full text-sm text-left border-collapse table-fixed min-w-[1000px]">
+                                <thead className="sticky top-0 z-20 bg-muted/90 backdrop-blur-md">
+                                    <tr className="border-b border-border">
+                                        <ResizableHeader columnId="usuario" width={widths.usuario} onResizeStart={onResizeStart} className="px-6 py-4">
+                                            <div className="flex items-center justify-between gap-2 group/header cursor-pointer" onClick={() => handleSort('username')}>
+                                                <span className="font-bold text-sm text-foreground tracking-tight">Responsable / ID</span>
+                                                <SortIcon column="username" sortBy={sortBy} sortOrder={sortOrder} />
+                                            </div>
+                                        </ResizableHeader>
+                                        <ResizableHeader columnId="email" width={widths.email} onResizeStart={onResizeStart} className="px-6 py-4">
+                                            <div className="flex items-center justify-between gap-2 group/header cursor-pointer" onClick={() => handleSort('email')}>
+                                                <span className="font-bold text-sm text-foreground tracking-tight">Correo Corporativo</span>
+                                                <SortIcon column="email" sortBy={sortBy} sortOrder={sortOrder} />
+                                            </div>
+                                        </ResizableHeader>
+                                        <ResizableHeader columnId="rol" width={widths.rol} onResizeStart={onResizeStart} className="px-6 py-4">
+                                            <div className="flex items-center justify-between gap-2 group/header cursor-pointer" onClick={() => handleSort('rol')}>
+                                                <span className="font-bold text-sm text-foreground tracking-tight">Perfil de Seguridad</span>
+                                                <SortIcon column="rol" sortBy={sortBy} sortOrder={sortOrder} />
+                                            </div>
+                                        </ResizableHeader>
+                                        <ResizableHeader columnId="apps" width={widths.apps} onResizeStart={onResizeStart} className="px-6 py-4 text-center">
+                                            <span className="font-bold text-sm text-foreground tracking-tight">Alcance Ecosistema</span>
+                                        </ResizableHeader>
+                                        <th className="px-6 py-4 w-28 bg-muted/30 text-right italic font-medium text-[10px] text-muted-foreground uppercase tracking-widest">Acciones</th>
                                     </tr>
-                                ) : (
-                                    filteredUsers.map((user) => (
+                                </thead>
+                                <tbody className="divide-y divide-border">
+                                    {filteredUsers.map((user) => (
                                         <tr key={user.id} className="group hover:bg-muted/30 transition-colors">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
@@ -351,10 +377,10 @@ export default function UsersPage() {
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </>
                     )}
                 </div>
                 

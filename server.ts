@@ -586,80 +586,107 @@ app.get('/api/dashboard/technicians', verifyToken, checkPermission('liq.dashboar
 });
 
 async function runMigrations() {
-  try {
     const db = await getDb();
-    await db.request().query(`
-      IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('EBM.Roles') AND name = 'Apps')
-      BEGIN
-        ALTER TABLE EBM.Roles ADD Apps NVARCHAR(200) NOT NULL DEFAULT 'EBM';
-      END
 
-      UPDATE EBM.Roles 
-      SET Apps = CASE 
-          WHEN Apps IS NULL OR Apps = '' THEN 'TEC'
-          WHEN Apps NOT LIKE '%TEC%' THEN Apps + ', TEC'
-          ELSE Apps
-      END
-      WHERE Id IN (
-          SELECT DISTINCT RoleId 
-          FROM EBM.RolePermissions 
-          WHERE Permission LIKE 'liq.%'
-      ) 
-      AND (Apps NOT LIKE '%TEC%' OR Apps IS NULL);
+    const steps: Array<{ name: string; sql: string }> = [
+        {
+            name: 'Add Apps to EBM.Roles',
+            sql: `IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('EBM.Roles') AND name = 'Apps')
+                  BEGIN ALTER TABLE EBM.Roles ADD Apps NVARCHAR(200) NOT NULL DEFAULT 'EBM'; END`
+        },
+        {
+            name: 'Add Apps to EBM.Users',
+            sql: `IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('EBM.Users') AND name = 'Apps')
+                  BEGIN ALTER TABLE EBM.Users ADD Apps NVARCHAR(200) NULL DEFAULT 'TEC'; END`
+        },
+        {
+            name: 'Add RequiresPasswordChange to EBM.Users',
+            sql: `IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('EBM.Users') AND name = 'RequiresPasswordChange')
+                  BEGIN ALTER TABLE EBM.Users ADD RequiresPasswordChange BIT NOT NULL DEFAULT 0; END`
+        },
+        {
+            name: 'Add CreatedAt to EBM.Users',
+            sql: `IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('EBM.Users') AND name = 'CreatedAt')
+                  BEGIN ALTER TABLE EBM.Users ADD CreatedAt DATETIME NULL DEFAULT GETDATE(); END`
+        },
+        {
+            name: 'Update Apps in EBM.Roles for TEC',
+            sql: `UPDATE EBM.Roles
+                  SET Apps = CASE
+                      WHEN Apps IS NULL OR Apps = '' THEN 'TEC'
+                      WHEN Apps NOT LIKE '%TEC%' THEN Apps + ', TEC'
+                      ELSE Apps
+                  END
+                  WHERE Id IN (SELECT DISTINCT RoleId FROM EBM.RolePermissions WHERE Permission LIKE 'liq.%')
+                  AND (Apps NOT LIKE '%TEC%' OR Apps IS NULL)`
+        },
+        {
+            name: 'Update Apps in EBM.Users for TEC',
+            sql: `UPDATE EBM.Users
+                  SET Apps = CASE
+                      WHEN Apps IS NULL OR Apps = '' THEN 'TEC'
+                      WHEN Apps NOT LIKE '%TEC%' THEN Apps + ', TEC'
+                      ELSE Apps
+                  END
+                  WHERE (Apps LIKE '%Liq%' OR Apps LIKE '%LIQ%' OR Apps LIKE '%ADMIN%')
+                  AND (Apps NOT LIKE '%TEC%' OR Apps IS NULL)`
+        },
+        {
+            name: 'Add tec.config.* permissions from liq.config.*',
+            sql: `INSERT INTO EBM.RolePermissions (RoleId, Permission)
+                  SELECT DISTINCT rp.RoleId, REPLACE(rp.Permission, 'liq.config.', 'tec.config.')
+                  FROM EBM.RolePermissions rp
+                  JOIN EBM.Roles r ON rp.RoleId = r.Id
+                  WHERE r.Apps LIKE '%TEC%'
+                    AND rp.Permission LIKE 'liq.config.%'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM EBM.RolePermissions rp2
+                        WHERE rp2.RoleId = rp.RoleId
+                          AND rp2.Permission = REPLACE(rp.Permission, 'liq.config.', 'tec.config.')
+                    )`
+        },
+        {
+            name: 'Add tec.tickets.view permission',
+            sql: `INSERT INTO EBM.RolePermissions (RoleId, Permission)
+                  SELECT DISTINCT r.Id, 'tec.tickets.view'
+                  FROM EBM.Roles r
+                  WHERE r.Apps LIKE '%TEC%'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM EBM.RolePermissions rp2
+                        WHERE rp2.RoleId = r.Id AND rp2.Permission = 'tec.tickets.view'
+                    )`
+        },
+        {
+            name: 'Create GAC_APP_TB_CONFIG table',
+            sql: `IF OBJECT_ID('dbo.GAC_APP_TB_CONFIG', 'U') IS NULL
+                  BEGIN
+                    CREATE TABLE [dbo].[GAC_APP_TB_CONFIG] (
+                      [Clave] NVARCHAR(100) PRIMARY KEY,
+                      [Valor] NVARCHAR(255) NOT NULL,
+                      [Descripcion] NVARCHAR(500) NULL,
+                      [Actualizado_el] DATETIME DEFAULT GETDATE(),
+                      [Actualizado_por] NVARCHAR(100) NULL
+                    );
+                  END`
+        },
+        {
+            name: 'Insert default HORA_MAXIMA_RANGO_HORARIO config',
+            sql: `IF NOT EXISTS (SELECT 1 FROM [dbo].[GAC_APP_TB_CONFIG] WHERE [Clave] = 'HORA_MAXIMA_RANGO_HORARIO')
+                  BEGIN
+                    INSERT INTO [dbo].[GAC_APP_TB_CONFIG] ([Clave], [Valor], [Descripcion], [Actualizado_por])
+                    VALUES ('HORA_MAXIMA_RANGO_HORARIO', '09:30', 'Hora maxima limite diaria (HH:mm) para asignar rango horario a tickets de hoy', 'SYSTEM');
+                  END`
+        },
+    ];
 
-      UPDATE EBM.Users
-      SET Apps = CASE 
-          WHEN Apps IS NULL OR Apps = '' THEN 'TEC'
-          WHEN Apps NOT LIKE '%TEC%' THEN Apps + ', TEC'
-          ELSE Apps
-      END
-      WHERE (Apps LIKE '%Liq%' OR Apps LIKE '%LIQ%' OR Apps LIKE '%ADMIN%')
-      AND (Apps NOT LIKE '%TEC%' OR Apps IS NULL);
-
-         INSERT INTO EBM.RolePermissions (RoleId, Permission)
-         SELECT DISTINCT rp.RoleId, 
-                REPLACE(rp.Permission, 'liq.config.', 'tec.config.') as NewPermission
-         FROM EBM.RolePermissions rp
-         JOIN EBM.Roles r ON rp.RoleId = r.Id
-         WHERE r.Apps LIKE '%TEC%'
-           AND rp.Permission LIKE 'liq.config.%'
-           AND NOT EXISTS (
-               SELECT 1 FROM EBM.RolePermissions rp2 
-               WHERE rp2.RoleId = rp.RoleId 
-                 AND rp2.Permission = REPLACE(rp.Permission, 'liq.config.', 'tec.config.')
-           );
-
-         INSERT INTO EBM.RolePermissions (RoleId, Permission)
-         SELECT DISTINCT r.Id, 'tec.tickets.view'
-         FROM EBM.Roles r
-         WHERE r.Apps LIKE '%TEC%'
-           AND NOT EXISTS (
-               SELECT 1 FROM EBM.RolePermissions rp2 
-               WHERE rp2.RoleId = r.Id 
-                 AND rp2.Permission = 'tec.tickets.view'
-           );
-
-          IF OBJECT_ID('dbo.GAC_APP_TB_CONFIG', 'U') IS NULL
-          BEGIN
-            CREATE TABLE [dbo].[GAC_APP_TB_CONFIG] (
-              [Clave] NVARCHAR(100) PRIMARY KEY,
-              [Valor] NVARCHAR(255) NOT NULL,
-              [Descripcion] NVARCHAR(500) NULL,
-              [Actualizado_el] DATETIME DEFAULT GETDATE(),
-              [Actualizado_por] NVARCHAR(100) NULL
-            );
-          END
-
-          IF NOT EXISTS (SELECT 1 FROM [dbo].[GAC_APP_TB_CONFIG] WHERE [Clave] = 'HORA_MAXIMA_RANGO_HORARIO')
-          BEGIN
-            INSERT INTO [dbo].[GAC_APP_TB_CONFIG] ([Clave], [Valor], [Descripcion], [Actualizado_por])
-            VALUES ('HORA_MAXIMA_RANGO_HORARIO', '09:30', 'Hora maxima limite diaria (HH:mm) para asignar rango horario a tickets de hoy', 'SYSTEM');
-          END
-    `);
+    for (const step of steps) {
+        try {
+            await db.request().query(step.sql);
+        } catch (err: any) {
+            console.warn(`⚠️ Migration step skipped [${step.name}]:`, err.message);
+        }
+    }
     console.log('✅ SQL Migrations complete');
-  } catch (err: any) {
-    console.error('⚠️ Migration warning:', err.message);
-  }
 }
 
 app.get('/api/dashboard/cas-performance', verifyToken, checkPermission('liq.dashboard.view'), async (req: Request, res: Response) => {
@@ -1301,5 +1328,6 @@ app.get(/^(?!\/api\/).*/, (_req: Request, res: Response) => {
 // --- INICIO DEL SERVIDOR ---
 app.listen(port, () => {
     console.log(`🚀 Servidor Gestión Técnica escuchando en puerto ${port}`);
+    runMigrations().catch(err => console.error('❌ Migration failed:', err.message));
     setTimeout(() => syncAllMissingTickets(), 15000);
 });

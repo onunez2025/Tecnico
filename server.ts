@@ -1044,30 +1044,34 @@ app.patch('/api/tec/time-range', verifyToken, checkPermission('tec.tickets.view'
 app.get('/api/users', verifyToken, checkPermission('tec.config.users'), async (req: Request, res: Response) => {
     try {
         const db = await getDb();
+        // SELECT u.* avoids referencing columns that may not exist (e.g. RequiresPasswordChange, CreatedAt)
+        // JS-side mapping handles undefined fields gracefully, same pattern as the login endpoint.
         const result = await db.request().query(`
-            SELECT u.Id as id, u.Username as username, u.FullName as full_name,
-                   ISNULL(u.Email, '') as email, u.RoleId as role_id, r.Name as role_name,
-                   CAST(u.IsActive AS BIT) as is_active, ISNULL(u.Apps, '') as apps,
-                   ISNULL(CAST(u.RequiresPasswordChange AS BIT), 0) as requires_password_change,
-                   CONVERT(VARCHAR(30), u.CreatedAt, 127) as created_at
+            SELECT u.*, r.Name as RoleName
             FROM EBM.Users u
             LEFT JOIN EBM.Roles r ON u.RoleId = r.Id
             ORDER BY u.FullName
         `);
         const users = await Promise.all(result.recordset.map(async (u: any) => {
-            const perms = u.role_id
-                ? (await db.request().input('rid', sql.Int, u.role_id)
+            const perms = u.RoleId
+                ? (await db.request().input('rid', u.RoleId)
                     .query(`SELECT Permission FROM EBM.RolePermissions WHERE RoleId=@rid`))
                     .recordset.map((p: any) => p.Permission)
                 : [];
             return {
-                id: String(u.id), username: u.username, full_name: u.full_name,
-                email: u.email ?? '', role_id: u.role_id ? String(u.role_id) : '',
-                role_name: u.role_name ?? '', management_id: '', theme: 'light',
-                is_active: u.is_active === true || u.is_active === 1,
-                apps: u.apps || 'TEC',
-                requires_password_change: u.requires_password_change === true || u.requires_password_change === 1,
-                created_at: u.created_at ?? '', permissions: perms,
+                id: String(u.Id),
+                username: u.Username,
+                full_name: u.FullName,
+                email: u.Email ?? '',
+                role_id: u.RoleId ? String(u.RoleId) : '',
+                role_name: u.RoleName ?? '',
+                management_id: '',
+                theme: 'light',
+                is_active: u.IsActive === true || u.IsActive === 1,
+                apps: u.Apps || 'TEC',
+                requires_password_change: u.RequiresPasswordChange === true || u.RequiresPasswordChange === 1,
+                created_at: u.CreatedAt ? new Date(u.CreatedAt).toISOString() : '',
+                permissions: perms,
             };
         }));
         res.json(users);
@@ -1093,8 +1097,8 @@ app.post('/api/users', verifyToken, checkPermission('tec.config.users'), async (
             .input('e', sql.NVarChar, email).input('h', sql.NVarChar, hash)
             .input('rid', sql.Int, Number(role_id)).input('apps', sql.NVarChar, apps || APP_IDENTIFIER)
             .input('active', sql.Bit, is_active ? 1 : 0)
-            .query(`INSERT INTO EBM.Users (Username, FullName, Email, PasswordHash, RoleId, Apps, IsActive, RequiresPasswordChange, CreatedAt)
-                    OUTPUT INSERTED.Id VALUES (@u, @fn, @e, @h, @rid, @apps, @active, 1, GETDATE())`);
+            .query(`INSERT INTO EBM.Users (Username, FullName, Email, PasswordHash, RoleId, Apps, IsActive)
+                    OUTPUT INSERTED.Id VALUES (@u, @fn, @e, @h, @rid, @apps, @active)`);
         const newId = result.recordset[0].Id;
         await logAudit(req, 'CREATE_USER', 'User', String(newId), { username, full_name, email, role_id });
         res.status(201).json({ id: String(newId), username, full_name, email, role_id: String(role_id), apps: apps || APP_IDENTIFIER, is_active });

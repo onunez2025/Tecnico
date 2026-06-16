@@ -74,14 +74,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                             const preHydratedUser = {
                                 id: payload.id as string,
                                 username: payload.username as string,
-                                full_name: payload.full_name as string,
-                                role_id: '',
-                                role_name: payload.role as string,
-                                permissions: (payload.perms as string[]) || [],
+                                full_name: (payload.full_name as string) || (payload.fullName as string) || '',
+                                role_id: (payload.role_id as string) || '',
+                                role_name: (payload.role_name as string) || (payload.role as string) || '',
+                                permissions: (payload.permissions as string[]) || (payload.perms as string[]) || [],
                                 is_active: true,
                                 created_at: '',
                                 theme: 'light',
                                 management_id: '',
+                                apps: (payload.apps as string) || '',
                             };
                             setUser(preHydratedUser as unknown as User);
                             StorageService.setCurrentUser(preHydratedUser as unknown as User);
@@ -169,7 +170,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const hasPermission = (permission: Permission): boolean => {
         if (!user) return false;
-        if ((user.role_name || '').trim().toLowerCase() === 'administrador') return true;
+        const roleName = (user.role_name || user.role || '').trim().toLowerCase();
+        if (roleName === 'administrador' || roleName === 'admin' || roleName === 'console.administrador') return true;
         return user.permissions?.includes(permission) || false;
     };
 

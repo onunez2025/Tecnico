@@ -413,8 +413,11 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     try {
         const db = await getDb();
         const result = await db.request().input('u', sql.NVarChar, username).input('app', sql.NVarChar, APP_IDENTIFIER).query(`
-            SELECT u.*, r.Name as RoleName FROM EBM.Users u
+            SELECT u.*, r.Name as RoleName, uc.CASId as cas_id, c.Nombre_CAS as cas_name, LTRIM(RTRIM(c.Abrev_nombre_colaboradores)) as cas_prefijo
+            FROM EBM.Users u
             LEFT JOIN EBM.Roles r ON u.RoleId = r.Id
+            LEFT JOIN EBM.UserCAS uc ON u.Id = uc.UserId
+            LEFT JOIN dbo.GAC_APP_TB_CAS c ON uc.CASId = c.ID_CAS
             WHERE (u.Username = @u OR u.Email = @u) AND u.IsActive = 1
               AND (u.Apps LIKE '%' + @app + '%' OR u.Apps LIKE '%ADMIN%')
         `);
@@ -428,9 +431,39 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
         // [SECURITY] Token "Recuérdame" reducido de 30d a 7d para limitar ventana de compromiso
         const expiresIn = remember ? '7d' : '12h';
 
-        const token = jwt.sign({ id: user.Id, username: user.Username, full_name: user.FullName, role: user.RoleName, perms }, JWT_SECRET as string, { expiresIn });
+        const token = jwt.sign(
+            { 
+                id: user.Id, 
+                role_id: user.RoleId,
+                role_name: user.RoleName,
+                role: user.RoleName,
+                username: user.Username,
+                full_name: user.FullName,
+                permissions: perms,
+                perms: perms,
+                apps: user.Apps || '',
+                casId: user.cas_id || null,
+                casName: user.cas_name || null,
+                casPrefijo: user.cas_prefijo || null
+            }, 
+            JWT_SECRET as string, 
+            { expiresIn }
+        );
 
-        res.json({ token, user: { id: user.Id, username: user.Username, full_name: user.FullName, role_name: user.RoleName, permissions: perms, requires_password_change: user.RequiresPasswordChange === 1 } });
+        res.json({ 
+            token, 
+            user: { 
+                id: user.Id, 
+                username: user.Username, 
+                full_name: user.FullName, 
+                role_name: user.RoleName, 
+                role: user.RoleName, 
+                permissions: perms, 
+                perms: perms, 
+                apps: user.Apps || '',
+                requires_password_change: user.RequiresPasswordChange === 1 
+            } 
+        });
     } catch (err: any) { res.status(500).json({ error: 'Error interno del servidor' }); }
 });
 
@@ -439,8 +472,11 @@ app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
         const { id } = (req as any).user;
         const db = await getDb();
         const result = await db.request().input('id', sql.NVarChar, String(id)).query(`
-            SELECT u.*, r.Name as RoleName FROM EBM.Users u
+            SELECT u.*, r.Name as RoleName, uc.CASId as cas_id, c.Nombre_CAS as cas_name, LTRIM(RTRIM(c.Abrev_nombre_colaboradores)) as cas_prefijo
+            FROM EBM.Users u
             LEFT JOIN EBM.Roles r ON u.RoleId = r.Id
+            LEFT JOIN EBM.UserCAS uc ON u.Id = uc.UserId
+            LEFT JOIN dbo.GAC_APP_TB_CAS c ON uc.CASId = c.ID_CAS
             WHERE u.Id = @id
         `);
         const user = result.recordset[0];
@@ -448,11 +484,36 @@ app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
 
         const perms = (await db.request().input('rid', sql.NVarChar, String(user.RoleId)).query("SELECT Permission FROM EBM.RolePermissions WHERE RoleId = @rid")).recordset.map((p: any) => p.Permission);
         const freshToken = jwt.sign(
-            { id: user.Id, username: user.Username, full_name: user.FullName, role: user.RoleName, perms, casId: user.cas_id || null },
+            { 
+                id: user.Id, 
+                role_id: user.RoleId,
+                role_name: user.RoleName,
+                role: user.RoleName,
+                username: user.Username,
+                full_name: user.FullName,
+                permissions: perms,
+                perms: perms,
+                apps: user.Apps || '',
+                casId: user.cas_id || null,
+                casName: user.cas_name || null,
+                casPrefijo: user.cas_prefijo || null
+            },
             JWT_SECRET as string,
             { expiresIn: '12h' }
         );
-        res.json({ token: freshToken, user: { id: user.Id, username: user.Username, full_name: user.FullName, role_name: user.RoleName, permissions: perms } });
+        res.json({ 
+            token: freshToken, 
+            user: { 
+                id: user.Id, 
+                username: user.Username, 
+                full_name: user.FullName, 
+                role_name: user.RoleName, 
+                role: user.RoleName, 
+                permissions: perms, 
+                perms: perms, 
+                apps: user.Apps || ''
+            } 
+        });
     } catch (err: any) { res.status(500).json({ error: 'Error interno del servidor' }); }
 });
 

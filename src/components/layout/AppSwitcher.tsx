@@ -40,8 +40,8 @@ export function AppSwitcher({ currentAppId = 'TEC' }: AppSwitcherProps) {
         if (appCode === currentAppId.toUpperCase()) return false;
         
         // Super admin sees all active apps, other users only see allowed ones
-        const roleName = user?.role_name?.toLowerCase();
-        const isSuperAdmin = roleName === 'administrador' || roleName === 'console.administrador';
+        const roleName = user?.role_name?.toLowerCase() || user?.role?.toLowerCase() || '';
+        const isSuperAdmin = roleName === 'administrador' || roleName === 'admin' || roleName === 'console.administrador';
         if (isSuperAdmin) return true;
         
         return allowedAppsCodes.includes(appCode);

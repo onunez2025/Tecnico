@@ -616,6 +616,14 @@ app.get('/api/dashboard/stats', verifyToken, checkPermission('tec.dashboard.view
             whereClause += " AND YEAR(Fecha_transaccion) = @year";
             sqlReq.input('year', sql.Int, parseInt(year));
         }
+
+        // RLS: usuario CAS solo ve sus propios datos
+        const currentUser = (req as any).user;
+        if (currentUser.casId) {
+            whereClause += ' AND ID_cas = @casId';
+            sqlReq.input('casId', sql.VarChar(50), currentUser.casId);
+        }
+
         const query = `
             SELECT 
                 COUNT(*) as total,
@@ -772,8 +780,10 @@ async function runMigrations() {
 app.get('/api/dashboard/cas-performance', verifyToken, checkPermission('tec.dashboard.view'), async (req: Request, res: Response) => {
     try {
         const db = await getDb();
-        const zone = req.query.zone as string;
-        const casId = req.query.casId as string;
+        const currentUser = (req as any).user;
+        // RLS: usuario CAS siempre ve solo su propia empresa, ignorando query params
+        const casId: string = currentUser.casId ?? (req.query.casId as string);
+        const zone: string | undefined = currentUser.casId ? undefined : (req.query.zone as string);
         
         let statsQuery = '';
         const sqlReq = db.request();

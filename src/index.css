@@ -3,8 +3,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: var(--font-sans, 'DM Sans'), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-mono, 'JetBrains Mono'), monospace;
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -78,36 +78,36 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-sans);
+    font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
   }
   :root {
-    --background: hsl(210 40% 98%);
-    --foreground: hsl(222.2 84% 4.9%);
+    --background: #F9FAFB;
+    --foreground: #050F1A;
 
-    --card: hsl(0 0% 100%);
-    --card-foreground: hsl(222.2 84% 4.9%);
+    --card: #FFFFFF;
+    --card-foreground: #050F1A;
 
-    --popover: hsl(0 0% 100%);
-    --popover-foreground: hsl(222.2 84% 4.9%);
+    --popover: #FFFFFF;
+    --popover-foreground: #050F1A;
 
-    --primary: hsl(221.2 83.2% 53.3%);
-    --primary-foreground: hsl(210 40% 98%);
+    --primary: #4C5F80;
+    --primary-foreground: #FFFFFF;
 
-    --secondary: hsl(210 40% 96.1%);
-    --secondary-foreground: hsl(222.2 47.4% 11.2%);
+    --secondary: #5B616E;
+    --secondary-foreground: #FFFFFF;
 
-    --muted: hsl(210 40% 96.1%);
-    --muted-foreground: hsl(215.4 16.3% 46.9%);
+    --muted: #D1D5DB;
+    --muted-foreground: #8A919E;
 
-    --accent: hsl(210 40% 96.1%);
-    --accent-foreground: hsl(222.2 47.4% 11.2%);
+    --accent: #4C5F80;
+    --accent-foreground: #FFFFFF;
 
-    --destructive: hsl(0 84.2% 60.2%);
-    --destructive-foreground: hsl(210 40% 98%);
+    --destructive: #DF2935;
+    --destructive-foreground: #FFFFFF;
 
-    --border: hsl(214.3 31.8% 91.4%);
-    --input: hsl(214.3 31.8% 91.4%);
-    --ring: hsl(221.2 83.2% 53.3%);
+    --border: #D1D5DB;
+    --input: #D1D5DB;
+    --ring: #4C5F80;
 
     --radius: 0.5rem;
 
@@ -119,7 +119,7 @@
     --radius-modal: 16px;
 
     /* SIATC — colores semánticos (modo claro) */
-    --cb-bg: #F4F6FA;
+    --cb-bg: #F9FAFB;
     --cb-text-primary: #1A1C1E;
     --cb-text-secondary: #515254;
     --cb-border: #E2E4E9;
@@ -136,34 +136,34 @@
     --transition-duration: 300ms;
   }
 
-  html.dark {
-    --background: hsl(222.2 84% 4.9%);
-    --foreground: hsl(210 40% 98%);
+  .dark, html.dark {
+    --background: #050F1A;
+    --foreground: #F9FAFB;
 
-    --card: hsl(222.2 47% 9.5%);
-    --card-foreground: hsl(210 40% 98%);
+    --card: #111C2A;
+    --card-foreground: #F9FAFB;
 
-    --popover: hsl(222.2 84% 4.9%);
-    --popover-foreground: hsl(210 40% 98%);
+    --popover: #111C2A;
+    --popover-foreground: #F9FAFB;
 
-    --primary: hsl(217.2 91.2% 59.8%);
-    --primary-foreground: hsl(222.2 47.4% 11.2%);
+    --primary: #707F99;
+    --primary-foreground: #050F1A;
 
-    --secondary: hsl(217.2 32.6% 17.5%);
-    --secondary-foreground: hsl(210 40% 98%);
+    --secondary: #8A919E;
+    --secondary-foreground: #050F1A;
 
-    --muted: hsl(217.2 32.6% 17.5%);
-    --muted-foreground: hsl(215 20.2% 65.1%);
+    --muted: #1E293B;
+    --muted-foreground: #8A919E;
 
-    --accent: hsl(217.2 32.6% 15%);
-    --accent-foreground: hsl(210 40% 98%);
+    --accent: #707F99;
+    --accent-foreground: #050F1A;
 
-    --destructive: hsl(0 62.8% 30.6%);
-    --destructive-foreground: hsl(210 40% 98%);
+    --destructive: #DF2935;
+    --destructive-foreground: #FFFFFF;
 
-    --border: hsl(217.2 32.6% 15%);
-    --input: hsl(217.2 32.6% 15%);
-    --ring: hsl(224.3 76.3% 48%);
+    --border: #1E293B;
+    --input: #1E293B;
+    --ring: #707F99;
 
     /* SIATC — colores semánticos (modo oscuro) */
     --cb-bg: #050F1A;
@@ -183,7 +183,7 @@
 
 /* SIATC — responsive layout overrides */
 @media (max-width: 767px) {
-  :root, html.dark {
+  :root, .dark, html.dark {
     --layout-border-width: 0px;
     --layout-shadow: none;
   }

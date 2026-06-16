@@ -10,6 +10,7 @@ import {
 import { cn } from '../utils/cn';
 import { DashboardService, type DashboardStats } from '../services/dashboardService';
 import { useAuth } from '../hooks/useAuth';
+import { SIATC_THEME } from '../utils/siatc-theme';
 
 export default function DashboardPage() {
     const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -84,7 +85,10 @@ export default function DashboardPage() {
                     <button 
                         onClick={loadData} 
                         disabled={isLoading}
-                        className="p-2 bg-card border border-divider rounded-xl text-primary hover:bg-primary/10 transition-all shadow-sm active:scale-95 disabled:opacity-50" 
+                        className={cn(
+                            "p-2 bg-card border border-border text-primary hover:bg-primary/10 transition-all shadow-sm active:scale-95 disabled:opacity-50",
+                            SIATC_THEME.TOKENS.RADIUS.BUTTON
+                        )}
                     >
                         <RefreshCcw className={cn("w-4 h-4", isLoading && "animate-spin")} />
                     </button>
@@ -94,8 +98,11 @@ export default function DashboardPage() {
             {/* Metrics Grid */}
             <div className="grid grid-cols-2 gap-3">
                 {cards.map((card, i) => (
-                    <div key={i} className="bg-card border border-border rounded-xl p-3 shadow-sm flex flex-col gap-2">
-                        <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", card.bg, card.color)}>
+                    <div key={i} className={cn(
+                        "bg-card border border-border p-3 shadow-sm flex flex-col gap-2",
+                        SIATC_THEME.TOKENS.MASTER_ROUNDNESS
+                    )}>
+                        <div className={cn("w-8 h-8 flex items-center justify-center", card.bg, card.color, SIATC_THEME.TOKENS.RADIUS.FULL)}>
                             <card.icon className="w-4 h-4" />
                         </div>
                         <div>
@@ -108,14 +115,20 @@ export default function DashboardPage() {
             </div>
 
             {/* Acceso Rápido */}
-            <div className="mt-4 bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-center justify-between">
+            <div className={cn(
+                "mt-4 bg-primary/5 border border-primary/20 p-4 flex items-center justify-between",
+                SIATC_THEME.TOKENS.MASTER_ROUNDNESS
+            )}>
                 <div>
                     <h3 className="font-bold text-sm text-foreground">Registrar Pago</h3>
                     <p className="text-xs text-muted-foreground mt-1">Ingresa el pago de tus servicios finalizados.</p>
                 </div>
                 <a 
                     href="/payments"
-                    className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md active:scale-95 transition-transform"
+                    className={cn(
+                        "w-10 h-10 bg-primary text-primary-foreground flex items-center justify-center shadow-md active:scale-95 transition-transform",
+                        SIATC_THEME.TOKENS.RADIUS.FULL
+                    )}
                 >
                     <CreditCard className="w-5 h-5" />
                 </a>

@@ -63,7 +63,7 @@ export default function AuditLogPage() {
                     ? "bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border-rose-200/50 dark:border-rose-900/20 group-hover:bg-rose-100 dark:group-hover:bg-rose-950/50"
                     : isSuccess
                     ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-900/20 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-950/50"
-                    : "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border-blue-200/50 dark:border-blue-900/20 group-hover:bg-blue-100 dark:group-hover:bg-blue-950/50"
+                    : "bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-foreground border-primary/20 dark:border-primary/30 group-hover:bg-primary/20"
             )}>
                 {isCritical ? <ShieldAlert className="w-3 h-3" /> : isSuccess ? <CheckCircle2 className="w-3 h-3" /> : <Activity className="w-3 h-3" />}
                 {toTitleCase(action)}

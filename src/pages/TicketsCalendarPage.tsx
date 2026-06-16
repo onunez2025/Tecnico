@@ -396,7 +396,7 @@ export default function TicketsCalendarPage() {
             );
         } else {
             return (
-                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20 flex items-center gap-1 shrink-0">
+                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20 flex items-center gap-1 shrink-0">
                     <Clock className="w-3.5 h-3.5" />
                     Programado
                 </span>
@@ -557,9 +557,9 @@ export default function TicketsCalendarPage() {
 
                     {/* Summary Metrics Cards */}
                     <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-3 flex flex-col justify-between">
-                            <span className="text-xs font-bold text-blue-500">Total</span>
-                            <span className="text-2xl font-black text-blue-900 dark:text-blue-200 mt-1">{totalCount}</span>
+                        <div className="bg-primary/10 border border-primary/20 rounded-2xl p-3 flex flex-col justify-between">
+                            <span className="text-xs font-bold text-primary">Total</span>
+                            <span className="text-2xl font-black text-foreground mt-1">{totalCount}</span>
                         </div>
                         <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-3 flex flex-col justify-between">
                             <span className="text-xs font-bold text-green-500">Realizados</span>
@@ -906,7 +906,7 @@ export default function TicketsCalendarPage() {
                                                         pago.Estado === 'RECHAZADO' && "bg-red-500/10 text-red-500",
                                                         pago.Estado === 'RECEPCIONADO' && "bg-sky-500/10 text-sky-500",
                                                         pago.Estado === 'LIQUIDADO_OBSERVADO' && "bg-purple-500/10 text-purple-500",
-                                                        pago.Estado === 'PENDIENTE_APROBACION' && "bg-blue-500/10 text-blue-500"
+                                                        pago.Estado === 'PENDIENTE_APROBACION' && "bg-primary/10 text-primary"
                                                     )}>
                                                         {pago.Estado}
                                                     </span>

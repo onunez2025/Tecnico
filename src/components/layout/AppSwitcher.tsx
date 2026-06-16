@@ -36,11 +36,10 @@ export function AppSwitcher() {
 
             {isOpen && (
                 <div
-                    className="absolute right-0 mt-2 w-[432px] backdrop-blur-md border border-black/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-300"
-                    style={{ backgroundColor: '#FFFFFF' }}
+                    className="absolute right-0 mt-2 w-[432px] bg-card backdrop-blur-md border border-border/40 rounded-cb-card shadow-cb-level-3 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-300"
                 >
-                    <div className="p-5 border-b border-black/5 bg-[#2563EB]">
-                        <h3 className="text-base font-bold text-white tracking-tight">Más aplicaciones</h3>
+                    <div className="p-5 border-b border-border/30 bg-primary">
+                        <h3 className="text-base font-bold text-primary-foreground tracking-tight">Más aplicaciones</h3>
                     </div>
                     <div className="p-4 grid grid-cols-2 gap-4">
                         {otherApps.map(app => (
@@ -49,19 +48,19 @@ export function AppSwitcher() {
                                 href={app.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="group relative flex flex-col items-center justify-center p-6 rounded-xl hover:bg-blue-600/10 transition-all duration-500 border border-transparent hover:border-blue-200/50 hover:shadow-[0_8px_30px_rgb(37,99,235,0.06)]"
+                                className="group relative flex flex-col items-center justify-center p-6 rounded-xl hover:bg-primary/10 transition-all duration-500 border border-transparent hover:border-primary/20 hover:shadow-cb-level-2"
                             >
-                                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl" />
-                                <div className="relative w-20 h-20 mb-3 flex items-center justify-center overflow-hidden drop-shadow-md group-hover:scale-110 group-hover:drop-shadow-[0_15px_25px_rgba(37,99,235,0.4)] transition-all duration-500 ease-out">
+                                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl" />
+                                <div className="relative w-20 h-20 mb-3 flex items-center justify-center overflow-hidden drop-shadow-md group-hover:scale-110 transition-all duration-500 ease-out">
                                     {app.logo_url ? (
                                         <img src={app.logo_url} alt={`${app.label} logo`} className="w-full h-full object-contain" />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-blue-100 rounded-xl">
-                                            <Grid className="w-10 h-10 text-blue-500" />
+                                        <div className="w-full h-full flex items-center justify-center bg-primary/10 rounded-xl">
+                                            <Grid className="w-10 h-10 text-primary" />
                                         </div>
                                     )}
                                 </div>
-                                <span className="relative text-sm font-bold text-[#0F172A] group-hover:text-blue-600 transition-colors text-center">
+                                <span className="relative text-sm font-bold text-foreground dark:text-foreground/95 group-hover:text-primary transition-colors text-center">
                                     {app.label}
                                 </span>
                             </a>

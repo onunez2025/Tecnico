@@ -61,14 +61,14 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     };
 
     const renderIcon = () => {
-        if (!options) return <Info className="w-6 h-6 text-blue-500" />;
+        if (!options) return <Info className="w-6 h-6 text-primary" />;
         switch (options.type) {
             case 'danger': return <Trash2 className="w-6 h-6 text-red-600" />;
             case 'error': return <XCircle className="w-6 h-6 text-red-500" />;
             case 'warning': return <AlertCircle className="w-6 h-6 text-amber-500" />;
             case 'success': return <CheckCircle className="w-6 h-6 text-green-500" />;
             case 'info':
-            default: return <Info className="w-6 h-6 text-blue-500" />;
+            default: return <Info className="w-6 h-6 text-primary" />;
         }
     };
 

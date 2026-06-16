@@ -1367,11 +1367,126 @@ app.get('/api/applications', verifyToken, async (req: Request, res: Response) =>
     try {
         const db = await getDb();
         const activeOnly = req.query.activeOnly === 'true';
-        let query = 'SELECT Id as id, Code as code, Label as label, Url as url, LogoUrl as logo_url, CAST(IsActive AS BIT) as is_active, DisplayOrder as display_order FROM [dbo].[GAC_APP_TB_CONSOLE_APPLICATIONS]';
-        if (activeOnly) query += ' WHERE IsActive = 1';
-        query += ' ORDER BY DisplayOrder ASC';
+        let query = `
+            SELECT 
+                a.Id as id, 
+                a.Code as code, 
+                a.Label as label, 
+                a.Url as url, 
+                a.LogoUrl as logo_url, 
+                CAST(a.IsActive AS BIT) as is_active, 
+                a.DisplayOrder as display_order, 
+                a.CreatedAt as created_at,
+                b.FontTitle as font_title,
+                b.FontSubtitle as font_subtitle,
+                b.FontHeader as font_header,
+                b.FontSidebar as font_sidebar,
+                b.FontTableData as font_table_data,
+                b.BaseFontSize as base_font_size,
+                b.SidebarWidth as sidebar_width,
+                b.HeaderHeight as header_height,
+                b.TableRowHeight as table_row_height,
+                b.TransitionDuration as transition_duration,
+                b.RadiusChip as radius_chip,
+                b.RadiusButton as radius_button,
+                b.RadiusInput as radius_input,
+                b.RadiusCard as radius_card,
+                b.RadiusModal as radius_modal,
+                b.LightPrimary as light_primary,
+                b.LightPrimaryForeground as light_primary_foreground,
+                b.LightBg as light_bg,
+                b.LightCard as light_card,
+                b.LightBorder as light_border,
+                b.LightTextPrimary as light_text_primary,
+                b.LightTextSecondary as light_text_secondary,
+                b.DarkPrimary as dark_primary,
+                b.DarkPrimaryForeground as dark_primary_foreground,
+                b.DarkBg as dark_bg,
+                b.DarkCard as dark_card,
+                b.DarkBorder as dark_border,
+                b.DarkTextPrimary as dark_text_primary,
+                b.DarkTextSecondary as dark_text_secondary,
+                b.ShadowLevel1 as shadow_level_1,
+                b.ShadowLevel2 as shadow_level_2,
+                b.ShadowLevel3 as shadow_level_3,
+                b.MobileFontScale as mobile_font_scale,
+                b.MobileRadiusCard as mobile_radius_card,
+                b.MobileRadiusButton as mobile_radius_button,
+                b.MobilePaddingScale as mobile_padding_scale
+            FROM [dbo].[GAC_APP_TB_CONSOLE_APPLICATIONS] a
+            LEFT JOIN [dbo].[GAC_APP_TB_CONSOLE_APP_BRANDING] b ON a.Id = b.ApplicationId
+        `;
+        if (activeOnly) {
+            query += ' WHERE a.IsActive = 1';
+        }
+        query += ' ORDER BY a.DisplayOrder ASC';
+
         const result = await db.request().query(query);
-        res.json(result.recordset);
+        
+        const apps = result.recordset.map(row => ({
+            id: row.id,
+            code: row.code,
+            label: row.label,
+            url: row.url,
+            logo_url: row.logo_url,
+            is_active: row.is_active,
+            display_order: row.display_order,
+            created_at: row.created_at,
+            theme_config: row.font_title ? {
+                typography: {
+                    fontTitle: row.font_title,
+                    fontSubtitle: row.font_subtitle,
+                    fontHeader: row.font_header,
+                    fontSidebar: row.font_sidebar,
+                    fontTableData: row.font_table_data,
+                    baseFontSize: row.base_font_size,
+                },
+                border: {
+                    radiusChip: row.radius_chip,
+                    radiusButton: row.radius_button,
+                    radiusCard: row.radius_card,
+                    radiusModal: row.radius_modal,
+                    radiusInput: row.radius_input,
+                },
+                light: {
+                    primary: row.light_primary,
+                    primaryForeground: row.light_primary_foreground,
+                    background: row.light_bg,
+                    card: row.light_card,
+                    border: row.light_border,
+                    textPrimary: row.light_text_primary,
+                    textSecondary: row.light_text_secondary,
+                },
+                dark: {
+                    primary: row.dark_primary,
+                    primaryForeground: row.dark_primary_foreground,
+                    background: row.dark_bg,
+                    card: row.dark_card,
+                    border: row.dark_border,
+                    textPrimary: row.dark_text_primary,
+                    textSecondary: row.dark_text_secondary,
+                },
+                layout: {
+                    sidebarWidth: row.sidebar_width,
+                    headerHeight: row.header_height,
+                    tableRowHeight: row.table_row_height,
+                    transitionDuration: row.transition_duration,
+                },
+                shadows: {
+                    level1: row.shadow_level_1,
+                    level2: row.shadow_level_2,
+                    level3: row.shadow_level_3,
+                },
+                responsive: {
+                    mobileFontScale: row.mobile_font_scale,
+                    mobileRadiusCard: row.mobile_radius_card,
+                    mobileRadiusButton: row.mobile_radius_button,
+                    mobilePaddingScale: row.mobile_padding_scale,
+                }
+            } : null
+        }));
+        
+        res.json(apps);
     } catch (err: any) {
         res.status(500).json({ error: err.message });
     }

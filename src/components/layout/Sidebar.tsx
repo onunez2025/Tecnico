@@ -28,18 +28,6 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
             permission: 'tec.tickets.view' as const 
         },
         { 
-            to: '/config/users', 
-            icon: Users, 
-            label: 'Gestión de Usuarios', 
-            permission: 'tec.config.users' as const 
-        },
-        { 
-            to: '/config/roles', 
-            icon: Shield, 
-            label: 'Perfiles y Permisos', 
-            permission: 'tec.config.roles' as const 
-        },
-        { 
             to: '/config/audit', 
             icon: Terminal, 
             label: 'Logs de Auditoría', 

@@ -1,73 +1,152 @@
 import { useState, useRef, useEffect } from 'react';
-import { Grid } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Grid, Info, X } from 'lucide-react';
+import { cn } from '../../utils/cn';
+import { SIATC_THEME } from '../../utils/siatc-theme';
+import { useAuth } from '../../hooks/useAuth';
 import { useAppConfig } from '../../context/AppConfigContext';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 
-const CURRENT_APP_CODE = 'TEC';
+interface AppSwitcherProps {
+    currentAppId?: string;
+}
 
-export function AppSwitcher() {
+export function AppSwitcher({ currentAppId = 'TEC' }: AppSwitcherProps) {
+    const isMobile = useMediaQuery('(max-width: 767px)');
+    const { user } = useAuth();
+    const { applications } = useAppConfig();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const { applications } = useAppConfig();
-
-    const otherApps = applications.filter(app => app.code !== CURRENT_APP_CODE && app.is_active);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
+            if (isMobile) return;
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setIsOpen(false);
             }
         }
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    }, [isMobile]);
 
-    if (otherApps.length === 0) return null;
+    // Filter apps:
+    // 1. Omit the current app (e.g. TEC)
+    // 2. Filter by user allowed apps list (smart switcher)
+    const allowedAppsCodes = (user?.apps || '').split(',').map((a: string) => a.trim().toUpperCase()).filter(Boolean);
+    
+    const filteredApps = applications.filter(app => {
+        const appCode = app.code.toUpperCase();
+        // Omit current
+        if (appCode === currentAppId.toUpperCase()) return false;
+        
+        // Super admin sees all active apps, other users only see allowed ones
+        const roleName = user?.role_name?.toLowerCase();
+        const isSuperAdmin = roleName === 'administrador' || roleName === 'console.administrador';
+        if (isSuperAdmin) return true;
+        
+        return allowedAppsCodes.includes(appCode);
+    });
+
+    const theme = SIATC_THEME.APP_SWITCHER;
+
+    const renderSwitcherContent = () => (
+        <>
+            {/* Switcher Header */}
+            <div className={cn(theme.HEADER, isMobile ? "px-6 pt-6 pb-4" : "px-10 pt-8 pb-4")}>
+                <div className="flex flex-col gap-1">
+                    <h3 className={theme.HEADER_TITLE}>Ecosistema SIATC</h3>
+                    <span className={theme.HEADER_SUBTITLE}>Nube Corporativa</span>
+                </div>
+                <div className="flex items-center gap-3">
+                    <div className={theme.SYNC_BADGE}>
+                        <div className={theme.SYNC_DOT} />
+                        <span className={theme.SYNC_TEXT}>Global Sync</span>
+                    </div>
+                    {isMobile && (
+                        <button
+                            type="button"
+                            onClick={() => setIsOpen(false)}
+                            className="p-2 rounded-xl hover:bg-rose-500/10 hover:text-rose-500 transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Apps Grid */}
+            {filteredApps.length > 0 ? (
+                <div className={cn(theme.GRID, isMobile ? "grid grid-cols-2 p-4 gap-4 flex-1" : "grid grid-cols-4 p-6 gap-4")}>
+                    {filteredApps.map(app => (
+                        <a
+                            key={app.id}
+                            href={app.url}
+                            className={cn(theme.ITEM_CARD, "min-h-[110px] justify-center")}
+                        >
+                            <div className={theme.ITEM_LOGO_WRAPPER}>
+                                <img 
+                                    src={app.logo_url || '/Logo.png'} 
+                                    alt={app.label} 
+                                    className="w-full h-full object-contain" 
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).src = '/Logo.png';
+                                    }}
+                                />
+                            </div>
+                            <span className={theme.ITEM_NAME}>
+                                {app.label}
+                            </span>
+                        </a>
+                    ))}
+                </div>
+            ) : (
+                <div className="p-10 text-center text-xs text-cb-text-secondary font-bold tracking-tight flex-1 flex items-center justify-center">
+                    No tienes acceso a otras aplicaciones del ecosistema.
+                </div>
+            )}
+
+            {/* Footer */}
+            <div className={cn(theme.FOOTER, isMobile ? "px-6 py-4 mt-auto" : "px-10 py-5")}>
+                <Info className="w-4 h-4 text-muted-foreground opacity-30 shrink-0" />
+                <p className={theme.FOOTER_TEXT}>Plataforma Unificada SIATC v3.5</p>
+            </div>
+        </>
+    );
 
     return (
         <div className="relative inline-block" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 flex items-center justify-center"
-                title="Ecosistema de Aplicaciones"
+                className={cn(
+                    theme.TRIGGER,
+                    isOpen && theme.TRIGGER_ACTIVE,
+                    "cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+                )}
+                title="Ecosistema de Aplicaciones SIATC"
                 type="button"
             >
-                <Grid className="w-5 h-5" />
+                <Grid className={cn('w-5 h-5 transition-transform duration-500', isOpen && 'rotate-90')} />
             </button>
 
             {isOpen && (
-                <div
-                    className="absolute right-0 mt-2 w-[432px] bg-card backdrop-blur-md border border-border/40 rounded-cb-card shadow-cb-level-3 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-300"
-                >
-                    <div className="p-5 border-b border-border/30 bg-primary">
-                        <h3 className="text-base font-bold text-primary-foreground tracking-tight">Más aplicaciones</h3>
+                isMobile ? (
+                    createPortal(
+                        <div className="fixed inset-0 w-screen h-screen rounded-none border-none bg-card z-[100] flex flex-col p-0 overflow-y-auto">
+                            {renderSwitcherContent()}
+                        </div>,
+                        document.body
+                    )
+                ) : (
+                    <div className={cn(
+                        theme.CONTAINER,
+                        "absolute right-0 mt-6 w-[540px] h-auto rounded-[2.5rem] border border-cb-border bg-card/95 overflow-hidden"
+                    )}>
+                        {renderSwitcherContent()}
                     </div>
-                    <div className="p-4 grid grid-cols-2 gap-4">
-                        {otherApps.map(app => (
-                            <a
-                                key={app.id}
-                                href={app.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="group relative flex flex-col items-center justify-center p-6 rounded-xl hover:bg-primary/10 transition-all duration-500 border border-transparent hover:border-primary/20 hover:shadow-cb-level-2"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl" />
-                                <div className="relative w-20 h-20 mb-3 flex items-center justify-center overflow-hidden drop-shadow-md group-hover:scale-110 transition-all duration-500 ease-out">
-                                    {app.logo_url ? (
-                                        <img src={app.logo_url} alt={`${app.label} logo`} className="w-full h-full object-contain" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-primary/10 rounded-xl">
-                                            <Grid className="w-10 h-10 text-primary" />
-                                        </div>
-                                    )}
-                                </div>
-                                <span className="relative text-sm font-bold text-foreground dark:text-foreground/95 group-hover:text-primary transition-colors text-center">
-                                    {app.label}
-                                </span>
-                            </a>
-                        ))}
-                    </div>
-                </div>
+                )
             )}
         </div>
     );
 }
+
+export default AppSwitcher;

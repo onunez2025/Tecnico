@@ -11,6 +11,8 @@ import multer from 'multer';
 import fs from 'fs';
 import { createRequire } from 'module';
 import { BlobServiceClient } from '@azure/storage-blob';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 const require = createRequire(import.meta.url);
 const XLSX = require('xlsx');
 
@@ -52,34 +54,22 @@ async function validateFileMagicBytes(filePath: string, declaredMime: string): P
     }
 }
 
-// --- RATE LIMITER EN MEMORIA (sin dependencias externas) ---
-const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+// --- RATE LIMITING ---
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 1000,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Demasiadas solicitudes. Intenta más tarde.' },
+});
 
-const loginRateLimiter = (req: Request, res: Response, next: NextFunction) => {
-    const ip = req.ip ?? req.socket.remoteAddress ?? 'unknown';
-    const now = Date.now();
-    const WINDOW_MS = 15 * 60 * 1000;
-    const MAX_ATTEMPTS = 10;
-
-    const entry = loginAttempts.get(ip);
-    if (entry && entry.resetAt > now) {
-        if (entry.count >= MAX_ATTEMPTS) {
-            return res.status(429).json({ error: 'Demasiados intentos fallidos. Espera 15 minutos.' });
-        }
-        entry.count++;
-    } else {
-        loginAttempts.set(ip, { count: 1, resetAt: now + WINDOW_MS });
-    }
-    next();
-};
-
-// Limpiar el mapa de rate limiting cada hora para evitar fuga de memoria
-setInterval(() => {
-    const now = Date.now();
-    for (const [ip, entry] of loginAttempts.entries()) {
-        if (entry.resetAt <= now) loginAttempts.delete(ip);
-    }
-}, 60 * 60 * 1000);
+const authLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 50,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Demasiados intentos de inicio de sesión. Espera 1 hora.' },
+});
 
 // --- CACHÉ EN MEMORIA (TTL simple para endpoints estáticos) ---
 const _cache = new Map<string, { data: unknown; expiresAt: number }>();
@@ -119,22 +109,46 @@ const cleanApps = (str: string) => [...new Set((str || '').split(',').map(s => s
 
 // Nota: la ruta /api/images se registra más abajo, después de verifyToken, para protegerla con autenticación.
 
-// [SECURITY] Restringir CORS solo al origen permitido definido en el entorno.
-const allowedOrigin = process.env.ALLOWED_ORIGIN || 'http://localhost:3000';
-app.use(cors({ origin: allowedOrigin, credentials: true }));
+// [SECURITY] Proxy de confianza para que express-rate-limit vea la IP real
+app.set('trust proxy', 1);
 
-// [SECURITY] Cabeceras de seguridad HTTP (equivalente a helmet sin dependencia externa)
-app.use((_req: Request, res: Response, next: NextFunction) => {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('X-XSS-Protection', '0');
-    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=()');
-    if (IS_PRODUCTION) {
-        res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-    }
-    next();
-});
+// [SECURITY] CORS — múltiples orígenes desde env, con guard de producción
+if (IS_PRODUCTION && !(process.env.ALLOWED_ORIGINS || '').trim()) {
+    console.warn('WARNING: ALLOWED_ORIGINS no configurado en producción.');
+}
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!IS_PRODUCTION) return callback(null, true);
+        const allowed = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+        if (!origin || allowed.includes(origin)) callback(null, true);
+        else callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+}));
+
+// [SECURITY] Cabeceras de seguridad via helmet (incluye CSP)
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            imgSrc: ["'self'", "data:", "https:"],
+            connectSrc: ["'self'"],
+            fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
+            objectSrc: ["'none'"],
+            frameAncestors: ["'none'"],
+            formAction: ["'self'"],
+            baseUri: ["'self'"],
+            upgradeInsecureRequests: [],
+        },
+    },
+    hsts: IS_PRODUCTION ? { maxAge: 31536000, includeSubDomains: true } : false,
+}));
+
+// [SECURITY] Rate limiting general (1000 req / 15 min) y auth-específico (50 req / 1 hora)
+app.use(limiter);
+app.use('/api/auth/login', authLimiter);
 
 // [SECURITY] Limitar tamaño de body para prevenir DoS
 app.use(express.json({ limit: '1mb' }));
@@ -224,13 +238,13 @@ async function logAudit(req: Request, action: string, entity: string, entityId: 
         if (!user) return;
         const db = await getDb();
         await db.request()
-            .input('uid', user.id)
-            .input('un', user.username)
-            .input('acc', action)
-            .input('ent', entity)
-            .input('eid', entityId)
-            .input('det', JSON.stringify(details))
-            .query(`INSERT INTO [dbo].[GAC_APP_TB_AUDIT_LOG] (UsuarioID, UsuarioNombre, Accion, Entidad, EntidadID, Detalle, Fecha) 
+            .input('uid', sql.NVarChar, String(user.id))
+            .input('un', sql.NVarChar, user.username)
+            .input('acc', sql.NVarChar, action)
+            .input('ent', sql.NVarChar, entity)
+            .input('eid', sql.NVarChar, entityId)
+            .input('det', sql.NVarChar, JSON.stringify(details))
+            .query(`INSERT INTO [dbo].[GAC_APP_TB_AUDIT_LOG] (UsuarioID, UsuarioNombre, Accion, Entidad, EntidadID, Detalle, Fecha)
                     VALUES (@uid, @un, @acc, @ent, @eid, @det, GETDATE())`);
     } catch (err) {
         console.error('❌ Falla en Log de Auditoría:', err);
@@ -240,7 +254,7 @@ async function logAudit(req: Request, action: string, entity: string, entityId: 
 async function syncPaymentCache(id_transaccion: string) {
     try {
         const db = await getDb();
-        await db.request().input('id', id_transaccion).query(`
+        await db.request().input('id', sql.VarChar(50), id_transaccion).query(`
             DELETE FROM [dbo].[GAC_PAGOS_CACHE] WHERE ID_transaccion = @id;
             
             INSERT INTO [dbo].[GAC_PAGOS_CACHE] (
@@ -366,19 +380,19 @@ const checkPermission = (permission: string) => {
         try {
             const db = await getDb();
             await db.request()
-                .input('uid', user.id)
-                .input('un', user.full_name || user.username)
-                .input('acc', 'ACCESO_DENEGADO')
-                .input('ent', `Endpoint: ${req.method} ${req.baseUrl}${req.path}`)
-                .input('eid', permission)
-                .input('det', JSON.stringify({
+                .input('uid', sql.NVarChar, String(user.id))
+                .input('un', sql.NVarChar, user.full_name || user.username)
+                .input('acc', sql.NVarChar, 'ACCESO_DENEGADO')
+                .input('ent', sql.NVarChar, `Endpoint: ${req.method} ${req.baseUrl}${req.path}`)
+                .input('eid', sql.NVarChar, permission)
+                .input('det', sql.NVarChar, JSON.stringify({
                     ip: req.ip,
                     userAgent: req.get('user-agent'),
                     params: req.params,
                     query: req.query
                 }))
                 .query(`
-                    INSERT INTO [dbo].[GAC_APP_TB_AUDIT_LOG] 
+                    INSERT INTO [dbo].[GAC_APP_TB_AUDIT_LOG]
                     (UsuarioID, UsuarioNombre, Accion, Entidad, EntidadID, Detalle)
                     VALUES (@uid, @un, @acc, @ent, @eid, @det)
                 `);
@@ -391,14 +405,14 @@ const checkPermission = (permission: string) => {
 };
 
 // --- AUTH ---
-app.post('/api/auth/login', loginRateLimiter, async (req: Request, res: Response) => {
+app.post('/api/auth/login', async (req: Request, res: Response) => {
     const { username, password, remember } = req.body;
     if (!username || !password) {
         return res.status(400).json({ error: 'Usuario y contraseña son requeridos' });
     }
     try {
         const db = await getDb();
-        const result = await db.request().input('u', username).input('app', APP_IDENTIFIER).query(`
+        const result = await db.request().input('u', sql.NVarChar, username).input('app', sql.NVarChar, APP_IDENTIFIER).query(`
             SELECT u.*, r.Name as RoleName FROM EBM.Users u
             LEFT JOIN EBM.Roles r ON u.RoleId = r.Id
             WHERE (u.Username = @u OR u.Email = @u) AND u.IsActive = 1
@@ -409,7 +423,7 @@ app.post('/api/auth/login', loginRateLimiter, async (req: Request, res: Response
             return res.status(401).json({ error: 'Credenciales inválidas' });
         }
 
-        const perms = (await db.request().input('rid', user.RoleId).query("SELECT Permission FROM EBM.RolePermissions WHERE RoleId = @rid")).recordset.map((p: any) => p.Permission);
+        const perms = (await db.request().input('rid', sql.NVarChar, String(user.RoleId)).query("SELECT Permission FROM EBM.RolePermissions WHERE RoleId = @rid")).recordset.map((p: any) => p.Permission);
 
         // [SECURITY] Token "Recuérdame" reducido de 30d a 7d para limitar ventana de compromiso
         const expiresIn = remember ? '7d' : '12h';
@@ -424,16 +438,21 @@ app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
     try {
         const { id } = (req as any).user;
         const db = await getDb();
-        const result = await db.request().input('id', id).query(`
-            SELECT u.*, r.Name as RoleName FROM EBM.Users u 
-            LEFT JOIN EBM.Roles r ON u.RoleId = r.Id 
+        const result = await db.request().input('id', sql.NVarChar, String(id)).query(`
+            SELECT u.*, r.Name as RoleName FROM EBM.Users u
+            LEFT JOIN EBM.Roles r ON u.RoleId = r.Id
             WHERE u.Id = @id
         `);
         const user = result.recordset[0];
         if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
-        
-        const perms = (await db.request().input('rid', user.RoleId).query("SELECT Permission FROM EBM.RolePermissions WHERE RoleId = @rid")).recordset.map(p => p.Permission);
-        res.json({ user: { id: user.Id, username: user.Username, full_name: user.FullName, role_name: user.RoleName, permissions: perms } });
+
+        const perms = (await db.request().input('rid', sql.NVarChar, String(user.RoleId)).query("SELECT Permission FROM EBM.RolePermissions WHERE RoleId = @rid")).recordset.map((p: any) => p.Permission);
+        const freshToken = jwt.sign(
+            { id: user.Id, username: user.Username, full_name: user.FullName, role: user.RoleName, perms, casId: user.cas_id || null },
+            JWT_SECRET as string,
+            { expiresIn: '12h' }
+        );
+        res.json({ token: freshToken, user: { id: user.Id, username: user.Username, full_name: user.FullName, role_name: user.RoleName, permissions: perms } });
     } catch (err: any) { res.status(500).json({ error: 'Error interno del servidor' }); }
 });
 
@@ -473,7 +492,7 @@ if (!APPSHEET_PDF_PATH) {
 }
 
 // --- DASHBOARD ---
-app.get('/api/dashboard/stats', verifyToken, checkPermission('liq.dashboard.view'), async (req: Request, res: Response) => {
+app.get('/api/dashboard/stats', verifyToken, checkPermission('tec.dashboard.view'), async (req: Request, res: Response) => {
     try {
         const { search = '', status = '', field = 'all', auth_code = '', date_trans = '', date_visit = '', tipo_servicio = '', month = '', year = '' } = req.query as any;
         const db = await getDb();
@@ -493,12 +512,12 @@ app.get('/api/dashboard/stats', verifyToken, checkPermission('liq.dashboard.view
                 whereClause += " AND Estado = 'LIQUIDADO' AND (Observacion IS NOT NULL AND LTRIM(RTRIM(CAST(Observacion AS NVARCHAR(MAX)))) <> '')";
             } else {
                 whereClause += ' AND Estado = @status';
-                sqlReq.input('status', statusVal);
+                sqlReq.input('status', sql.NVarChar, statusVal);
             }
         }
 
         if (search) {
-            sqlReq.input('search', `%${search}%`);
+            sqlReq.input('search', sql.NVarChar, `%${search}%`);
             if (field === 'ticket') {
                 whereClause += ` AND Ticket_Original LIKE @search`;
             } else if (field === 'vouch') {
@@ -514,27 +533,27 @@ app.get('/api/dashboard/stats', verifyToken, checkPermission('liq.dashboard.view
 
         if (auth_code) {
             whereClause += " AND CodigoAutorizacion LIKE @auth";
-            sqlReq.input('auth', `%${auth_code}%`);
+            sqlReq.input('auth', sql.NVarChar, `%${auth_code}%`);
         }
         if (date_trans) {
             whereClause += " AND CAST(Fecha_transaccion AS DATE) = @dateTrans";
-            sqlReq.input('dateTrans', date_trans);
+            sqlReq.input('dateTrans', sql.VarChar(10), date_trans);
         }
         if (date_visit) {
             whereClause += " AND CAST(FechaVisita AS DATE) = @dateVisit";
-            sqlReq.input('dateVisit', date_visit);
+            sqlReq.input('dateVisit', sql.VarChar(10), date_visit);
         }
         if (tipo_servicio) {
             whereClause += " AND TipoServicio LIKE @tipoServicio";
-            sqlReq.input('tipoServicio', `%${tipo_servicio}%`);
+            sqlReq.input('tipoServicio', sql.NVarChar, `%${tipo_servicio}%`);
         }
         if (month) {
             whereClause += " AND MONTH(Fecha_transaccion) = @month";
-            sqlReq.input('month', parseInt(month));
+            sqlReq.input('month', sql.Int, parseInt(month));
         }
         if (year) {
             whereClause += " AND YEAR(Fecha_transaccion) = @year";
-            sqlReq.input('year', parseInt(year));
+            sqlReq.input('year', sql.Int, parseInt(year));
         }
         const query = `
             SELECT 
@@ -561,7 +580,7 @@ app.get('/api/dashboard/stats', verifyToken, checkPermission('liq.dashboard.view
     }
 });
 
-app.get('/api/dashboard/technicians', verifyToken, checkPermission('liq.dashboard.view'), async (req: Request, res: Response) => {
+app.get('/api/dashboard/technicians', verifyToken, checkPermission('tec.dashboard.view'), async (req: Request, res: Response) => {
     try {
         const db = await getDb();
         const sqlReq = db.request();
@@ -689,7 +708,7 @@ async function runMigrations() {
     console.log('✅ SQL Migrations complete');
 }
 
-app.get('/api/dashboard/cas-performance', verifyToken, checkPermission('liq.dashboard.view'), async (req: Request, res: Response) => {
+app.get('/api/dashboard/cas-performance', verifyToken, checkPermission('tec.dashboard.view'), async (req: Request, res: Response) => {
     try {
         const db = await getDb();
         const zone = req.query.zone as string;
@@ -716,10 +735,10 @@ app.get('/api/dashboard/cas-performance', verifyToken, checkPermission('liq.dash
         `;
 
         if (casId) {
-            sqlReq.input('casId', casId);
+            sqlReq.input('casId', sql.VarChar(50), casId);
             statsQuery = `${setupQuery} SELECT CHOOSE(MONTH(T.FechaVisita), 'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SET', 'OCT', 'NOV', 'DIC') as name, SUM(ISNULL(P.ImporteValido, 0)) as value, COUNT(P.Ticket) as count FROM @Tickets2026 T LEFT JOIN @Pagos P ON T.Ticket = P.Ticket WHERE T.ID_cas = @casId GROUP BY MONTH(T.FechaVisita) ORDER BY MONTH(T.FechaVisita) ASC;`;
         } else if (zone) {
-            sqlReq.input('zone', zone);
+            sqlReq.input('zone', sql.NVarChar, zone);
             statsQuery = `${setupQuery} SELECT c.ID_CAS as id_cas, c.Nombre_CAS as name, SUM(ISNULL(p.ImporteValido, 0)) as value, COUNT(p.Ticket) as count FROM [dbo].[GAC_APP_TB_CAS] c INNER JOIN @Tickets2026 T ON c.ID_CAS = T.ID_cas LEFT JOIN @Pagos p ON T.Ticket = p.Ticket WHERE c.Zona_atencion = @zone GROUP BY c.ID_CAS, c.Nombre_CAS ORDER BY value DESC;`;
         } else {
             statsQuery = `${setupQuery} SELECT UPPER(ISNULL(c.Zona_atencion, 'OTRO')) as name, SUM(ISNULL(p.ImporteValido, 0)) as value, COUNT(p.Ticket) as count FROM [dbo].[GAC_APP_TB_CAS] c INNER JOIN @Tickets2026 T ON c.ID_CAS = T.ID_cas LEFT JOIN @Pagos p ON T.Ticket = p.Ticket GROUP BY c.Zona_atencion ORDER BY value DESC;`;
@@ -733,11 +752,11 @@ app.get('/api/dashboard/cas-performance', verifyToken, checkPermission('liq.dash
     }
 });
 
-app.get('/api/dashboard/technician/:name/metrics', verifyToken, checkPermission('liq.dashboard.view'), async (req: Request, res: Response) => {
+app.get('/api/dashboard/technician/:name/metrics', verifyToken, checkPermission('tec.dashboard.view'), async (req: Request, res: Response) => {
     try {
         const { name } = req.params;
         const db = await getDb();
-        const sqlReq = db.request().input('techName', name);
+        const sqlReq = db.request().input('techName', sql.NVarChar, name);
 
         const techQuery = `
             SELECT MONTH(s.FechaVisita) as month, SUM(TRY_CAST(REPLACE(REPLACE(ISNULL(P.Importe, '0'), 'S/', ''), ',', '') as decimal(18,2))) as total FROM [SIATC].[Dashboard_FSM] s LEFT JOIN [dbo].[GAC_APP_TB_TICKETS_PAGOS] P ON P.Ticket = s.Ticket WHERE (s.NombreTecnico + ' ' + s.ApellidoTecnico) = @techName AND YEAR(s.FechaVisita) = YEAR(GETDATE()) GROUP BY MONTH(s.FechaVisita) ORDER BY month ASC;
@@ -753,12 +772,12 @@ app.get('/api/dashboard/technician/:name/metrics', verifyToken, checkPermission(
     }
 });
 
-app.get('/api/tickets-pagos/:id/pdf', verifyToken, checkPermission('liq.payments.view'), async (req: Request, res: Response) => {
+app.get('/api/tickets-pagos/:id/pdf', verifyToken, checkPermission('tec.payments.view'), async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const db = await getDb();
         const payment = await db.request()
-            .input('id', id)
+            .input('id', sql.VarChar(50), id)
             .query("SELECT Ticket FROM [dbo].[GAC_APP_TB_TICKETS_PAGOS] WHERE ID_transaccion = @id");
 
         if (payment.recordset.length === 0) return res.status(404).json({ error: 'Pago no encontrado' });
@@ -983,7 +1002,21 @@ app.post('/api/tec/tickets/:ticketId/pago', verifyToken, checkPermission('tec.ti
         } else if (String(canal || '').toUpperCase() !== 'EFECTIVO') { return res.status(400).json({ error: 'Adjunto obligatorio' }); }
 
         const idTransaccion = uuidv4().toUpperCase();
-        await db.request().input('id', idTransaccion).input('ticket', ticketId).input('f_trans', fecha_transaccion ? new Date(fecha_transaccion) : new Date()).input('vouch', voucher || '').input('lote', lote || '').input('izipay', codigo_izipay || '').input('imp', importe || '0').input('canal', String(canal || 'POS').toUpperCase()).input('obs', observacion || '').input('est', 'LIQUIDADO').input('folio', folio || '').input('auth', codigo_autorizacion || '').input('adjunto', blobUrl || null).query(`INSERT INTO [dbo].[GAC_APP_TB_TICKETS_PAGOS] (ID_transaccion, Fecha_creacion, Ticket, Fecha_transaccion, Voucher, Lote, Codigo_Izipay, Importe, Estado, Canal, Observacion, CodigoAutorizacion, Folio, Adjunto) VALUES (@id, GETDATE(), @ticket, @f_trans, @vouch, @lote, @izipay, @imp, @est, @canal, @obs, @auth, @folio, @adjunto)`);
+        await db.request()
+            .input('id', sql.VarChar(50), idTransaccion)
+            .input('ticket', sql.NVarChar, ticketId)
+            .input('f_trans', sql.DateTime, fecha_transaccion ? new Date(fecha_transaccion) : new Date())
+            .input('vouch', sql.NVarChar, voucher || '')
+            .input('lote', sql.NVarChar, lote || '')
+            .input('izipay', sql.NVarChar, codigo_izipay || '')
+            .input('imp', sql.NVarChar, importe || '0')
+            .input('canal', sql.NVarChar, String(canal || 'POS').toUpperCase())
+            .input('obs', sql.NVarChar, observacion || '')
+            .input('est', sql.NVarChar, 'LIQUIDADO')
+            .input('folio', sql.NVarChar, folio || '')
+            .input('auth', sql.NVarChar, codigo_autorizacion || '')
+            .input('adjunto', sql.NVarChar, blobUrl || null)
+            .query(`INSERT INTO [dbo].[GAC_APP_TB_TICKETS_PAGOS] (ID_transaccion, Fecha_creacion, Ticket, Fecha_transaccion, Voucher, Lote, Codigo_Izipay, Importe, Estado, Canal, Observacion, CodigoAutorizacion, Folio, Adjunto) VALUES (@id, GETDATE(), @ticket, @f_trans, @vouch, @lote, @izipay, @imp, @est, @canal, @obs, @auth, @folio, @adjunto)`);
         setImmediate(() => syncPaymentCache(idTransaccion));
         res.status(201).json({ message: 'Pago registrado', id: idTransaccion });
     } catch (err: any) { if (req.file) fs.unlinkSync(req.file.path); res.status(500).json({ error: 'Error interno' }); }
@@ -995,7 +1028,7 @@ app.get('/api/tec/today-tickets', verifyToken, checkPermission('tec.tickets.view
         const db = await getDb();
         const sqlReq = db.request();
         let query = `SELECT Ticket as id, Estado, FechaVisita, NombreCliente as Cliente, Distrito, (ISNULL(Calle, '') + ' ' + ISNULL(NumeroCalle, '')) as Direccion, BloqueHorario, Asunto, Celular1 as Contacto FROM [SIATC].[Dashboard_FSM] WHERE CONVERT(DATE, FechaVisita) = CONVERT(DATE, GETDATE())`;
-        if (role?.toLowerCase() !== 'administrador') { query += " AND (NombreTecnico + ' ' + ApellidoTecnico) = @userFullName"; sqlReq.input('userFullName', full_name); }
+        if (role?.toLowerCase() !== 'administrador') { query += " AND (NombreTecnico + ' ' + ApellidoTecnico) = @userFullName"; sqlReq.input('userFullName', sql.NVarChar, full_name); }
         const result = await sqlReq.query(query);
         res.json(result.recordset);
     } catch (err: any) { res.status(500).json({ error: 'Error interno del servidor' }); }
@@ -1005,7 +1038,7 @@ app.get('/api/tec/schedule', verifyToken, checkPermission('tec.tickets.view'), a
     try {
         const { full_name } = (req as any).user;
         const db = await getDb();
-        const result = await db.request().input('user', full_name).query(`SELECT ID_empleado_calendario_labores as id, Fecha_Labor as date, Labor as title, 'Taller/Reunión' as type FROM [dbo].[GAC_APP_TB_EMPLEADOS_CALENDARIO_LABORES] WHERE Empleado = @user AND Fecha_Labor >= CONVERT(DATE, GETDATE()) ORDER BY Fecha_Labor ASC`);
+        const result = await db.request().input('user', sql.NVarChar, full_name).query(`SELECT ID_empleado_calendario_labores as id, Fecha_Labor as date, Labor as title, 'Taller/Reunión' as type FROM [dbo].[GAC_APP_TB_EMPLEADOS_CALENDARIO_LABORES] WHERE Empleado = @user AND Fecha_Labor >= CONVERT(DATE, GETDATE()) ORDER BY Fecha_Labor ASC`);
         res.json(result.recordset);
     } catch (err: any) { res.status(500).json({ error: 'Error interno del servidor' }); }
 });
@@ -1016,7 +1049,14 @@ app.post('/api/tec/sales', verifyToken, checkPermission('tec.tickets.view'), asy
         const { full_name } = (req as any).user;
         const db = await getDb();
         const idVenta = uuidv4().substring(0, 8).toUpperCase();
-        await db.request().input('id', idVenta).input('ticket', ticket).input('pedido', pedido).input('obs', observacion).input('coment', comentarioTecnico).input('user', full_name).query(`INSERT INTO [dbo].[GAC_APP_TB_VENTAS] (ID_Venta, Ticket, Nro_pedido_venta, Observacion, Comentario_tecnico, Venta_registrada_por, Venta_registrada_el, Venta_realizada) VALUES (@id, @ticket, @pedido, @obs, @coment, @user, GETDATE(), 'SI')`);
+        await db.request()
+            .input('id', sql.VarChar(50), idVenta)
+            .input('ticket', sql.NVarChar, ticket)
+            .input('pedido', sql.NVarChar, pedido)
+            .input('obs', sql.NVarChar, observacion)
+            .input('coment', sql.NVarChar, comentarioTecnico)
+            .input('user', sql.NVarChar, full_name)
+            .query(`INSERT INTO [dbo].[GAC_APP_TB_VENTAS] (ID_Venta, Ticket, Nro_pedido_venta, Observacion, Comentario_tecnico, Venta_registrada_por, Venta_registrada_el, Venta_realizada) VALUES (@id, @ticket, @pedido, @obs, @coment, @user, GETDATE(), 'SI')`);
         res.json({ message: 'Oportunidad de venta registrada', id: idVenta });
     } catch (err: any) { res.status(500).json({ error: 'Error interno del servidor' }); }
 });
@@ -1029,8 +1069,8 @@ app.patch('/api/tec/time-range', verifyToken, checkPermission('tec.tickets.view'
         }
         const db = await getDb();
         await db.request()
-            .input('ticket', ticket)
-            .input('bloque', bloqueHorario)
+            .input('ticket', sql.NVarChar, ticket)
+            .input('bloque', sql.NVarChar, bloqueHorario)
             .query(`UPDATE [dbo].[GAC_APP_TB_RANGO_HORARIO] SET Bloque_horario = @bloque WHERE ID_ticket = @ticket`);
         res.json({ message: 'Rango horario actualizado' });
     } catch (err: any) {
@@ -1054,7 +1094,7 @@ app.get('/api/users', verifyToken, checkPermission('tec.config.users'), async (r
         `);
         const users = await Promise.all(result.recordset.map(async (u: any) => {
             const perms = u.RoleId
-                ? (await db.request().input('rid', u.RoleId)
+                ? (await db.request().input('rid', sql.NVarChar, String(u.RoleId))
                     .query(`SELECT Permission FROM EBM.RolePermissions WHERE RoleId=@rid`))
                     .recordset.map((p: any) => p.Permission)
                 : [];
@@ -1319,6 +1359,21 @@ app.get('/api/config/audit-logs', verifyToken, checkPermission('tec.config.audit
     } catch (err: any) {
         console.error('[GET /api/config/audit-logs]', err);
         res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+// --- APPLICATIONS (AppSwitcher dinámico) ---
+app.get('/api/applications', verifyToken, async (req: Request, res: Response) => {
+    try {
+        const db = await getDb();
+        const activeOnly = req.query.activeOnly === 'true';
+        let query = 'SELECT Id as id, Code as code, Label as label, Url as url, LogoUrl as logo_url, CAST(IsActive AS BIT) as is_active, DisplayOrder as display_order FROM [dbo].[GAC_APP_TB_CONSOLE_APPLICATIONS]';
+        if (activeOnly) query += ' WHERE IsActive = 1';
+        query += ' ORDER BY DisplayOrder ASC';
+        const result = await db.request().query(query);
+        res.json(result.recordset);
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
     }
 });
 

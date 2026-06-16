@@ -35,6 +35,39 @@
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
+
+  /* SIATC Design System — radio de bordes dinámicos */
+  --radius-cb-chip: var(--radius-chip, 4px);
+  --radius-cb-btn: var(--radius-button, 8px);
+  --radius-cb-input: var(--radius-input, 8px);
+  --radius-cb-card: var(--radius-card, 12px);
+  --radius-cb-modal: var(--radius-modal, 16px);
+
+  /* SIATC — fuentes dinámicas (sobreescribibles por theme_config) */
+  --font-title: var(--font-title, 'Lato'), sans-serif;
+  --font-subtitle: var(--font-subtitle, 'Lato'), sans-serif;
+  --font-header: var(--font-header, 'Lato'), sans-serif;
+  --font-sidebar: var(--font-sidebar, 'Lato'), sans-serif;
+  --font-table-data: var(--font-table-data, 'Lato'), monospace;
+
+  /* SIATC — colores semánticos fijos del sistema */
+  --color-cb-blue: #4C5F80;
+  --color-cb-slate: #5B616E;
+  --color-cb-neutral: #8A919E;
+  --color-cb-success: #05B169;
+  --color-cb-error: #DF2935;
+  --color-cb-warning: #F0AD4E;
+
+  /* SIATC — colores dinámicos (apuntan a CSS vars en :root) */
+  --color-cb-bg: var(--cb-bg);
+  --color-cb-text-primary: var(--cb-text-primary);
+  --color-cb-text-secondary: var(--cb-text-secondary);
+  --color-cb-border: var(--cb-border);
+
+  /* SIATC — sombras dinámicas */
+  --shadow-cb-level-1: var(--shadow-level-1, 0 1px 3px rgba(5,15,26,0.06));
+  --shadow-cb-level-2: var(--shadow-level-2, 0 4px 12px rgba(5,15,26,0.08));
+  --shadow-cb-level-3: var(--shadow-level-3, 0 12px 24px rgba(5,15,26,0.12));
 }
 
 @layer base {
@@ -75,6 +108,30 @@
     --ring: hsl(221.2 83.2% 53.3%);
 
     --radius: 0.5rem;
+
+    /* SIATC — radio de bordes por defecto */
+    --radius-chip: 4px;
+    --radius-button: 8px;
+    --radius-input: 8px;
+    --radius-card: 12px;
+    --radius-modal: 16px;
+
+    /* SIATC — colores semánticos (modo claro) */
+    --cb-bg: #F4F6FA;
+    --cb-text-primary: #1A1C1E;
+    --cb-text-secondary: #515254;
+    --cb-border: #E2E4E9;
+
+    /* SIATC — sombras */
+    --shadow-level-1: 0 1px 3px rgba(5,15,26,0.06);
+    --shadow-level-2: 0 4px 12px rgba(5,15,26,0.08);
+    --shadow-level-3: 0 12px 24px rgba(5,15,26,0.12);
+
+    /* SIATC — layout */
+    --layout-border-width: 1px;
+    --layout-shadow: var(--shadow-level-1);
+    --padding-scale: 1;
+    --transition-duration: 300ms;
   }
 
   html.dark {
@@ -105,6 +162,28 @@
     --border: hsl(217.2 32.6% 15%);
     --input: hsl(217.2 32.6% 15%);
     --ring: hsl(224.3 76.3% 48%);
+
+    /* SIATC — colores semánticos (modo oscuro) */
+    --cb-bg: #050F1A;
+    --cb-text-primary: #F9FAFB;
+    --cb-text-secondary: #8A919E;
+    --cb-border: #1E293B;
+
+    --layout-border-width: 1px;
+    --layout-shadow: none;
+  }
+}
+
+/* SIATC — clase marcadora para scrollbar personalizado */
+.custom-scrollbar {
+  scrollbar-width: thin;
+}
+
+/* SIATC — responsive layout overrides */
+@media (max-width: 767px) {
+  :root, html.dark {
+    --layout-border-width: 0px;
+    --layout-shadow: none;
   }
 }
 

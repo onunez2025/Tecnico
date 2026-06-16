@@ -108,7 +108,7 @@ export function MainLayout() {
                             </NavLink>
                         )}
 
-                        <AppSwitcher currentAppId="tec" />
+                        <AppSwitcher />
 
                         {/* User Profile Avatar */}
                         <NavLink 

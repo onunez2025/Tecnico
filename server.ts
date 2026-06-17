@@ -449,8 +449,14 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
             { expiresIn }
         );
 
+        // Token SSO mínimo para la cookie (sin permisos — garantiza < 400 bytes sin importar cuántos permisos tenga el rol)
+        const ssoToken = jwt.sign(
+            { id: user.Id, role: user.RoleName, role_name: user.RoleName, username: user.Username, apps: user.Apps || '', casId: user.cas_id || null },
+            JWT_SECRET as string,
+            { expiresIn }
+        );
         if (IS_PRODUCTION) {
-            res.cookie('token', token, {
+            res.cookie('token', ssoToken, {
                 domain: '.siatc.cloud',
                 maxAge: (remember ? 7 * 24 * 60 * 60 : 12 * 60 * 60) * 1000,
                 httpOnly: false,
@@ -512,8 +518,13 @@ app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
             JWT_SECRET as string,
             { expiresIn: '12h' }
         );
+        const ssoToken = jwt.sign(
+            { id: user.Id, role: user.RoleName, role_name: user.RoleName, username: user.Username, apps: user.Apps || '', casId: user.cas_id || null },
+            JWT_SECRET as string,
+            { expiresIn: '12h' }
+        );
         if (IS_PRODUCTION) {
-            res.cookie('token', freshToken, {
+            res.cookie('token', ssoToken, {
                 domain: '.siatc.cloud',
                 maxAge: 12 * 60 * 60 * 1000,
                 httpOnly: false,

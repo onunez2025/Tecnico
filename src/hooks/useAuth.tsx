@@ -111,7 +111,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     StorageService.setCurrentUser(data.user);
                     if (data.token) {
                         StorageService.setToken(data.token);
-                        // Cookie SSO renovada server-side via Set-Cookie HTTP header
+                        const isProd = window.location.hostname.endsWith('.siatc.cloud');
+                        const cookieDomain = isProd ? '; domain=.siatc.cloud' : '';
+                        document.cookie = `token=${data.token}; path=/${cookieDomain}; max-age=${24 * 60 * 60}; SameSite=Lax; Secure=${isProd ? 'true' : 'false'}`;
                     }
                 } else {
                     logout();
@@ -159,7 +161,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         StorageService.setCurrentUser(newUser, remember);
         if (token) {
             StorageService.setToken(token, remember);
-            // Cookie SSO establecida server-side via Set-Cookie HTTP header
+            // El server ya puso la cookie SSO mínima; esto intenta sobreescribir con el JWT completo.
+            // Si el JWT completo supera 4096 bytes, falla silenciosamente y queda la cookie mínima.
+            const isProd = window.location.hostname.endsWith('.siatc.cloud');
+            const cookieDomain = isProd ? '; domain=.siatc.cloud' : '';
+            document.cookie = `token=${token}; path=/${cookieDomain}; max-age=${24 * 60 * 60}; SameSite=Lax; Secure=${isProd ? 'true' : 'false'}`;
         }
     }, []);
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, Sun, Moon, Settings, Calendar, User } from 'lucide-react';
+import { Menu, X, Sun, Moon, Settings, Calendar, User, DollarSign } from 'lucide-react';
 import { NavLink, Navigate, Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { AppSwitcher } from './AppSwitcher';
@@ -180,6 +180,18 @@ export function MainLayout() {
                         >
                             <Calendar className="w-5 h-5" />
                             <span className="text-[10px] font-medium">Tickets</span>
+                        </NavLink>
+                    )}
+                    {hasPermission('tec.payments.view') && (
+                        <NavLink
+                            to="/payments"
+                            className={({ isActive }) => cn(
+                                "flex-1 flex flex-col items-center justify-center gap-1 py-2.5 min-h-[56px] transition-colors",
+                                isActive ? "text-primary" : "text-muted-foreground"
+                            )}
+                        >
+                            <DollarSign className="w-5 h-5" />
+                            <span className="text-[10px] font-medium">Pagos</span>
                         </NavLink>
                     )}
                     {(hasPermission('tec.config.users') || hasPermission('tec.config.roles') || hasPermission('tec.config.audit')) && (

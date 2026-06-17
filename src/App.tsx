@@ -12,6 +12,7 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const CentralizedConfigPage = lazy(() => import('./pages/config/CentralizedConfigPage'));
 const AuditLogPage = lazy(() => import('./pages/config/AuditLogPage'));
 const TicketsCalendarPage = lazy(() => import('./pages/TicketsCalendarPage'));
+const PaymentsPage = lazy(() => import('./pages/PaymentsPage'));
 import { PermissionGuard } from './components/auth/PermissionGuard';
 
 const LoadingFallback = () => (
@@ -53,6 +54,12 @@ function App() {
                 <Route path="tickets" element={
                   <PermissionGuard permission="tec.tickets.view" asRoute>
                     <TicketsCalendarPage />
+                  </PermissionGuard>
+                } />
+
+                <Route path="payments" element={
+                  <PermissionGuard permission="tec.payments.view" asRoute>
+                    <PaymentsPage />
                   </PermissionGuard>
                 } />
 

@@ -798,6 +798,17 @@ async function runMigrations() {
                     VALUES ('HORA_MAXIMA_RANGO_HORARIO', '09:30', 'Hora maxima limite diaria (HH:mm) para asignar rango horario a tickets de hoy', 'SYSTEM');
                   END`
         },
+        {
+            name: 'Add tec.payments.view permission to all TEC roles',
+            sql: `INSERT INTO EBM.RolePermissions (RoleId, Permission)
+                  SELECT DISTINCT r.Id, 'tec.payments.view'
+                  FROM EBM.Roles r
+                  WHERE r.Apps LIKE '%TEC%'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM EBM.RolePermissions rp2
+                        WHERE rp2.RoleId = r.Id AND rp2.Permission = 'tec.payments.view'
+                    )`
+        },
     ];
 
     for (const step of steps) {

@@ -5,7 +5,8 @@ import {
     Terminal,
     LogOut,
     Calendar,
-    ChevronRight
+    ChevronRight,
+    DollarSign
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAuth } from '../../hooks/useAuth';
@@ -21,17 +22,23 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
     const { logout, hasPermission } = useAuth();
 
     const navItems = [
-        { 
-            to: '/tickets', 
-            icon: Calendar, 
-            label: 'Mis Tickets', 
-            permission: 'tec.tickets.view' as const 
+        {
+            to: '/tickets',
+            icon: Calendar,
+            label: 'Mis Tickets',
+            permission: 'tec.tickets.view' as const
         },
-        { 
-            to: '/config/audit', 
-            icon: Terminal, 
-            label: 'Logs de Auditoría', 
-            permission: 'tec.config.audit' as const 
+        {
+            to: '/payments',
+            icon: DollarSign,
+            label: 'Mis Pagos',
+            permission: 'tec.payments.view' as const
+        },
+        {
+            to: '/config/audit',
+            icon: Terminal,
+            label: 'Logs de Auditoría',
+            permission: 'tec.config.audit' as const
         }
     ];
 

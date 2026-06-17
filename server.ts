@@ -27,7 +27,7 @@ interface AuthenticatedRequest extends Request {
         username: string;
         full_name: string;
         role: string;
-        perms: string[];
+        permissions: string[];
     };
 }
 
@@ -373,7 +373,8 @@ const checkPermission = (permission: string) => {
         const role = (user.role || '').trim().toLowerCase();
         if (role === 'administrador') return next();
         
-        if (user.perms && user.perms.includes(permission)) {
+        const userPerms = user.permissions || (user as any).perms;
+        if (userPerms && userPerms.includes(permission)) {
             return next();
         }
 
@@ -432,21 +433,19 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
         const expiresIn = remember ? '7d' : '12h';
 
         const token = jwt.sign(
-            { 
-                id: user.Id, 
+            {
+                id: user.Id,
                 role_id: user.RoleId,
-                role_name: user.RoleName,
                 role: user.RoleName,
                 username: user.Username,
                 full_name: user.FullName,
                 permissions: perms,
-                perms: perms,
                 apps: user.Apps || '',
                 casId: user.cas_id || null,
                 casName: user.cas_name || null,
                 casPrefijo: user.cas_prefijo || null
-            }, 
-            JWT_SECRET as string, 
+            },
+            JWT_SECRET as string,
             { expiresIn }
         );
 
@@ -487,15 +486,13 @@ app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
 
         const perms = (await db.request().input('rid', sql.UniqueIdentifier, user.RoleId).query("SELECT Permission FROM EBM.RolePermissions WHERE RoleId = @rid")).recordset.map((p: any) => p.Permission);
         const freshToken = jwt.sign(
-            { 
-                id: user.Id, 
+            {
+                id: user.Id,
                 role_id: user.RoleId,
-                role_name: user.RoleName,
                 role: user.RoleName,
                 username: user.Username,
                 full_name: user.FullName,
                 permissions: perms,
-                perms: perms,
                 apps: user.Apps || '',
                 casId: user.cas_id || null,
                 casName: user.cas_name || null,
@@ -539,7 +536,7 @@ app.post('/api/auth/refresh', async (req: Request, res: Response) => {
             'SELECT Permission FROM EBM.RolePermissions WHERE RoleId = @rid'
         )).recordset.map((p: any) => p.Permission);
         const newToken = jwt.sign(
-            { id: user.Id, username: user.Username, full_name: user.FullName, role: user.RoleName, perms },
+            { id: user.Id, username: user.Username, full_name: user.FullName, role: user.RoleName, permissions: perms },
             JWT_SECRET as string,
             { expiresIn: '12h' }
         );

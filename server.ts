@@ -422,7 +422,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
               AND (u.Apps LIKE '%' + @app + '%' OR u.Apps LIKE '%ADMIN%')
         `);
         const user = result.recordset[0];
-        if (!user || !(await bcrypt.compare(password, user.PasswordHash))) {
+        if (!user || !user.PasswordHash || !(await bcrypt.compare(password, user.PasswordHash))) {
             return res.status(401).json({ error: 'Credenciales inválidas' });
         }
 

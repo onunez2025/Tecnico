@@ -449,19 +449,30 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
             { expiresIn }
         );
 
-        res.json({ 
-            token, 
-            user: { 
-                id: user.Id, 
-                username: user.Username, 
-                full_name: user.FullName, 
-                role_name: user.RoleName, 
-                role: user.RoleName, 
-                permissions: perms, 
-                perms: perms, 
+        if (IS_PRODUCTION) {
+            res.cookie('token', token, {
+                domain: '.siatc.cloud',
+                maxAge: (remember ? 7 * 24 * 60 * 60 : 12 * 60 * 60) * 1000,
+                httpOnly: false,
+                secure: true,
+                sameSite: 'lax',
+                path: '/'
+            });
+        }
+
+        res.json({
+            token,
+            user: {
+                id: user.Id,
+                username: user.Username,
+                full_name: user.FullName,
+                role_name: user.RoleName,
+                role: user.RoleName,
+                permissions: perms,
+                perms: perms,
                 apps: user.Apps || '',
-                requires_password_change: user.RequiresPasswordChange === 1 
-            } 
+                requires_password_change: user.RequiresPasswordChange === 1
+            }
         });
     } catch (err: any) {
         console.error('❌ Error en Login:', err);
@@ -501,18 +512,29 @@ app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
             JWT_SECRET as string,
             { expiresIn: '12h' }
         );
-        res.json({ 
-            token: freshToken, 
-            user: { 
-                id: user.Id, 
-                username: user.Username, 
-                full_name: user.FullName, 
-                role_name: user.RoleName, 
-                role: user.RoleName, 
-                permissions: perms, 
-                perms: perms, 
+        if (IS_PRODUCTION) {
+            res.cookie('token', freshToken, {
+                domain: '.siatc.cloud',
+                maxAge: 12 * 60 * 60 * 1000,
+                httpOnly: false,
+                secure: true,
+                sameSite: 'lax',
+                path: '/'
+            });
+        }
+
+        res.json({
+            token: freshToken,
+            user: {
+                id: user.Id,
+                username: user.Username,
+                full_name: user.FullName,
+                role_name: user.RoleName,
+                role: user.RoleName,
+                permissions: perms,
+                perms: perms,
                 apps: user.Apps || ''
-            } 
+            }
         });
     } catch (err: any) { res.status(500).json({ error: 'Error interno del servidor' }); }
 });

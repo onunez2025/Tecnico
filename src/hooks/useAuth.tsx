@@ -111,9 +111,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     StorageService.setCurrentUser(data.user);
                     if (data.token) {
                         StorageService.setToken(data.token);
-                        const isProd = window.location.hostname.endsWith('.siatc.cloud');
-                        const cookieDomain = isProd ? '; domain=.siatc.cloud' : '';
-                        document.cookie = `token=${data.token}; path=/${cookieDomain}; max-age=${24 * 60 * 60}; SameSite=Lax; Secure=${isProd ? 'true' : 'false'}`;
+                        // Cookie SSO renovada server-side via Set-Cookie HTTP header
                     }
                 } else {
                     logout();
@@ -161,10 +159,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         StorageService.setCurrentUser(newUser, remember);
         if (token) {
             StorageService.setToken(token, remember);
-
-            const isProd = window.location.hostname.endsWith('.siatc.cloud');
-            const cookieDomain = isProd ? '; domain=.siatc.cloud' : '';
-            document.cookie = `token=${token}; path=/${cookieDomain}; max-age=${24 * 60 * 60}; SameSite=Lax; Secure=${isProd ? 'true' : 'false'}`;
+            // Cookie SSO establecida server-side via Set-Cookie HTTP header
         }
     }, []);
 

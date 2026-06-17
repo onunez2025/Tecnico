@@ -350,12 +350,6 @@ export default function TicketsCalendarPage() {
     }, [currentMonth]);
 
     const monthName = currentMonth.toLocaleString('es-PE', { month: 'long', year: 'numeric' });
-    const formattedSelectedDate = selectedDate.toLocaleDateString('es-PE', { 
-        weekday: 'long', 
-        day: 'numeric', 
-        month: 'long', 
-        year: 'numeric' 
-    });
 
     // Helper for formatting times
     const formatTime = (dateStr?: string) => {
@@ -520,13 +514,10 @@ export default function TicketsCalendarPage() {
             {/* Tickets Panel (Right) */}
             <div className="flex-1 flex flex-col h-full overflow-hidden bg-background">
                 {/* Header Info */}
-                <div className="bg-card border-b border-border p-6 flex flex-col gap-4">
+                <div className="bg-card border-b border-border p-4 flex flex-col gap-3">
                     <div className="flex justify-between items-start md:items-center flex-col md:flex-row gap-4">
                         <div>
                             <span className="text-xs font-bold text-primary uppercase tracking-wider">Mis Tickets Asignados</span>
-                            <h1 className="text-2xl font-bold text-foreground capitalize mt-1">
-                                {formattedSelectedDate}
-                            </h1>
                         </div>
                         
                         <div className="flex items-center gap-2 self-stretch md:self-auto">
@@ -599,7 +590,7 @@ export default function TicketsCalendarPage() {
                 </div>
 
                 {/* Tickets list */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                <div className="flex-1 overflow-y-auto p-3 space-y-3">
                     {isLoading ? (
                         <div className="flex justify-center py-20">
                             <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -627,29 +618,29 @@ export default function TicketsCalendarPage() {
                             </p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
                             {filteredTickets.map((ticket) => {
                                 const isSelected = activeTicket?.id === ticket.id;
                                 return (
-                                    <div 
-                                        key={ticket.id} 
+                                    <div
+                                        key={ticket.id}
                                         onClick={() => setActiveTicket(ticket)}
                                         className={cn(
-                                            "bg-card rounded-2xl p-5 shadow-sm border transition-all cursor-pointer flex flex-col justify-between group",
-                                            isSelected 
-                                                ? "border-primary ring-2 ring-primary/10 shadow-md" 
+                                            "bg-card rounded-xl p-3 shadow-sm border transition-all cursor-pointer flex flex-col justify-between group",
+                                            isSelected
+                                                ? "border-primary ring-2 ring-primary/10 shadow-md"
                                                 : "border-border/50 hover:border-border hover:shadow-md dark:hover:shadow-none"
                                         )}
                                     >
-                                        <div className="flex justify-between items-start gap-4 mb-4">
+                                        <div className="flex justify-between items-start gap-2 mb-2">
                                             <div>
                                                 <div className="flex items-center gap-2">
-                                                    <span className="font-black text-foreground text-lg group-hover:text-primary transition-colors">
+                                                    <span className="font-black text-foreground text-base group-hover:text-primary transition-colors">
                                                         #{ticket.id}
                                                     </span>
                                                     {getStatusBadge(ticket)}
                                                 </div>
-                                                <h3 className="font-bold text-foreground text-sm mt-2">
+                                                <h3 className="font-bold text-foreground text-xs mt-1">
                                                     {ticket.Servicio || 'Servicio Técnico'}
                                                 </h3>
                                                 {ticket.Asunto && (
@@ -658,12 +649,12 @@ export default function TicketsCalendarPage() {
                                                     </p>
                                                 )}
                                             </div>
-                                            <div className="bg-muted/40 group-hover:bg-primary/10 p-2 rounded-xl transition-colors shrink-0">
-                                                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                            <div className="bg-muted/40 group-hover:bg-primary/10 p-1.5 rounded-lg transition-colors shrink-0">
+                                                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
                                             </div>
                                         </div>
 
-                                        <div className="space-y-2 pt-3 border-t border-border/50">
+                                        <div className="space-y-1.5 pt-2 border-t border-border/50">
                                             <div className="flex items-start gap-2.5 text-xs">
                                                 <UserIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
                                                 <span className="font-semibold text-foreground">{ticket.Cliente || 'Sin Cliente'}</span>

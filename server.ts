@@ -876,6 +876,157 @@ app.get('/api/dashboard/technician/:name/metrics', verifyToken, checkPermission(
     }
 });
 
+// --- PAGOS MULTI-TICKET ---
+
+// Buscar tickets en SAP/FSM por número o nombre de cliente
+app.get('/api/sap/tickets/search', verifyToken, checkPermission('tec.payments.view'), async (req: Request, res: Response) => {
+    try {
+        const q = String(req.query.q || '').trim();
+        if (q.length < 3) return res.json([]);
+        const db = await getDb();
+        const result = await db.request()
+            .input('q', sql.NVarChar, `%${q}%`)
+            .input('qExact', sql.NVarChar, q)
+            .query(`
+                SELECT TOP 20
+                    F.Ticket as id,
+                    ISNULL(F.NombreCliente, 'Sin cliente') as cliente,
+                    F.Distrito as distrito,
+                    ISNULL(F.Asunto, '') as servicio,
+                    TRY_CAST(
+                        SUM((ISNULL(V.DE_neto,0) + ISNULL(V.DE_igv,0)) *
+                            CASE WHEN V.VC_documento_pago_clase IN ('S2','ZNCV','ZNCD') THEN -1
+                                 WHEN V.VC_documento_pago_clase LIKE 'ZTG%' OR V.VC_anulacion_status = 'X' THEN 0
+                                 ELSE 1 END)
+                    AS DECIMAL(18,2)) as total
+                FROM [SIATC].[Dashboard_FSM] F
+                LEFT JOIN [SAP].[SD_VENTAS] V
+                    ON LTRIM(RTRIM(V.VC_oden_compra_numero)) = F.Ticket
+                WHERE F.Ticket LIKE @q OR F.NombreCliente LIKE @q
+                GROUP BY F.Ticket, F.NombreCliente, F.Distrito, F.Asunto
+                ORDER BY CASE WHEN F.Ticket = @qExact THEN 0 ELSE 1 END, F.Ticket DESC
+            `);
+        res.json(result.recordset);
+    } catch (err: any) {
+        console.error('Error en /api/sap/tickets/search:', err);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+// Detalle de ticket para auto-completar importe y folio
+app.get('/api/tickets-pagos/:ticketId/details', verifyToken, checkPermission('tec.payments.view'), async (req: Request, res: Response) => {
+    try {
+        const { ticketId } = req.params;
+        const safeTicketId = String(ticketId).replace(/[^a-zA-Z0-9_-]/g, '');
+        if (!safeTicketId) return res.status(400).json({ error: 'Ticket inválido' });
+        const db = await getDb();
+        const result = await db.request()
+            .input('ticket', sql.NVarChar, safeTicketId)
+            .query(`
+                SELECT TOP 1
+                    TRY_CAST(
+                        SUM((ISNULL(V.DE_neto,0) + ISNULL(V.DE_igv,0)) *
+                            CASE WHEN V.VC_documento_pago_clase IN ('S2','ZNCV','ZNCD') THEN -1
+                                 WHEN V.VC_documento_pago_clase LIKE 'ZTG%' OR V.VC_anulacion_status = 'X' THEN 0
+                                 ELSE 1 END)
+                    AS DECIMAL(18,2)) as Total_documento,
+                    MAX(V.VC_referencia) as Folio
+                FROM [SAP].[SD_VENTAS] V
+                WHERE LTRIM(RTRIM(V.VC_oden_compra_numero)) = @ticket
+                    OR (TRY_CAST(LTRIM(RTRIM(V.VC_oden_compra_numero)) AS BIGINT) = TRY_CAST(@ticket AS BIGINT)
+                        AND TRY_CAST(@ticket AS BIGINT) IS NOT NULL)
+            `);
+        res.json({ sap: { header: result.recordset[0] || null } });
+    } catch (err: any) {
+        console.error('Error en /api/tickets-pagos/:ticketId/details:', err);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+// Listar pagos con paginación y búsqueda (usa cache enriquecida)
+app.get('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.view'), async (req: Request, res: Response) => {
+    try {
+        const page  = Math.max(1, parseInt(String(req.query.page  || '1')));
+        const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit || '20'))));
+        const search = String(req.query.search || '').trim();
+        const offset = (page - 1) * limit;
+        const db = await getDb();
+        const sqlReq = db.request()
+            .input('limit',  sql.Int, limit)
+            .input('offset', sql.Int, offset)
+            .input('search', sql.NVarChar, `%${search}%`);
+
+        const whereClause = search
+            ? `WHERE (C.Ticket_Original LIKE @search OR C.Clientes LIKE @search OR C.CodigoAutorizacion LIKE @search OR C.Voucher LIKE @search)`
+            : '';
+
+        const data = await sqlReq.query(`
+            SELECT
+                C.ID_transaccion, C.Fecha_creacion, C.Fecha_transaccion,
+                C.Ticket_Original as Ticket, C.Estado, C.Importe_Texto as Importe,
+                C.Canal, C.Voucher, C.Lote, C.Codigo_Izipay, C.CodigoAutorizacion,
+                C.Folio, C.Clientes as Cliente, C.Tecnicos as Tecnico,
+                C.Distrito, C.Direccion, C.FechaVisita, C.Observacion
+            FROM [dbo].[GAC_PAGOS_CACHE] C
+            ${whereClause}
+            ORDER BY C.Fecha_creacion DESC
+            OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY;
+
+            SELECT COUNT(*) as total FROM [dbo].[GAC_PAGOS_CACHE] C ${whereClause};
+        `);
+
+        const recordsets = data.recordsets as any;
+        res.json({ data: recordsets[0], total: recordsets[1][0]?.total ?? 0 });
+    } catch (err: any) {
+        console.error('Error en GET /api/tickets-pagos:', err);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+// Crear pago (soporta uno o varios tickets en una transacción)
+app.post('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.view'), async (req: Request, res: Response) => {
+    try {
+        const { ticket, fecha_transaccion, voucher, lote, codigo_izipay, codigo_autorizacion, folio, importe, canal, observacion } = req.body;
+        if (!ticket || String(ticket).trim() === '') return res.status(400).json({ error: 'Debe incluir al menos un ticket' });
+        if (!importe) return res.status(400).json({ error: 'Importe requerido' });
+
+        const tickets = String(ticket).split(',').map((t: string) => t.trim()).filter(Boolean);
+        if (tickets.length === 0) return res.status(400).json({ error: 'Ticket inválido' });
+        const ticketStr = tickets.join(', ');
+
+        const db = await getDb();
+        const idTransaccion = uuidv4().toUpperCase();
+        await db.request()
+            .input('id',       sql.VarChar(50), idTransaccion)
+            .input('ticket',   sql.NVarChar,    ticketStr)
+            .input('f_trans',  sql.DateTime,    fecha_transaccion ? new Date(fecha_transaccion) : new Date())
+            .input('vouch',    sql.NVarChar,    voucher || '')
+            .input('lote',     sql.NVarChar,    lote || '')
+            .input('izipay',   sql.NVarChar,    codigo_izipay || '')
+            .input('imp',      sql.NVarChar,    String(importe))
+            .input('canal',    sql.NVarChar,    String(canal || 'POS').toUpperCase())
+            .input('obs',      sql.NVarChar,    observacion || '')
+            .input('folio',    sql.NVarChar,    folio || '')
+            .input('auth',     sql.NVarChar,    codigo_autorizacion || '')
+            .query(`
+                INSERT INTO [dbo].[GAC_APP_TB_TICKETS_PAGOS]
+                    (ID_transaccion, Fecha_creacion, Ticket, Fecha_transaccion,
+                     Voucher, Lote, Codigo_Izipay, Importe, Estado, Canal,
+                     Observacion, CodigoAutorizacion, Folio)
+                VALUES
+                    (@id, GETDATE(), @ticket, @f_trans,
+                     @vouch, @lote, @izipay, @imp, 'LIQUIDADO', @canal,
+                     @obs, @auth, @folio)
+            `);
+        await logAudit(req, 'TEC:CREATE_PAGO_MULTI', 'TicketPago', idTransaccion, { tickets, canal, importe });
+        setImmediate(() => syncPaymentCache(idTransaccion));
+        res.status(201).json({ message: 'Pago registrado', id: idTransaccion });
+    } catch (err: any) {
+        console.error('Error en POST /api/tickets-pagos:', err);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
 app.get('/api/tickets-pagos/:id/pdf', verifyToken, checkPermission('tec.payments.view'), async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
@@ -1072,7 +1223,7 @@ app.get('/api/tec/tickets/:ticketId/pagos', verifyToken, checkPermission('tec.ti
             const assignmentResult = await db.request().input('ticketId', sql.VarChar, ticketId).input('techCode', sql.VarChar, username).query(`SELECT 1 FROM [APPGAC].[ServiciosViewSQL] WHERE Ticket = @ticketId AND CodigoTecnico = @techCode`);
             if (assignmentResult.recordset.length === 0) return res.status(403).json({ error: 'No tienes permiso' });
         }
-        const paymentsResult = await db.request().input('ticketId', sql.VarChar, ticketId).query(`SELECT ID_transaccion, Fecha_creacion, Ticket, Fecha_transaccion, Voucher, Lote, Codigo_Izipay, Importe, Estado, Canal, Observacion, CodigoAutorizacion, Folio, Adjunto FROM [dbo].[GAC_APP_TB_TICKETS_PAGOS] WHERE Ticket = @ticketId ORDER BY Fecha_creacion DESC`);
+        const paymentsResult = await db.request().input('ticketId', sql.VarChar, ticketId).query(`SELECT ID_transaccion, Fecha_creacion, Ticket, Fecha_transaccion, Voucher, Lote, Codigo_Izipay, Importe, Estado, Canal, Observacion, CodigoAutorizacion, Folio, Adjunto FROM [dbo].[GAC_APP_TB_TICKETS_PAGOS] WHERE EXISTS (SELECT 1 FROM STRING_SPLIT(Ticket, ',') WHERE LTRIM(RTRIM(value)) = @ticketId) ORDER BY Fecha_creacion DESC`);
         res.json(paymentsResult.recordset);
     } catch (err: any) { res.status(500).json({ error: 'Error interno del servidor' }); }
 });

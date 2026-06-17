@@ -13,11 +13,15 @@ import { createRequire } from 'module';
 import { BlobServiceClient } from '@azure/storage-blob';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import axios from 'axios';
 const require = createRequire(import.meta.url);
 const XLSX = require('xlsx');
 
 dotenv.config();
 const APP_IDENTIFIER = 'TEC';
+
+const C4C_BASE_URL = process.env.C4C_BASE_URL;
+const C4C_AUTH = Buffer.from(`${process.env.C4C_USER || ''}:${process.env.C4C_PASSWORD || ''}`).toString('base64');
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 // --- TIPOS TIPADOS PARA REQUESTS AUTENTICADOS ---
@@ -884,6 +888,79 @@ app.get('/api/dashboard/technician/:name/metrics', verifyToken, checkPermission(
         res.json({ monthly_trend: recordsets[0], services: recordsets[1], materials: recordsets[2] });
     } catch (err: any) {
         res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+// --- INFORME TÉCNICO (C4C OData) ---
+app.get('/api/tec/tickets/:ticketId/informe', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
+    try {
+        const { ticketId } = req.params;
+        const safeId = String(ticketId).replace(/[^a-zA-Z0-9_-]/g, '');
+        if (!safeId) return res.status(400).json({ error: 'Ticket inválido' });
+
+        if (!C4C_BASE_URL || !process.env.C4C_USER || !process.env.C4C_PASSWORD) {
+            return res.status(503).json({ error: 'Integración C4C no configurada en el servidor.' });
+        }
+
+        // 1. Buscar el Service Request en C4C
+        const searchUrl = `${C4C_BASE_URL}/ServiceRequestCollection?$filter=ID eq '${safeId}'&$select=ID,ObjectID`;
+        const searchResp = await axios.get(searchUrl, {
+            headers: { 'Authorization': `Basic ${C4C_AUTH}` },
+            timeout: 15000
+        });
+
+        const ticket = searchResp.data?.d?.results?.[0];
+        if (!ticket) return res.status(404).json({ error: `Ticket ${safeId} no encontrado en C4C` });
+
+        // 2. Buscar adjuntos del ticket
+        let attachments = ticket.ServiceRequestAttachmentFolder?.results;
+        if (!attachments || attachments.length === 0) {
+            const attUrl = `${C4C_BASE_URL}/ServiceRequestCollection('${ticket.ObjectID}')/ServiceRequestAttachmentFolder`;
+            try {
+                const attResp = await axios.get(attUrl, {
+                    headers: { 'Authorization': `Basic ${C4C_AUTH}` },
+                    timeout: 15000
+                });
+                attachments = attResp.data?.d?.results;
+            } catch {
+                attachments = [];
+            }
+        }
+
+        if (!attachments || attachments.length === 0) {
+            return res.status(404).json({ error: `El ticket ${safeId} no tiene adjuntos en C4C.` });
+        }
+
+        // 3. Buscar el PDF del informe (prioriza nombre "informe" o "report")
+        type Attachment = { MimeType: string; Name: string; ObjectID: string };
+        let report: Attachment | undefined = attachments.find((a: Attachment) =>
+            a.MimeType === 'application/pdf' &&
+            (a.Name.toLowerCase().includes('informe') || a.Name.toLowerCase().includes('report'))
+        );
+        if (!report) {
+            report = attachments.find((a: Attachment) => a.MimeType === 'application/pdf');
+        }
+        if (!report) {
+            return res.status(404).json({ error: `No se encontró un PDF de informe para el ticket ${safeId}` });
+        }
+
+        // 4. Descargar el binario del PDF
+        const downloadUrl = `${C4C_BASE_URL}/ServiceRequestAttachmentFolderCollection('${report.ObjectID}')/Binary/$value`;
+        const pdfResp = await axios.get(downloadUrl, {
+            headers: { 'Authorization': `Basic ${C4C_AUTH}` },
+            responseType: 'arraybuffer',
+            timeout: 30000
+        });
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${report.Name}"`);
+        res.send(pdfResp.data);
+
+    } catch (err: any) {
+        const status = err?.response?.status || 500;
+        const detail = err?.response?.data?.error?.message?.value || err.message || 'Error desconocido';
+        console.error(`[C4C Informe] Error ticket ${req.params.ticketId}:`, detail);
+        res.status(status).json({ error: 'No se pudo obtener el informe desde C4C', details: detail });
     }
 });
 

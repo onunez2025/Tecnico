@@ -67,6 +67,22 @@ export default function TicketsCalendarPage() {
     const [activeTicketPayments, setActiveTicketPayments] = useState<TicketPago[]>([]);
     const [isLoadingPayments, setIsLoadingPayments] = useState(false);
 
+    // Informe técnico C4C
+    const [isLoadingInforme, setIsLoadingInforme] = useState(false);
+    const handleVerInforme = async (ticketId: string) => {
+        setIsLoadingInforme(true);
+        try {
+            const blob = await ApiClient.download(`/tec/tickets/${ticketId}/informe`);
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+        } catch (err: any) {
+            alert(err?.message || 'No se pudo obtener el informe técnico desde C4C.');
+        } finally {
+            setIsLoadingInforme(false);
+        }
+    };
+
     // Payment form states
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [importePago, setImportePago] = useState('');
@@ -929,6 +945,25 @@ export default function TicketsCalendarPage() {
                                         ))}
                                     </div>
                                 )}
+                            </div>
+
+                            {/* Section: Informe Técnico */}
+                            <div className="bg-muted/30 rounded-2xl p-4 border border-border/50">
+                                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                    <FileText className="w-3.5 h-3.5" />
+                                    Informe Técnico
+                                </h3>
+                                <button
+                                    onClick={() => handleVerInforme(activeTicket.id)}
+                                    disabled={isLoadingInforme}
+                                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                                >
+                                    {isLoadingInforme ? (
+                                        <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Cargando informe...</>
+                                    ) : (
+                                        <><FileText className="w-3.5 h-3.5" /> Ver Informe Técnico (C4C)</>
+                                    )}
+                                </button>
                             </div>
 
                             {/* Section: Rango Horario */}

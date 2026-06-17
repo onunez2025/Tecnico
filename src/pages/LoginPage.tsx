@@ -41,8 +41,8 @@ export default function LoginPage() {
             // Success, register session in Context
             login(data.user, data.token, rememberMe);
 
-            // Redirect appropriately
-            navigate('/');
+            // Redirect appropriately with a full page reload to reload AppConfigProvider
+            window.location.href = '/';
 
         } catch (err: any) {
             console.error('Login error:', err);

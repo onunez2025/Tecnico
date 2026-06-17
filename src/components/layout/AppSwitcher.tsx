@@ -4,8 +4,9 @@ import { Grid, Info, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { SIATC_THEME } from '../../utils/siatc-theme';
 import { useAuth } from '../../hooks/useAuth';
-import { useAppConfig } from '../../context/AppConfigContext';
+import { useAppConfig, Application } from '../../context/AppConfigContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { ApiClient } from '../../services/apiClient';
 
 interface AppSwitcherProps {
     currentAppId?: string;
@@ -14,9 +15,24 @@ interface AppSwitcherProps {
 export function AppSwitcher({ currentAppId = 'TEC' }: AppSwitcherProps) {
     const isMobile = useMediaQuery('(max-width: 767px)');
     const { user } = useAuth();
-    const { applications } = useAppConfig();
+    const [applications, setApplications] = useState<Application[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Fetch active applications on open
+    useEffect(() => {
+        const fetchApps = async () => {
+            try {
+                const data = await ApiClient.request<Application[]>('/applications?activeOnly=true');
+                setApplications(data);
+            } catch (err) {
+                console.error("Failed to load ecosystem apps", err);
+            }
+        };
+        if (isOpen && applications.length === 0) {
+            fetchApps();
+        }
+    }, [isOpen, applications.length]);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {

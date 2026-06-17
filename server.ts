@@ -426,7 +426,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
             return res.status(401).json({ error: 'Credenciales inválidas' });
         }
 
-        const perms = (await db.request().input('rid', sql.NVarChar, String(user.RoleId)).query("SELECT Permission FROM EBM.RolePermissions WHERE RoleId = @rid")).recordset.map((p: any) => p.Permission);
+        const perms = (await db.request().input('rid', sql.UniqueIdentifier, user.RoleId).query("SELECT Permission FROM EBM.RolePermissions WHERE RoleId = @rid")).recordset.map((p: any) => p.Permission);
 
         // [SECURITY] Token "Recuérdame" reducido de 30d a 7d para limitar ventana de compromiso
         const expiresIn = remember ? '7d' : '12h';
@@ -464,14 +464,17 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
                 requires_password_change: user.RequiresPasswordChange === 1 
             } 
         });
-    } catch (err: any) { res.status(500).json({ error: 'Error interno del servidor' }); }
+    } catch (err: any) {
+        console.error('❌ Error en Login:', err);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
 });
 
 app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
     try {
         const { id } = (req as any).user;
         const db = await getDb();
-        const result = await db.request().input('id', sql.NVarChar, String(id)).query(`
+        const result = await db.request().input('id', sql.UniqueIdentifier, id).query(`
             SELECT u.*, r.Name as RoleName, uc.CASId as cas_id, c.Nombre_CAS as cas_name, LTRIM(RTRIM(c.Abrev_nombre_colaboradores)) as cas_prefijo
             FROM EBM.Users u
             LEFT JOIN EBM.Roles r ON u.RoleId = r.Id
@@ -482,7 +485,7 @@ app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
         const user = result.recordset[0];
         if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-        const perms = (await db.request().input('rid', sql.NVarChar, String(user.RoleId)).query("SELECT Permission FROM EBM.RolePermissions WHERE RoleId = @rid")).recordset.map((p: any) => p.Permission);
+        const perms = (await db.request().input('rid', sql.UniqueIdentifier, user.RoleId).query("SELECT Permission FROM EBM.RolePermissions WHERE RoleId = @rid")).recordset.map((p: any) => p.Permission);
         const freshToken = jwt.sign(
             { 
                 id: user.Id, 

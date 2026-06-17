@@ -9,8 +9,7 @@ import { ConfigLayout } from './pages/config/ConfigLayout';
 // Pages - Lazy loaded
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
-const UsersPage = lazy(() => import('./pages/config/UsersPage'));
-const RolesPage = lazy(() => import('./pages/config/RolesPage'));
+const CentralizedConfigPage = lazy(() => import('./pages/config/CentralizedConfigPage'));
 const AuditLogPage = lazy(() => import('./pages/config/AuditLogPage'));
 const TicketsCalendarPage = lazy(() => import('./pages/TicketsCalendarPage'));
 import { PermissionGuard } from './components/auth/PermissionGuard';
@@ -61,12 +60,12 @@ function App() {
                   <Route index element={<Navigate to="users" replace />} />
                   <Route path="users" element={
                     <PermissionGuard permission="tec.config.users" asRoute>
-                      <UsersPage />
+                      <CentralizedConfigPage />
                     </PermissionGuard>
                   } />
                   <Route path="roles" element={
                     <PermissionGuard permission="tec.config.roles" asRoute>
-                      <RolesPage />
+                      <CentralizedConfigPage />
                     </PermissionGuard>
                   } />
                   <Route path="audit" element={

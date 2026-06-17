@@ -116,7 +116,7 @@ export const TechnicianDetailModal: React.FC<TechnicianDetailModalProps> = ({ is
                                     {/* Tipos de Servicio */}
                                     <div className="bg-muted/10 p-6 rounded-2xl border border-divider">
                                         <div className="flex items-center gap-2 mb-6">
-                                            <BarChart3 className="w-4 h-4 text-blue-500" />
+                                            <BarChart3 className="w-4 h-4 text-primary" />
                                             <h3 className="text-xs font-bold opacity-70">Tipos De Servicio (Servicios/S/)</h3>
                                         </div>
                                         <div className="space-y-5">
@@ -133,7 +133,7 @@ export const TechnicianDetailModal: React.FC<TechnicianDetailModalProps> = ({ is
                                                         <motion.div 
                                                             initial={{ width: 0 }}
                                                             animate={{ width: `${(s.total / Math.max(...metrics.services.map((d: any) => d.total))) * 100}%` }}
-                                                            className="h-full bg-blue-500 rounded-full"
+                                                            className="h-full bg-primary rounded-full"
                                                         />
                                                     </div>
                                                 </div>
@@ -185,7 +185,7 @@ export const TechnicianDetailModal: React.FC<TechnicianDetailModalProps> = ({ is
                         <span className="text-[8px] font-bold text-muted-foreground">© 2026 Mt Industrial S.A.C - Sistema de Liquidaciones</span>
                         <div className="flex gap-4">
                             <div className="flex items-center gap-1.5 opacity-60">
-                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <div className="w-2 h-2 rounded-full bg-primary"></div>
                                 <span className="text-[8px] font-bold">Servicios</span>
                             </div>
                             <div className="flex items-center gap-1.5 opacity-60">

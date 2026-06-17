@@ -1,21 +1,19 @@
-FROM node:20-slim
-
+# ── Build frontend ───────────────────────────────────────────────────────────
+FROM node:20-slim AS builder
 WORKDIR /app
-
-# Instalar dependencias necesarias para mssql y bcrypt en slim si fuera necesario
-# RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
-
 COPY package.json package-lock.json ./
-RUN npm install
-
+RUN npm ci
 COPY . .
-
-# Construir el frontend
 RUN npm run build
 
-# Instalar tsx para ejecutar el servidor
-RUN npm install -g tsx
+# ── Runtime ──────────────────────────────────────────────────────────────────
+FROM node:20-slim AS runtime
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev && npm install -g tsx
+COPY server.ts ./
+COPY lib/ ./lib/
+COPY --from=builder /app/dist ./dist
 
 EXPOSE 3000
-
 CMD ["tsx", "server.ts"]

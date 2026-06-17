@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useAppConfig } from '../context/AppConfigContext';
 import { useTheme } from '../context/ThemeContext';
 import { User, Lock, Eye, EyeOff, Moon, Sun } from 'lucide-react';
 import { cn } from '../utils/cn';
@@ -9,6 +10,7 @@ import { SIATC_THEME } from '../utils/siatc-theme';
 
 export default function LoginPage() {
     const { login } = useAuth();
+    const { refreshApplications } = useAppConfig();
     const { theme, setTheme } = useTheme();
     const navigate = useNavigate();
 
@@ -38,11 +40,9 @@ export default function LoginPage() {
 
             const data = await response.json();
 
-            // Success, register session in Context
             login(data.user, data.token, rememberMe);
-
-            // Redirect appropriately with a full page reload to reload AppConfigProvider
-            window.location.href = '/';
+            refreshApplications();
+            navigate('/');
 
         } catch (err: any) {
             console.error('Login error:', err);

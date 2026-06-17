@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { StorageService } from '../services/storageService';
 
 const APP_CODE = 'TEC';
@@ -24,9 +24,10 @@ export interface Application {
 
 interface AppConfigContextType {
     applications: Application[];
+    refreshApplications: () => void;
 }
 
-const AppConfigContext = createContext<AppConfigContextType>({ applications: [] });
+const AppConfigContext = createContext<AppConfigContextType>({ applications: [], refreshApplications: () => {} });
 
 function applyThemeConfig(theme: NonNullable<Application['theme_config']>) {
     try {
@@ -123,14 +124,15 @@ function applyThemeConfig(theme: NonNullable<Application['theme_config']>) {
 export const AppConfigProvider = ({ children }: { children: React.ReactNode }) => {
     const [applications, setApplications] = useState<Application[]>([]);
 
-    useEffect(() => {
-        // SSO race condition fix: leer cookie directamente antes de que validateSession
-        // sincronice el token al localStorage (React ejecuta efectos de hijos antes que padres).
+    // Preferir cookie sobre localStorage: la cookie siempre tiene el token más reciente
+    // (se actualiza tanto en SSO como en login directo), mientras que localStorage puede
+    // tener un token SSO antiguo de sesión anterior.
+    const refreshApplications = useCallback(() => {
         const getSsoToken = () => {
             const m = document.cookie.match(/(?:^|;\s*)token=([^;]+)/);
             return m ? decodeURIComponent(m[1]) : null;
         };
-        const token = StorageService.getToken() || getSsoToken();
+        const token = getSsoToken() || StorageService.getToken();
         if (!token) return;
 
         fetch('/api/applications?activeOnly=true', {
@@ -162,8 +164,12 @@ export const AppConfigProvider = ({ children }: { children: React.ReactNode }) =
             .catch(() => { /* sin apps dinámicas, AppSwitcher queda vacío */ });
     }, []);
 
+    useEffect(() => {
+        refreshApplications();
+    }, [refreshApplications]);
+
     return (
-        <AppConfigContext.Provider value={{ applications }}>
+        <AppConfigContext.Provider value={{ applications, refreshApplications }}>
             {children}
         </AppConfigContext.Provider>
     );

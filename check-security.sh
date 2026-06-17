@@ -81,6 +81,17 @@ check_file() {
             fi
         fi
     fi
+
+    # C11: .request().query() directo sin .input() encadenado (puede perder parámetros ligados en otro request)
+    if [[ "$f" != *"lib/"* ]] && [[ "$f" != *"scratch/"* ]]; then
+        local c11_hit
+        c11_hit=$(grep -nP "\.request\(\)\.(query|execute)\(" "$f" 2>/dev/null | grep -v "^\s*//" || true)
+        if [ -n "$c11_hit" ]; then
+            echo -e "${YELLOW}[C11-ADVERTENCIA]${NC} .request().query() sin .input() encadenado — verificar que no se pierdan parámetros → $f"
+            echo "$c11_hit" | sed 's/^/     /'
+            WARNINGS=$((WARNINGS+1))
+        fi
+    fi
 }
 
 while IFS= read -r -d '' f; do

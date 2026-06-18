@@ -1875,6 +1875,11 @@ app.get(/^(?!\/api\/).*/, (_req: Request, res: Response) => {
     res.sendFile(path.join(distPath, 'index.html'));
 });
 
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+    console.error(`[ERROR] ${req.method} ${req.path}:`, err);
+    res.status(500).json({ error: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : err.message });
+});
+
 // --- INICIO DEL SERVIDOR ---
 app.listen(port, () => {
     console.log(`🚀 Servidor Gestión Técnica escuchando en puerto ${port}`);

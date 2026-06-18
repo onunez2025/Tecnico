@@ -1193,9 +1193,14 @@ export default function TicketsCalendarPage() {
                                 >
                                     <option value="">Seleccione un rango...</option>
                                     <option value="07:00 am - 10:00 am">07:00 am - 10:00 am</option>
+                                    <option value="08:00 am - 11:00 am">08:00 am - 11:00 am</option>
                                     <option value="09:00 am - 12:00 pm">09:00 am - 12:00 pm</option>
+                                    <option value="10:00 am - 01:00 pm">10:00 am - 01:00 pm</option>
+                                    <option value="11:00 am - 02:00 pm">11:00 am - 02:00 pm</option>
                                     <option value="12:00 pm - 03:00 pm">12:00 pm - 03:00 pm</option>
+                                    <option value="01:00 pm - 04:00 pm">01:00 pm - 04:00 pm</option>
                                     <option value="02:00 pm - 05:00 pm">02:00 pm - 05:00 pm</option>
+                                    <option value="03:00 pm - 06:00 pm">03:00 pm - 06:00 pm</option>
                                     <option value="04:00 pm - 07:00 pm">04:00 pm - 07:00 pm</option>
                                 </select>
                             </div>

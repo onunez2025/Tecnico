@@ -14,6 +14,7 @@ import { BlobServiceClient } from '@azure/storage-blob';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import axios from 'axios';
+import { z } from 'zod';
 const require = createRequire(import.meta.url);
 const XLSX = require('xlsx');
 
@@ -410,11 +411,40 @@ const checkPermission = (permission: string) => {
 };
 
 // --- AUTH ---
+const loginSchema = z.object({
+    username: z.string().min(1, 'Usuario requerido').max(255),
+    password: z.string().min(1, 'Contraseña requerida').max(255),
+    remember: z.boolean().optional(),
+});
+const createUserSchema = z.object({
+    username: z.string().min(1).max(100),
+    full_name: z.string().min(1).max(200),
+    email: z.email('Email inválido'),
+    password_hash: z.string().min(6, 'Mínimo 6 caracteres').max(255),
+    role_id: z.union([z.string().min(1), z.number()]),
+    apps: z.string().optional(),
+    is_active: z.boolean().optional(),
+});
+const updateUserSchema = z.object({
+    full_name: z.string().min(1).max(200),
+    email: z.email('Email inválido'),
+    role_id: z.union([z.string().min(1), z.number()]),
+    apps: z.string().optional(),
+    is_active: z.boolean().optional(),
+    password_hash: z.string().min(6).max(255).optional(),
+});
+const roleSchema = z.object({
+    name: z.string().min(1, 'El nombre del rol es requerido').max(100),
+    permissions: z.array(z.string()).optional(),
+    apps: z.string().optional(),
+});
+
 app.post('/api/auth/login', async (req: Request, res: Response) => {
-    const { username, password, remember } = req.body;
-    if (!username || !password) {
-        return res.status(400).json({ error: 'Usuario y contraseña son requeridos' });
+    const parseResult = loginSchema.safeParse(req.body);
+    if (!parseResult.success) {
+        return res.status(400).json({ error: 'Datos de login inválidos', details: parseResult.error.issues });
     }
+    const { username, password, remember } = parseResult.data;
     try {
         const db = await getDb();
         const result = await db.request().input('u', sql.NVarChar, username).input('app', sql.NVarChar, APP_IDENTIFIER).query(`
@@ -1466,10 +1496,9 @@ app.get('/api/users', verifyToken, checkPermission('tec.config.users'), async (r
 
 app.post('/api/users', verifyToken, checkPermission('tec.config.users'), async (req: Request, res: Response) => {
     try {
-        const { username, full_name, email, password_hash: rawPassword, role_id, apps, is_active = true } = req.body;
-        if (!username || !full_name || !email || !rawPassword || !role_id) {
-            return res.status(400).json({ error: 'Campos requeridos: username, full_name, email, password, role_id' });
-        }
+        const parsed = createUserSchema.safeParse(req.body);
+        if (!parsed.success) return res.status(400).json({ error: 'Datos inválidos', details: parsed.error.issues });
+        const { username, full_name, email, password_hash: rawPassword, role_id, apps, is_active = true } = parsed.data;
         const db = await getDb();
         const dup = await db.request().input('u', sql.NVarChar, username).input('e', sql.NVarChar, email)
             .query(`SELECT Id FROM EBM.Users WHERE Username=@u OR Email=@e`);
@@ -1494,7 +1523,9 @@ app.post('/api/users', verifyToken, checkPermission('tec.config.users'), async (
 app.put('/api/users/:id', verifyToken, checkPermission('tec.config.users'), async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { full_name, email, role_id, apps, is_active, password_hash: rawPassword } = req.body;
+        const parsed = updateUserSchema.safeParse(req.body);
+        if (!parsed.success) return res.status(400).json({ error: 'Datos inválidos', details: parsed.error.issues });
+        const { full_name, email, role_id, apps, is_active, password_hash: rawPassword } = parsed.data;
         const db = await getDb();
         const sqlReq = db.request()
             .input('id', sql.NVarChar, String(id)).input('fn', sql.NVarChar, full_name)
@@ -1557,8 +1588,9 @@ app.get('/api/roles', verifyToken, checkPermission('tec.config.roles'), async (r
 
 app.post('/api/roles', verifyToken, checkPermission('tec.config.roles'), async (req: Request, res: Response) => {
     try {
-        const { name, permissions = [], apps = '' } = req.body;
-        if (!name) return res.status(400).json({ error: 'El nombre del rol es requerido' });
+        const parsed = roleSchema.safeParse(req.body);
+        if (!parsed.success) return res.status(400).json({ error: 'Datos inválidos', details: parsed.error.issues });
+        const { name, permissions = [], apps = '' } = parsed.data;
         const db = await getDb();
         const dup = await db.request().input('n', sql.NVarChar, name).query(`SELECT Id FROM EBM.Roles WHERE Name=@n`);
         if (dup.recordset.length > 0) return res.status(409).json({ error: 'Ya existe un rol con ese nombre' });
@@ -1580,8 +1612,9 @@ app.post('/api/roles', verifyToken, checkPermission('tec.config.roles'), async (
 app.put('/api/roles/:id', verifyToken, checkPermission('tec.config.roles'), async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { name, permissions = [], apps } = req.body;
-        if (!name) return res.status(400).json({ error: 'El nombre del rol es requerido' });
+        const parsed = roleSchema.safeParse(req.body);
+        if (!parsed.success) return res.status(400).json({ error: 'Datos inválidos', details: parsed.error.issues });
+        const { name, permissions = [], apps } = parsed.data;
         const db = await getDb();
         const sqlReq = db.request().input('id', sql.NVarChar, String(id)).input('n', sql.NVarChar, name);
         if (apps !== undefined) {

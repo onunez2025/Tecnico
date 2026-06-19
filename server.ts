@@ -13,6 +13,9 @@ import { createRequire } from 'module';
 import { BlobServiceClient } from '@azure/storage-blob';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import Redis from 'ioredis';
+import { createHash } from 'crypto';
+import { RedisStore } from 'rate-limit-redis';
 import axios from 'axios';
 import { z } from 'zod';
 const require = createRequire(import.meta.url);
@@ -66,6 +69,7 @@ const limiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Demasiadas solicitudes. Intenta más tarde.' },
+    store: new RedisStore({ sendCommand: (...args: string[]) => (getRedisClient() as any).call(...args) as any, prefix: 'rl:tec:' }),
 });
 
 const authLimiter = rateLimit({
@@ -74,6 +78,7 @@ const authLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Demasiados intentos de inicio de sesión. Espera 1 hora.' },
+    store: new RedisStore({ sendCommand: (...args: string[]) => (getRedisClient() as any).call(...args) as any, prefix: 'rl:tec:auth:' }),
 });
 
 // --- CACHÉ EN MEMORIA (TTL simple para endpoints estáticos) ---
@@ -219,11 +224,44 @@ async function getDb() {
     return pool;
 }
 
-const verifyToken = (req: Request, res: Response, next: NextFunction) => {
+// --- REDIS CLIENT ---
+let _redis: Redis | null = null;
+function getRedisClient(): Redis {
+    if (!_redis) {
+        _redis = new Redis({
+            host: process.env.REDIS_HOST || 'localhost',
+            port: parseInt(process.env.REDIS_PORT || '6379'),
+            password: process.env.REDIS_PASSWORD,
+            lazyConnect: true,
+            retryStrategy: (times) => Math.min(times * 100, 3000),
+        });
+        _redis.on('error', (err) => console.error('[Redis] Error:', err.message));
+    }
+    return _redis;
+}
+async function isTokenBlacklisted(token: string): Promise<boolean> {
+    try {
+        const hash = createHash('sha256').update(token).digest('hex');
+        return (await getRedisClient().exists(`bl:${hash}`)) === 1;
+    } catch { return false; }
+}
+async function blacklistToken(token: string, exp: number): Promise<void> {
+    try {
+        const hash = createHash('sha256').update(token).digest('hex');
+        const ttl = Math.max(exp - Math.floor(Date.now() / 1000), 0);
+        if (ttl > 0) await getRedisClient().set(`bl:${hash}`, '1', 'EX', ttl);
+    } catch (err) { console.error('[Redis] Error al blacklistear token:', err); }
+}
+
+const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Token no encontrado' });
     try {
-        (req as AuthenticatedRequest).user = jwt.verify(token, JWT_SECRET as string) as AuthenticatedRequest['user'];
+        const decoded = jwt.verify(token, JWT_SECRET as string) as AuthenticatedRequest['user'];
+        if (await isTokenBlacklisted(token)) {
+            return res.status(401).json({ error: 'Sesión cerrada. Inicia sesión nuevamente.' });
+        }
+        (req as AuthenticatedRequest).user = decoded;
         next();
     } catch (err: any) {
         if (err.name === 'TokenExpiredError') return res.status(401).json({ error: 'Token expirado', code: 'TOKEN_EXPIRED' });
@@ -518,6 +556,12 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
         console.error('❌ Error en Login:', err);
         res.status(500).json({ error: 'Error interno del servidor' });
     }
+});
+
+app.post('/api/auth/logout', verifyToken, async (req: any, res: any) => {
+    const token = req.headers['authorization']!.split(' ')[1];
+    await blacklistToken(token, (req.user as any).exp ?? 0);
+    res.json({ message: 'Sesión cerrada correctamente.' });
 });
 
 app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {

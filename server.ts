@@ -257,7 +257,7 @@ async function blacklistToken(token: string, exp: number): Promise<void> {
 const safeError = (err: unknown): string =>
     process.env.NODE_ENV === 'production'
         ? 'Error interno del servidor'
-        : err instanceof Error ? err.message : String(err);
+        : safeError(err);
 
 const sanitizeLog = (val: unknown, maxLen = 200): string =>
     String(val ?? '').replace(/[\r\n\t\x00-\x1F\x7F]/g, ' ').slice(0, maxLen);
@@ -1920,7 +1920,7 @@ app.get('/api/applications', verifyToken, async (req: Request, res: Response) =>
         
         res.json(apps);
     } catch (err: any) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -1933,7 +1933,7 @@ app.get(/^(?!\/api\/).*/, (_req: Request, res: Response) => {
 
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     console.error(`[ERROR] ${req.method} ${req.path}:`, err);
-    res.status(500).json({ error: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : err.message });
+    res.status(500).json({ error: safeError(err) });
 });
 
 // --- INICIO DEL SERVIDOR ---

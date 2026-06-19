@@ -640,6 +640,9 @@ app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
 app.post('/api/auth/refresh', async (req: Request, res: Response) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Token no encontrado' });
+    if (await isTokenBlacklisted(token)) {
+        return res.status(401).json({ error: 'Sesión cerrada. Inicia sesión nuevamente.' });
+    }
     try {
         const decoded = jwt.verify(token, JWT_SECRET as string, { ignoreExpiration: true }) as any;
         const now = Math.floor(Date.now() / 1000);

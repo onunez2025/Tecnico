@@ -253,6 +253,15 @@ async function blacklistToken(token: string, exp: number): Promise<void> {
     } catch (err) { console.error('[Redis] Error al blacklistear token:', err); }
 }
 
+// --- SECURITY HELPERS (ver CLAUDE.md) ---
+const safeError = (err: unknown): string =>
+    process.env.NODE_ENV === 'production'
+        ? 'Error interno del servidor'
+        : err instanceof Error ? err.message : String(err);
+
+const sanitizeLog = (val: unknown, maxLen = 200): string =>
+    String(val ?? '').replace(/[\r\n\t\x00-\x1F\x7F]/g, ' ').slice(0, maxLen);
+
 const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Token no encontrado' });

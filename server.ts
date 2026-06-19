@@ -257,7 +257,7 @@ async function blacklistToken(token: string, exp: number): Promise<void> {
 const safeError = (err: unknown): string =>
     process.env.NODE_ENV === 'production'
         ? 'Error interno del servidor'
-        : safeError(err);
+        : err instanceof Error ? err.message : String(err);
 
 const sanitizeLog = (val: unknown, maxLen = 200): string =>
     String(val ?? '').replace(/[\r\n\t\x00-\x1F\x7F]/g, ' ').slice(0, maxLen);

@@ -290,12 +290,12 @@ async function logAudit(req: Request, action: string, entity: string, entityId: 
         if (!user) return;
         const db = await getDb();
         await db.request()
-            .input('uid', sql.NVarChar, String(user.id))
-            .input('un', sql.NVarChar, user.username)
-            .input('acc', sql.NVarChar, action)
-            .input('ent', sql.NVarChar, entity)
-            .input('eid', sql.NVarChar, entityId)
-            .input('det', sql.NVarChar, JSON.stringify(details))
+            .input('uid', sql.NVarChar(sql.MAX), String(user.id))
+            .input('un', sql.NVarChar(sql.MAX), user.username)
+            .input('acc', sql.NVarChar(sql.MAX), action)
+            .input('ent', sql.NVarChar(sql.MAX), entity)
+            .input('eid', sql.NVarChar(sql.MAX), entityId)
+            .input('det', sql.NVarChar(sql.MAX), JSON.stringify(details))
             .query(`INSERT INTO [dbo].[GAC_APP_TB_AUDIT_LOG] (UsuarioID, UsuarioNombre, Accion, Entidad, EntidadID, Detalle, Fecha)
                     VALUES (@uid, @un, @acc, @ent, @eid, @det, GETDATE())`);
     } catch (err) {
@@ -433,12 +433,12 @@ const checkPermission = (permission: string) => {
         try {
             const db = await getDb();
             await db.request()
-                .input('uid', sql.NVarChar, String(user.id))
-                .input('un', sql.NVarChar, user.full_name || user.username)
-                .input('acc', sql.NVarChar, 'ACCESO_DENEGADO')
-                .input('ent', sql.NVarChar, `Endpoint: ${req.method} ${req.baseUrl}${req.path}`)
-                .input('eid', sql.NVarChar, permission)
-                .input('det', sql.NVarChar, JSON.stringify({
+                .input('uid', sql.NVarChar(sql.MAX), String(user.id))
+                .input('un', sql.NVarChar(sql.MAX), user.full_name || user.username)
+                .input('acc', sql.NVarChar(sql.MAX), 'ACCESO_DENEGADO')
+                .input('ent', sql.NVarChar(sql.MAX), `Endpoint: ${req.method} ${req.baseUrl}${req.path}`)
+                .input('eid', sql.NVarChar(sql.MAX), permission)
+                .input('det', sql.NVarChar(sql.MAX), JSON.stringify({
                     ip: req.ip,
                     userAgent: req.get('user-agent'),
                     params: req.params,
@@ -494,7 +494,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     const { username, password, remember } = parseResult.data;
     try {
         const db = await getDb();
-        const result = await db.request().input('u', sql.NVarChar, username).input('app', sql.NVarChar, APP_IDENTIFIER).query(`
+        const result = await db.request().input('u', sql.NVarChar(sql.MAX), username).input('app', sql.NVarChar(sql.MAX), APP_IDENTIFIER).query(`
             SELECT u.*, r.Name as RoleName, uc.CASId as cas_id, c.Nombre_CAS as cas_name, LTRIM(RTRIM(c.Abrev_nombre_colaboradores)) as cas_prefijo
             FROM EBM.Users u
             LEFT JOIN EBM.Roles r ON u.RoleId = r.Id
@@ -650,12 +650,12 @@ app.post('/api/auth/refresh', async (req: Request, res: Response) => {
             return res.status(401).json({ error: 'Sesión demasiado antigua. Inicia sesión nuevamente.' });
         }
         const db = await getDb();
-        const result = await db.request().input('id', sql.NVarChar, String(decoded.id)).query(
+        const result = await db.request().input('id', sql.NVarChar(sql.MAX), String(decoded.id)).query(
             `SELECT u.Id, u.Username, u.FullName, u.RoleId, u.IsActive, r.Name as RoleName FROM EBM.Users u LEFT JOIN EBM.Roles r ON u.RoleId = r.Id WHERE u.Id = @id`
         );
         const user = result.recordset[0];
         if (!user || !user.IsActive) return res.status(401).json({ error: 'Usuario inactivo' });
-        const perms = (await db.request().input('rid', sql.NVarChar, String(user.RoleId)).query(
+        const perms = (await db.request().input('rid', sql.NVarChar(sql.MAX), String(user.RoleId)).query(
             'SELECT Permission FROM EBM.RolePermissions WHERE RoleId = @rid'
         )).recordset.map((p: any) => p.Permission);
         const newToken = jwt.sign(
@@ -696,12 +696,12 @@ app.get('/api/dashboard/stats', verifyToken, checkPermission('tec.dashboard.view
                 whereClause += " AND Estado = 'LIQUIDADO' AND (Observacion IS NOT NULL AND LTRIM(RTRIM(CAST(Observacion AS NVARCHAR(MAX)))) <> '')";
             } else {
                 whereClause += ' AND Estado = @status';
-                sqlReq.input('status', sql.NVarChar, statusVal);
+                sqlReq.input('status', sql.NVarChar(sql.MAX), statusVal);
             }
         }
 
         if (search) {
-            sqlReq.input('search', sql.NVarChar, `%${search}%`);
+            sqlReq.input('search', sql.NVarChar(sql.MAX), `%${search}%`);
             if (field === 'ticket') {
                 whereClause += ` AND Ticket_Original LIKE @search`;
             } else if (field === 'vouch') {
@@ -717,7 +717,7 @@ app.get('/api/dashboard/stats', verifyToken, checkPermission('tec.dashboard.view
 
         if (auth_code) {
             whereClause += " AND CodigoAutorizacion LIKE @auth";
-            sqlReq.input('auth', sql.NVarChar, `%${auth_code}%`);
+            sqlReq.input('auth', sql.NVarChar(sql.MAX), `%${auth_code}%`);
         }
         if (date_trans) {
             whereClause += " AND CAST(Fecha_transaccion AS DATE) = @dateTrans";
@@ -729,7 +729,7 @@ app.get('/api/dashboard/stats', verifyToken, checkPermission('tec.dashboard.view
         }
         if (tipo_servicio) {
             whereClause += " AND TipoServicio LIKE @tipoServicio";
-            sqlReq.input('tipoServicio', sql.NVarChar, `%${tipo_servicio}%`);
+            sqlReq.input('tipoServicio', sql.NVarChar(sql.MAX), `%${tipo_servicio}%`);
         }
         if (month) {
             whereClause += " AND MONTH(Fecha_transaccion) = @month";
@@ -950,7 +950,7 @@ app.get('/api/dashboard/cas-performance', verifyToken, checkPermission('tec.dash
             sqlReq.input('casId', sql.VarChar(50), casId);
             statsQuery = `${setupQuery} SELECT CHOOSE(MONTH(T.FechaVisita), 'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SET', 'OCT', 'NOV', 'DIC') as name, SUM(ISNULL(P.ImporteValido, 0)) as value, COUNT(P.Ticket) as count FROM @Tickets2026 T LEFT JOIN @Pagos P ON T.Ticket = P.Ticket WHERE T.ID_cas = @casId GROUP BY MONTH(T.FechaVisita) ORDER BY MONTH(T.FechaVisita) ASC;`;
         } else if (zone) {
-            sqlReq.input('zone', sql.NVarChar, zone);
+            sqlReq.input('zone', sql.NVarChar(sql.MAX), zone);
             statsQuery = `${setupQuery} SELECT c.ID_CAS as id_cas, c.Nombre_CAS as name, SUM(ISNULL(p.ImporteValido, 0)) as value, COUNT(p.Ticket) as count FROM [dbo].[GAC_APP_TB_CAS] c INNER JOIN @Tickets2026 T ON c.ID_CAS = T.ID_cas LEFT JOIN @Pagos p ON T.Ticket = p.Ticket WHERE c.Zona_atencion = @zone GROUP BY c.ID_CAS, c.Nombre_CAS ORDER BY value DESC;`;
         } else {
             statsQuery = `${setupQuery} SELECT UPPER(ISNULL(c.Zona_atencion, 'OTRO')) as name, SUM(ISNULL(p.ImporteValido, 0)) as value, COUNT(p.Ticket) as count FROM [dbo].[GAC_APP_TB_CAS] c INNER JOIN @Tickets2026 T ON c.ID_CAS = T.ID_cas LEFT JOIN @Pagos p ON T.Ticket = p.Ticket GROUP BY c.Zona_atencion ORDER BY value DESC;`;
@@ -968,7 +968,7 @@ app.get('/api/dashboard/technician/:name/metrics', verifyToken, checkPermission(
     try {
         const { name } = req.params;
         const db = await getDb();
-        const sqlReq = db.request().input('techName', sql.NVarChar, name);
+        const sqlReq = db.request().input('techName', sql.NVarChar(sql.MAX), name);
 
         const techQuery = `
             SELECT MONTH(s.FechaVisita) as month, SUM(TRY_CAST(REPLACE(REPLACE(ISNULL(P.Importe, '0'), 'S/', ''), ',', '') as decimal(18,2))) as total FROM [SIATC].[Dashboard_FSM] s LEFT JOIN [dbo].[GAC_APP_TB_TICKETS_PAGOS] P ON P.Ticket = s.Ticket WHERE (s.NombreTecnico + ' ' + s.ApellidoTecnico) = @techName AND YEAR(s.FechaVisita) = YEAR(GETDATE()) GROUP BY MONTH(s.FechaVisita) ORDER BY month ASC;
@@ -1066,8 +1066,8 @@ app.get('/api/sap/tickets/search', verifyToken, checkPermission('tec.payments.vi
         if (q.length < 3) return res.json([]);
         const db = await getDb();
         const result = await db.request()
-            .input('q', sql.NVarChar, `%${q}%`)
-            .input('qExact', sql.NVarChar, q)
+            .input('q', sql.NVarChar(sql.MAX), `%${q}%`)
+            .input('qExact', sql.NVarChar(sql.MAX), q)
             .query(`
                 SELECT TOP 20
                     F.Ticket as id,
@@ -1102,7 +1102,7 @@ app.get('/api/tickets-pagos/:ticketId/details', verifyToken, checkPermission('te
         if (!safeTicketId) return res.status(400).json({ error: 'Ticket inválido' });
         const db = await getDb();
         const result = await db.request()
-            .input('ticket', sql.NVarChar, safeTicketId)
+            .input('ticket', sql.NVarChar(sql.MAX), safeTicketId)
             .query(`
                 SELECT TOP 1
                     TRY_CAST(
@@ -1135,7 +1135,7 @@ app.get('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.view'),
         const sqlReq = db.request()
             .input('limit',  sql.Int, limit)
             .input('offset', sql.Int, offset)
-            .input('search', sql.NVarChar, `%${search}%`);
+            .input('search', sql.NVarChar(sql.MAX), `%${search}%`);
 
         // RLS: usuario CAS solo ve sus propios datos
         const currentUser = (req as any).user; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -1185,16 +1185,16 @@ app.post('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.view')
         const idTransaccion = uuidv4().toUpperCase();
         await db.request()
             .input('id',       sql.VarChar(50), idTransaccion)
-            .input('ticket',   sql.NVarChar,    ticketStr)
+            .input('ticket',   sql.NVarChar(sql.MAX),    ticketStr)
             .input('f_trans',  sql.DateTime,    fecha_transaccion ? new Date(fecha_transaccion) : new Date())
-            .input('vouch',    sql.NVarChar,    voucher || '')
-            .input('lote',     sql.NVarChar,    lote || '')
-            .input('izipay',   sql.NVarChar,    codigo_izipay || '')
-            .input('imp',      sql.NVarChar,    String(importe))
-            .input('canal',    sql.NVarChar,    String(canal || 'POS').toUpperCase())
-            .input('obs',      sql.NVarChar,    observacion || '')
-            .input('folio',    sql.NVarChar,    folio || '')
-            .input('auth',     sql.NVarChar,    codigo_autorizacion || '')
+            .input('vouch',    sql.NVarChar(sql.MAX),    voucher || '')
+            .input('lote',     sql.NVarChar(sql.MAX),    lote || '')
+            .input('izipay',   sql.NVarChar(sql.MAX),    codigo_izipay || '')
+            .input('imp',      sql.NVarChar(sql.MAX),    String(importe))
+            .input('canal',    sql.NVarChar(sql.MAX),    String(canal || 'POS').toUpperCase())
+            .input('obs',      sql.NVarChar(sql.MAX),    observacion || '')
+            .input('folio',    sql.NVarChar(sql.MAX),    folio || '')
+            .input('auth',     sql.NVarChar(sql.MAX),    codigo_autorizacion || '')
             .query(`
                 INSERT INTO [dbo].[GAC_APP_TB_TICKETS_PAGOS]
                     (ID_transaccion, Fecha_creacion, Ticket, Fecha_transaccion,
@@ -1263,14 +1263,14 @@ app.get('/api/tec/tickets/calendar-summary', verifyToken, checkPermission('tec.t
             return res.status(400).json({ error: 'Parámetro month requerido en formato YYYY-MM' });
         }
         const db = await getDb();
-        const sqlReq = db.request().input('month', sql.VarChar, month);
+        const sqlReq = db.request().input('month', sql.VarChar(255), month);
         let query = `SELECT CONVERT(VARCHAR(10), FechaVisita, 23) as date, COUNT(*) as count FROM [APPGAC].[ServiciosViewSQL] WHERE FORMAT(FechaVisita, 'yyyy-MM') = @month`;
         if (!isAdmin) {
             query += ' AND CodigoTecnico = @techCode';
-            sqlReq.input('techCode', sql.VarChar, username);
+            sqlReq.input('techCode', sql.VarChar(255), username);
         } else if (req.query.techCode) {
             query += ' AND CodigoTecnico = @techCode';
-            sqlReq.input('techCode', sql.VarChar, req.query.techCode as string);
+            sqlReq.input('techCode', sql.VarChar(255), req.query.techCode as string);
         }
         query += ' GROUP BY CONVERT(VARCHAR(10), FechaVisita, 23)';
         const result = await sqlReq.query(query);
@@ -1301,7 +1301,7 @@ app.get('/api/tec/tickets', verifyToken, checkPermission('tec.tickets.view'), as
 
         if (dateStr) {
             query += " AND CONVERT(DATE, S.FechaVisita) = CONVERT(DATE, @date)";
-            sqlReq.input('date', sql.VarChar, dateStr);
+            sqlReq.input('date', sql.VarChar(255), dateStr);
         } else {
             query += " AND CONVERT(DATE, S.FechaVisita) = CONVERT(DATE, GETDATE())";
         }
@@ -1310,11 +1310,11 @@ app.get('/api/tec/tickets', verifyToken, checkPermission('tec.tickets.view'), as
             const techCode = req.query.techCode as string;
             if (techCode) {
                 query += " AND S.CodigoTecnico = @techCode";
-                sqlReq.input('techCode', sql.VarChar, techCode);
+                sqlReq.input('techCode', sql.VarChar(255), techCode);
             }
         } else {
             query += " AND S.CodigoTecnico = @techCode";
-            sqlReq.input('techCode', sql.VarChar, username);
+            sqlReq.input('techCode', sql.VarChar(255), username);
         }
 
         query += " ORDER BY S.FechaVisita ASC";
@@ -1336,7 +1336,7 @@ app.post('/api/tec/tickets/rango-horario', verifyToken, checkPermission('tec.tic
         if (!ticketId) return res.status(400).json({ error: 'ID de ticket es requerido' });
 
         const db = await getDb();
-        const ticketResult = await db.request().input('ticketId', sql.VarChar, ticketId).query(`SELECT FechaVisita, IdCliente, CodigoTecnico FROM [APPGAC].[ServiciosViewSQL] WHERE Ticket = @ticketId`);
+        const ticketResult = await db.request().input('ticketId', sql.VarChar(255), ticketId).query(`SELECT FechaVisita, IdCliente, CodigoTecnico FROM [APPGAC].[ServiciosViewSQL] WHERE Ticket = @ticketId`);
 
         if (ticketResult.recordset.length === 0) return res.status(404).json({ error: 'Ticket no encontrado' });
 
@@ -1359,12 +1359,12 @@ app.post('/api/tec/tickets/rango-horario', verifyToken, checkPermission('tec.tic
 
         let ticketsToUpdate = [ticketId];
         if (applyToAllClientTickets && ticketData.IdCliente) {
-            const bulkResult = await db.request().input('idCliente', sql.VarChar, ticketData.IdCliente).input('fechaVisita', sql.DateTime, ticketData.FechaVisita).input('codeTec', sql.VarChar, ticketData.CodigoTecnico).query(`SELECT Ticket FROM [APPGAC].[ServiciosViewSQL] WHERE IdCliente = @idCliente AND CONVERT(DATE, FechaVisita) = CONVERT(DATE, @fechaVisita) AND CodigoTecnico = @codeTec`);
+            const bulkResult = await db.request().input('idCliente', sql.VarChar(255), ticketData.IdCliente).input('fechaVisita', sql.DateTime, ticketData.FechaVisita).input('codeTec', sql.VarChar(255), ticketData.CodigoTecnico).query(`SELECT Ticket FROM [APPGAC].[ServiciosViewSQL] WHERE IdCliente = @idCliente AND CONVERT(DATE, FechaVisita) = CONVERT(DATE, @fechaVisita) AND CodigoTecnico = @codeTec`);
             ticketsToUpdate = [...new Set([ticketId, ...bulkResult.recordset.map((r: any) => r.Ticket)])];
         }
 
         for (const tId of ticketsToUpdate) {
-            await db.request().input('tId', sql.VarChar, tId).input('rango', sql.VarChar, rangoHorario || null).input('orden', sql.VarChar, ordenAtencion || null).input('coment', sql.VarChar, comentario || null).input('user', sql.VarChar, username).input('idRango', sql.VarChar, uuidv4().substring(0, 8)).query(`MERGE [dbo].[GAC_APP_TB_RANGO_HORARIO] AS target USING (SELECT @tId AS ID_Ticket) AS source ON (target.ID_Ticket = source.ID_Ticket) WHEN MATCHED THEN UPDATE SET Rango_horario = @rango, Orden_atención = @orden, Comentario = @coment, Creado_el = GETDATE(), Creado_por = @user WHEN NOT MATCHED THEN INSERT (ID_Rango_horario, Rango_horario, Orden_atención, Comentario, Creado_el, Creado_por, ID_Ticket) VALUES (@idRango, @rango, @orden, @coment, GETDATE(), @user, @tId);`);
+            await db.request().input('tId', sql.VarChar(255), tId).input('rango', sql.VarChar(255), rangoHorario || null).input('orden', sql.VarChar(255), ordenAtencion || null).input('coment', sql.VarChar(255), comentario || null).input('user', sql.VarChar(255), username).input('idRango', sql.VarChar(255), uuidv4().substring(0, 8)).query(`MERGE [dbo].[GAC_APP_TB_RANGO_HORARIO] AS target USING (SELECT @tId AS ID_Ticket) AS source ON (target.ID_Ticket = source.ID_Ticket) WHEN MATCHED THEN UPDATE SET Rango_horario = @rango, Orden_atención = @orden, Comentario = @coment, Creado_el = GETDATE(), Creado_por = @user WHEN NOT MATCHED THEN INSERT (ID_Rango_horario, Rango_horario, Orden_atención, Comentario, Creado_el, Creado_por, ID_Ticket) VALUES (@idRango, @rango, @orden, @coment, GETDATE(), @user, @tId);`);
         }
         await logAudit(req, 'TEC:ASSIGN_RANGO_HORARIO', 'TicketRangoHorario', ticketId, { tickets: ticketsToUpdate });
         res.json({ message: 'Rango horario asignado correctamente', updatedTickets: ticketsToUpdate });
@@ -1394,7 +1394,7 @@ app.post('/api/config/rango-horario-limit', verifyToken, checkPermission('tec.co
         }
         const { username } = (req as any).user;
         const db = await getDb();
-        await db.request().input('limit', sql.VarChar, limit).input('user', sql.VarChar, username).query(`UPDATE [dbo].[GAC_APP_TB_CONFIG] SET Valor = @limit, Actualizado_el = GETDATE(), Actualizado_por = @user WHERE Clave = 'HORA_MAXIMA_RANGO_HORARIO'`);
+        await db.request().input('limit', sql.VarChar(255), limit).input('user', sql.VarChar(255), username).query(`UPDATE [dbo].[GAC_APP_TB_CONFIG] SET Valor = @limit, Actualizado_el = GETDATE(), Actualizado_por = @user WHERE Clave = 'HORA_MAXIMA_RANGO_HORARIO'`);
         cacheInvalidate('rango-horario-limit');
         await logAudit(req, 'TEC:UPDATE_CONFIG_LIMIT', 'SystemConfig', 'HORA_MAXIMA_RANGO_HORARIO', { limit });
         res.json({ message: 'Configuración actualizada' });
@@ -1407,10 +1407,10 @@ app.get('/api/tec/tickets/:ticketId/pagos', verifyToken, checkPermission('tec.ti
         const { username, role } = (req as any).user;
         const db = await getDb();
         if (role?.toLowerCase() !== 'administrador') {
-            const assignmentResult = await db.request().input('ticketId', sql.VarChar, ticketId).input('techCode', sql.VarChar, username).query(`SELECT 1 FROM [APPGAC].[ServiciosViewSQL] WHERE Ticket = @ticketId AND CodigoTecnico = @techCode`);
+            const assignmentResult = await db.request().input('ticketId', sql.VarChar(255), ticketId).input('techCode', sql.VarChar(255), username).query(`SELECT 1 FROM [APPGAC].[ServiciosViewSQL] WHERE Ticket = @ticketId AND CodigoTecnico = @techCode`);
             if (assignmentResult.recordset.length === 0) return res.status(403).json({ error: 'No tienes permiso' });
         }
-        const paymentsResult = await db.request().input('ticketId', sql.VarChar, ticketId).query(`SELECT ID_transaccion, Fecha_creacion, Ticket, Fecha_transaccion, Voucher, Lote, Codigo_Izipay, Importe, Estado, Canal, Observacion, CodigoAutorizacion, Folio, Adjunto FROM [dbo].[GAC_APP_TB_TICKETS_PAGOS] WHERE EXISTS (SELECT 1 FROM STRING_SPLIT(Ticket, ',') WHERE LTRIM(RTRIM(value)) = @ticketId) ORDER BY Fecha_creacion DESC`);
+        const paymentsResult = await db.request().input('ticketId', sql.VarChar(255), ticketId).query(`SELECT ID_transaccion, Fecha_creacion, Ticket, Fecha_transaccion, Voucher, Lote, Codigo_Izipay, Importe, Estado, Canal, Observacion, CodigoAutorizacion, Folio, Adjunto FROM [dbo].[GAC_APP_TB_TICKETS_PAGOS] WHERE EXISTS (SELECT 1 FROM STRING_SPLIT(Ticket, ',') WHERE LTRIM(RTRIM(value)) = @ticketId) ORDER BY Fecha_creacion DESC`);
         res.json(paymentsResult.recordset);
     } catch (err: any) { res.status(500).json({ error: 'Error interno del servidor' }); }
 });
@@ -1422,7 +1422,7 @@ app.post('/api/tec/tickets/:ticketId/pago', verifyToken, checkPermission('tec.ti
     try {
         const db = await getDb();
         if (role?.toLowerCase() !== 'administrador') {
-            const assignmentResult = await db.request().input('ticketId', sql.VarChar, ticketId).input('techCode', sql.VarChar, username).query(`SELECT 1 FROM [APPGAC].[ServiciosViewSQL] WHERE Ticket = @ticketId AND CodigoTecnico = @techCode`);
+            const assignmentResult = await db.request().input('ticketId', sql.VarChar(255), ticketId).input('techCode', sql.VarChar(255), username).query(`SELECT 1 FROM [APPGAC].[ServiciosViewSQL] WHERE Ticket = @ticketId AND CodigoTecnico = @techCode`);
             if (assignmentResult.recordset.length === 0) { if (req.file) fs.unlinkSync(req.file.path); return res.status(403).json({ error: 'No tienes permiso' }); }
         }
         let blobUrl = '';
@@ -1446,18 +1446,18 @@ app.post('/api/tec/tickets/:ticketId/pago', verifyToken, checkPermission('tec.ti
         const idTransaccion = uuidv4().toUpperCase();
         await db.request()
             .input('id', sql.VarChar(50), idTransaccion)
-            .input('ticket', sql.NVarChar, ticketId)
+            .input('ticket', sql.NVarChar(sql.MAX), ticketId)
             .input('f_trans', sql.DateTime, fecha_transaccion ? new Date(fecha_transaccion) : new Date())
-            .input('vouch', sql.NVarChar, voucher || '')
-            .input('lote', sql.NVarChar, lote || '')
-            .input('izipay', sql.NVarChar, codigo_izipay || '')
-            .input('imp', sql.NVarChar, importe || '0')
-            .input('canal', sql.NVarChar, String(canal || 'POS').toUpperCase())
-            .input('obs', sql.NVarChar, observacion || '')
-            .input('est', sql.NVarChar, 'LIQUIDADO')
-            .input('folio', sql.NVarChar, folio || '')
-            .input('auth', sql.NVarChar, codigo_autorizacion || '')
-            .input('adjunto', sql.NVarChar, blobUrl || null)
+            .input('vouch', sql.NVarChar(sql.MAX), voucher || '')
+            .input('lote', sql.NVarChar(sql.MAX), lote || '')
+            .input('izipay', sql.NVarChar(sql.MAX), codigo_izipay || '')
+            .input('imp', sql.NVarChar(sql.MAX), importe || '0')
+            .input('canal', sql.NVarChar(sql.MAX), String(canal || 'POS').toUpperCase())
+            .input('obs', sql.NVarChar(sql.MAX), observacion || '')
+            .input('est', sql.NVarChar(sql.MAX), 'LIQUIDADO')
+            .input('folio', sql.NVarChar(sql.MAX), folio || '')
+            .input('auth', sql.NVarChar(sql.MAX), codigo_autorizacion || '')
+            .input('adjunto', sql.NVarChar(sql.MAX), blobUrl || null)
             .query(`INSERT INTO [dbo].[GAC_APP_TB_TICKETS_PAGOS] (ID_transaccion, Fecha_creacion, Ticket, Fecha_transaccion, Voucher, Lote, Codigo_Izipay, Importe, Estado, Canal, Observacion, CodigoAutorizacion, Folio, Adjunto) VALUES (@id, GETDATE(), @ticket, @f_trans, @vouch, @lote, @izipay, @imp, @est, @canal, @obs, @auth, @folio, @adjunto)`);
         setImmediate(() => syncPaymentCache(idTransaccion));
         res.status(201).json({ message: 'Pago registrado', id: idTransaccion });
@@ -1470,7 +1470,7 @@ app.get('/api/tec/today-tickets', verifyToken, checkPermission('tec.tickets.view
         const db = await getDb();
         const sqlReq = db.request();
         let query = `SELECT Ticket as id, Estado, FechaVisita, NombreCliente as Cliente, Distrito, (ISNULL(Calle, '') + ' ' + ISNULL(NumeroCalle, '')) as Direccion, BloqueHorario, Asunto, Celular1 as Contacto FROM [SIATC].[Dashboard_FSM] WHERE CONVERT(DATE, FechaVisita) = CONVERT(DATE, GETDATE())`;
-        if (role?.toLowerCase() !== 'administrador') { query += " AND (NombreTecnico + ' ' + ApellidoTecnico) = @userFullName"; sqlReq.input('userFullName', sql.NVarChar, full_name); }
+        if (role?.toLowerCase() !== 'administrador') { query += " AND (NombreTecnico + ' ' + ApellidoTecnico) = @userFullName"; sqlReq.input('userFullName', sql.NVarChar(sql.MAX), full_name); }
         const result = await sqlReq.query(query);
         res.json(result.recordset);
     } catch (err: any) { res.status(500).json({ error: 'Error interno del servidor' }); }
@@ -1480,7 +1480,7 @@ app.get('/api/tec/schedule', verifyToken, checkPermission('tec.tickets.view'), a
     try {
         const { full_name } = (req as any).user;
         const db = await getDb();
-        const result = await db.request().input('user', sql.NVarChar, full_name).query(`SELECT ID_empleado_calendario_labores as id, Fecha_Labor as date, Labor as title, 'Taller/Reunión' as type FROM [dbo].[GAC_APP_TB_EMPLEADOS_CALENDARIO_LABORES] WHERE Empleado = @user AND Fecha_Labor >= CONVERT(DATE, GETDATE()) ORDER BY Fecha_Labor ASC`);
+        const result = await db.request().input('user', sql.NVarChar(sql.MAX), full_name).query(`SELECT ID_empleado_calendario_labores as id, Fecha_Labor as date, Labor as title, 'Taller/Reunión' as type FROM [dbo].[GAC_APP_TB_EMPLEADOS_CALENDARIO_LABORES] WHERE Empleado = @user AND Fecha_Labor >= CONVERT(DATE, GETDATE()) ORDER BY Fecha_Labor ASC`);
         res.json(result.recordset);
     } catch (err: any) { res.status(500).json({ error: 'Error interno del servidor' }); }
 });
@@ -1493,11 +1493,11 @@ app.post('/api/tec/sales', verifyToken, checkPermission('tec.tickets.view'), asy
         const idVenta = uuidv4().substring(0, 8).toUpperCase();
         await db.request()
             .input('id', sql.VarChar(50), idVenta)
-            .input('ticket', sql.NVarChar, ticket)
-            .input('pedido', sql.NVarChar, pedido)
-            .input('obs', sql.NVarChar, observacion)
-            .input('coment', sql.NVarChar, comentarioTecnico)
-            .input('user', sql.NVarChar, full_name)
+            .input('ticket', sql.NVarChar(sql.MAX), ticket)
+            .input('pedido', sql.NVarChar(sql.MAX), pedido)
+            .input('obs', sql.NVarChar(sql.MAX), observacion)
+            .input('coment', sql.NVarChar(sql.MAX), comentarioTecnico)
+            .input('user', sql.NVarChar(sql.MAX), full_name)
             .query(`INSERT INTO [dbo].[GAC_APP_TB_VENTAS] (ID_Venta, Ticket, Nro_pedido_venta, Observacion, Comentario_tecnico, Venta_registrada_por, Venta_registrada_el, Venta_realizada) VALUES (@id, @ticket, @pedido, @obs, @coment, @user, GETDATE(), 'SI')`);
         res.json({ message: 'Oportunidad de venta registrada', id: idVenta });
     } catch (err: any) { res.status(500).json({ error: 'Error interno del servidor' }); }
@@ -1511,8 +1511,8 @@ app.patch('/api/tec/time-range', verifyToken, checkPermission('tec.tickets.view'
         }
         const db = await getDb();
         await db.request()
-            .input('ticket', sql.NVarChar, ticket)
-            .input('bloque', sql.NVarChar, bloqueHorario)
+            .input('ticket', sql.NVarChar(sql.MAX), ticket)
+            .input('bloque', sql.NVarChar(sql.MAX), bloqueHorario)
             .query(`UPDATE [dbo].[GAC_APP_TB_RANGO_HORARIO] SET Bloque_horario = @bloque WHERE ID_ticket = @ticket`);
         res.json({ message: 'Rango horario actualizado' });
     } catch (err: any) {
@@ -1536,7 +1536,7 @@ app.get('/api/users', verifyToken, checkPermission('tec.config.users'), async (r
         `);
         const users = await Promise.all(result.recordset.map(async (u: any) => {
             const perms = u.RoleId
-                ? (await db.request().input('rid', sql.NVarChar, String(u.RoleId))
+                ? (await db.request().input('rid', sql.NVarChar(sql.MAX), String(u.RoleId))
                     .query(`SELECT Permission FROM EBM.RolePermissions WHERE RoleId=@rid`))
                     .recordset.map((p: any) => p.Permission)
                 : [];
@@ -1569,14 +1569,14 @@ app.post('/api/users', verifyToken, checkPermission('tec.config.users'), async (
         if (!parsed.success) return res.status(400).json({ error: 'Datos inválidos', details: parsed.error.issues });
         const { username, full_name, email, password_hash: rawPassword, role_id, apps, is_active = true } = parsed.data;
         const db = await getDb();
-        const dup = await db.request().input('u', sql.NVarChar, username).input('e', sql.NVarChar, email)
+        const dup = await db.request().input('u', sql.NVarChar(sql.MAX), username).input('e', sql.NVarChar(sql.MAX), email)
             .query(`SELECT Id FROM EBM.Users WHERE Username=@u OR Email=@e`);
         if (dup.recordset.length > 0) return res.status(409).json({ error: 'El usuario o email ya existe' });
         const hash = await bcrypt.hash(rawPassword, 12);
         const result = await db.request()
-            .input('u', sql.NVarChar, username).input('fn', sql.NVarChar, full_name)
-            .input('e', sql.NVarChar, email).input('h', sql.NVarChar, hash)
-            .input('rid', sql.Int, Number(role_id)).input('apps', sql.NVarChar, apps || APP_IDENTIFIER)
+            .input('u', sql.NVarChar(sql.MAX), username).input('fn', sql.NVarChar(sql.MAX), full_name)
+            .input('e', sql.NVarChar(sql.MAX), email).input('h', sql.NVarChar(sql.MAX), hash)
+            .input('rid', sql.Int, Number(role_id)).input('apps', sql.NVarChar(sql.MAX), apps || APP_IDENTIFIER)
             .input('active', sql.Bit, is_active ? 1 : 0)
             .query(`INSERT INTO EBM.Users (Username, FullName, Email, PasswordHash, RoleId, Apps, IsActive)
                     OUTPUT INSERTED.Id VALUES (@u, @fn, @e, @h, @rid, @apps, @active)`);
@@ -1597,12 +1597,12 @@ app.put('/api/users/:id', verifyToken, checkPermission('tec.config.users'), asyn
         const { full_name, email, role_id, apps, is_active, password_hash: rawPassword } = parsed.data;
         const db = await getDb();
         const sqlReq = db.request()
-            .input('id', sql.NVarChar, String(id)).input('fn', sql.NVarChar, full_name)
-            .input('e', sql.NVarChar, email).input('rid', sql.NVarChar, String(role_id))
-            .input('apps', sql.NVarChar, apps || APP_IDENTIFIER).input('active', sql.Bit, is_active ? 1 : 0);
+            .input('id', sql.NVarChar(sql.MAX), String(id)).input('fn', sql.NVarChar(sql.MAX), full_name)
+            .input('e', sql.NVarChar(sql.MAX), email).input('rid', sql.NVarChar(sql.MAX), String(role_id))
+            .input('apps', sql.NVarChar(sql.MAX), apps || APP_IDENTIFIER).input('active', sql.Bit, is_active ? 1 : 0);
         if (rawPassword) {
             const hash = await bcrypt.hash(rawPassword, 12);
-            sqlReq.input('h', sql.NVarChar, hash);
+            sqlReq.input('h', sql.NVarChar(sql.MAX), hash);
             await sqlReq.query(`UPDATE EBM.Users SET FullName=@fn, Email=@e, RoleId=@rid, Apps=@apps, IsActive=@active, PasswordHash=@h, RequiresPasswordChange=0 WHERE Id=@id`);
         } else {
             await sqlReq.query(`UPDATE EBM.Users SET FullName=@fn, Email=@e, RoleId=@rid, Apps=@apps, IsActive=@active WHERE Id=@id`);
@@ -1621,7 +1621,7 @@ app.delete('/api/users/:id', verifyToken, checkPermission('tec.config.users'), a
         const { id: myId } = (req as any).user;
         if (String(myId) === String(id)) return res.status(400).json({ error: 'No puedes desactivar tu propia cuenta' });
         const db = await getDb();
-        await db.request().input('id', sql.NVarChar, String(id)).query(`UPDATE EBM.Users SET IsActive=0 WHERE Id=@id`);
+        await db.request().input('id', sql.NVarChar(sql.MAX), String(id)).query(`UPDATE EBM.Users SET IsActive=0 WHERE Id=@id`);
         await logAudit(req, 'DEACTIVATE_USER', 'User', String(id), {});
         res.status(204).send();
     } catch (err: any) {
@@ -1661,13 +1661,13 @@ app.post('/api/roles', verifyToken, checkPermission('tec.config.roles'), async (
         if (!parsed.success) return res.status(400).json({ error: 'Datos inválidos', details: parsed.error.issues });
         const { name, permissions = [], apps = '' } = parsed.data;
         const db = await getDb();
-        const dup = await db.request().input('n', sql.NVarChar, name).query(`SELECT Id FROM EBM.Roles WHERE Name=@n`);
+        const dup = await db.request().input('n', sql.NVarChar(sql.MAX), name).query(`SELECT Id FROM EBM.Roles WHERE Name=@n`);
         if (dup.recordset.length > 0) return res.status(409).json({ error: 'Ya existe un rol con ese nombre' });
-        const result = await db.request().input('n', sql.NVarChar, name).input('apps', sql.NVarChar, apps)
+        const result = await db.request().input('n', sql.NVarChar(sql.MAX), name).input('apps', sql.NVarChar(sql.MAX), apps)
             .query(`INSERT INTO EBM.Roles (Name, Apps) OUTPUT INSERTED.Id VALUES (@n, @apps)`);
         const newId = result.recordset[0].Id;
         for (const perm of (permissions as string[])) {
-            await db.request().input('rid', sql.NVarChar, String(newId)).input('p', sql.NVarChar, perm)
+            await db.request().input('rid', sql.NVarChar(sql.MAX), String(newId)).input('p', sql.NVarChar(sql.MAX), perm)
                 .query(`INSERT INTO EBM.RolePermissions (RoleId, Permission) VALUES (@rid, @p)`);
         }
         await logAudit(req, 'CREATE_ROLE', 'Role', String(newId), { name, permissions });
@@ -1685,16 +1685,16 @@ app.put('/api/roles/:id', verifyToken, checkPermission('tec.config.roles'), asyn
         if (!parsed.success) return res.status(400).json({ error: 'Datos inválidos', details: parsed.error.issues });
         const { name, permissions = [], apps } = parsed.data;
         const db = await getDb();
-        const sqlReq = db.request().input('id', sql.NVarChar, String(id)).input('n', sql.NVarChar, name);
+        const sqlReq = db.request().input('id', sql.NVarChar(sql.MAX), String(id)).input('n', sql.NVarChar(sql.MAX), name);
         if (apps !== undefined) {
-            sqlReq.input('apps', sql.NVarChar, apps);
+            sqlReq.input('apps', sql.NVarChar(sql.MAX), apps);
             await sqlReq.query(`UPDATE EBM.Roles SET Name=@n, Apps=@apps WHERE Id=@id`);
         } else {
             await sqlReq.query(`UPDATE EBM.Roles SET Name=@n WHERE Id=@id`);
         }
-        await db.request().input('rid', sql.NVarChar, String(id)).query(`DELETE FROM EBM.RolePermissions WHERE RoleId=@rid`);
+        await db.request().input('rid', sql.NVarChar(sql.MAX), String(id)).query(`DELETE FROM EBM.RolePermissions WHERE RoleId=@rid`);
         for (const perm of (permissions as string[])) {
-            await db.request().input('rid', sql.NVarChar, String(id)).input('p', sql.NVarChar, perm)
+            await db.request().input('rid', sql.NVarChar(sql.MAX), String(id)).input('p', sql.NVarChar(sql.MAX), perm)
                 .query(`INSERT INTO EBM.RolePermissions (RoleId, Permission) VALUES (@rid, @p)`);
         }
         await logAudit(req, 'UPDATE_ROLE', 'Role', String(id), { name, permissions });
@@ -1709,11 +1709,11 @@ app.delete('/api/roles/:id', verifyToken, checkPermission('tec.config.roles'), a
     try {
         const { id } = req.params;
         const db = await getDb();
-        const inUse = await db.request().input('rid', sql.NVarChar, String(id))
+        const inUse = await db.request().input('rid', sql.NVarChar(sql.MAX), String(id))
             .query(`SELECT COUNT(*) as cnt FROM EBM.Users WHERE RoleId=@rid AND IsActive=1`);
         if (inUse.recordset[0].cnt > 0) return res.status(409).json({ error: 'No se puede eliminar: el rol tiene usuarios activos asignados' });
-        await db.request().input('rid', sql.NVarChar, String(id)).query(`DELETE FROM EBM.RolePermissions WHERE RoleId=@rid`);
-        await db.request().input('id', sql.NVarChar, String(id)).query(`DELETE FROM EBM.Roles WHERE Id=@id`);
+        await db.request().input('rid', sql.NVarChar(sql.MAX), String(id)).query(`DELETE FROM EBM.RolePermissions WHERE RoleId=@rid`);
+        await db.request().input('id', sql.NVarChar(sql.MAX), String(id)).query(`DELETE FROM EBM.Roles WHERE Id=@id`);
         await logAudit(req, 'DELETE_ROLE', 'Role', String(id), {});
         res.status(204).send();
     } catch (err: any) {
@@ -1765,7 +1765,7 @@ app.post('/api/user/preferences', verifyToken, async (req: Request, res: Respons
         const db = await getDb();
         const valorStr = typeof valor === 'string' ? valor : JSON.stringify(valor);
         await db.request()
-            .input('uid', sql.Int, id).input('c', sql.NVarChar, clave).input('v', sql.NVarChar, valorStr)
+            .input('uid', sql.Int, id).input('c', sql.NVarChar(sql.MAX), clave).input('v', sql.NVarChar(sql.MAX), valorStr)
             .query(`
                 IF EXISTS (SELECT 1 FROM [dbo].[GAC_APP_TB_USER_PREFS] WHERE UsuarioId=@uid AND Clave=@c)
                     UPDATE [dbo].[GAC_APP_TB_USER_PREFS] SET Valor=@v, UpdatedAt=GETDATE() WHERE UsuarioId=@uid AND Clave=@c
@@ -1789,8 +1789,8 @@ app.get('/api/config/audit-logs', verifyToken, checkPermission('tec.config.audit
         const db = await getDb();
         const sqlReq = db.request().input('lim', sql.Int, limit).input('off', sql.Int, offset);
         let where = '';
-        if (req.query.action) { sqlReq.input('act', sql.NVarChar, `%${req.query.action}%`); where += ' AND Accion LIKE @act'; }
-        if (req.query.entity) { sqlReq.input('ent2', sql.NVarChar, `%${req.query.entity}%`); where += ' AND Entidad LIKE @ent2'; }
+        if (req.query.action) { sqlReq.input('act', sql.NVarChar(sql.MAX), `%${req.query.action}%`); where += ' AND Accion LIKE @act'; }
+        if (req.query.entity) { sqlReq.input('ent2', sql.NVarChar(sql.MAX), `%${req.query.entity}%`); where += ' AND Entidad LIKE @ent2'; }
         const result = await sqlReq.query(`
             SELECT Id as id, UsuarioID as user_id, UsuarioNombre as username,
                    Accion as action, Entidad as entity, EntidadID as entity_id,

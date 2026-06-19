@@ -776,6 +776,13 @@ app.get('/api/dashboard/technicians', verifyToken, checkPermission('tec.dashboar
     try {
         const db = await getDb();
         const sqlReq = db.request();
+        // RLS: usuario CAS solo ve sus propios datos
+        const currentUser = (req as any).user; // eslint-disable-line @typescript-eslint/no-explicit-any
+        let techWhere = `WHERE Fecha_transaccion >= '2025-01-01'`;
+        if (currentUser?.casId) {
+            techWhere += ' AND ID_cas = @casId';
+            sqlReq.input('casId', sql.VarChar(50), currentUser.casId);
+        }
         const result = await sqlReq.query(`
             SELECT TOP 15
                 ISNULL(Tecnicos, 'SIN TECNICO') as tecnico,
@@ -785,7 +792,7 @@ app.get('/api/dashboard/technicians', verifyToken, checkPermission('tec.dashboar
                 SUM(CASE WHEN Estado = 'RECHAZADO' THEN 1 ELSE 0 END) as rechazados,
                 SUM(Importe_Num) as monto_total
             FROM [dbo].[GAC_PAGOS_CACHE]
-            WHERE Fecha_transaccion >= '2025-01-01'
+            ${techWhere}
             GROUP BY Tecnicos
             ORDER BY total_cobros DESC
         `);
@@ -1130,9 +1137,15 @@ app.get('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.view'),
             .input('offset', sql.Int, offset)
             .input('search', sql.NVarChar, `%${search}%`);
 
-        const whereClause = search
-            ? `WHERE (C.Ticket_Original LIKE @search OR C.Clientes LIKE @search OR C.CodigoAutorizacion LIKE @search OR C.Voucher LIKE @search)`
-            : '';
+        // RLS: usuario CAS solo ve sus propios datos
+        const currentUser = (req as any).user; // eslint-disable-line @typescript-eslint/no-explicit-any
+        const conditions: string[] = [];
+        if (search) conditions.push(`(C.Ticket_Original LIKE @search OR C.Clientes LIKE @search OR C.CodigoAutorizacion LIKE @search OR C.Voucher LIKE @search)`);
+        if (currentUser?.casId) {
+            conditions.push('C.ID_cas = @casId');
+            sqlReq.input('casId', sql.VarChar(50), currentUser.casId);
+        }
+        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
         const data = await sqlReq.query(`
             SELECT

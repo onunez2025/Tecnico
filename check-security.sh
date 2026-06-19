@@ -9,7 +9,7 @@
 # Uso manual: ./check-security.sh
 # Uso automático: cp check-security.sh .git/hooks/pre-push
 
-SECURITY_MODE="${SECURITY_MODE:-WARN}"
+SECURITY_MODE="${SECURITY_MODE:-BLOCK}"
 ERRORS=0
 WARNINGS=0
 RED='\033[0;31m'; YELLOW='\033[1;33m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; NC='\033[0m'

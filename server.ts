@@ -1045,7 +1045,7 @@ app.get('/api/tec/tickets/:ticketId/informe', verifyToken, checkPermission('tec.
     } catch (err: any) {
         const status = err?.response?.status || 500;
         const detail = err?.response?.data?.error?.message?.value || err.message || 'Error desconocido';
-        console.error(`[C4C Informe] Error ticket ${req.params.ticketId}:`, detail);
+        console.error(`[C4C Informe] Error ticket ${sanitizeLog(req.params.ticketId)}:`, detail);
         res.status(status).json({ error: 'No se pudo obtener el informe desde C4C', details: detail });
     }
 });

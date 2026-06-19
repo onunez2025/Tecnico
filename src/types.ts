@@ -154,4 +154,5 @@ export interface AssignedTicket {
   RangoHorario?: string;
   OrdenAtencion?: string;
   ComentarioHorario?: string;
+  tienePago?: boolean;
 }

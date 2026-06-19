@@ -9,7 +9,6 @@ import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import multer from 'multer';
 import fs from 'fs';
-import { createRequire } from 'module';
 import { BlobServiceClient } from '@azure/storage-blob';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -18,9 +17,6 @@ import { createHash } from 'crypto';
 import { RedisStore } from 'rate-limit-redis';
 import axios from 'axios';
 import { z } from 'zod';
-const require = createRequire(import.meta.url);
-const XLSX = require('xlsx');
-
 dotenv.config();
 const APP_IDENTIFIER = 'TEC';
 

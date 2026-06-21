@@ -1,0 +1,35 @@
+name: CI — SIATC Security Check
+
+on:
+  push:
+    branches: [master]
+  schedule:
+    - cron: '0 3 * * 1'   # Lunes 3am UTC — npm audit semanal
+
+jobs:
+  ci:
+    name: Lint · Build · Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: C6 — TypeScript / ESLint
+        run: npm run lint
+
+      - name: C8 — Build (CRÍTICO)
+        run: npm run build
+
+      - name: C7 — npm audit high/critical (advertencia)
+        run: npm audit --audit-level=high
+        continue-on-error: true

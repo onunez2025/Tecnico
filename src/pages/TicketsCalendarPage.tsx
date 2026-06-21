@@ -19,7 +19,8 @@ import {
     Sliders,
     Lock,
     Database,
-    X
+    X,
+    Banknote
 } from 'lucide-react';
 import { ApiClient } from '../services/apiClient';
 import { cn } from '../utils/cn';
@@ -650,11 +651,15 @@ export default function TicketsCalendarPage() {
                                     >
                                         <div className="flex justify-between items-start gap-2 mb-2">
                                             <div>
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 flex-wrap">
                                                     <span className="font-black text-foreground text-base group-hover:text-primary transition-colors">
                                                         #{ticket.id}
                                                     </span>
                                                     {getStatusBadge(ticket)}
+                                                    {ticket.tienePago
+                                                        ? <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center gap-1 shrink-0"><Banknote className="w-3 h-3" />Con Pago</span>
+                                                        : <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-slate-400/10 text-slate-400 border border-slate-300/40 flex items-center gap-1 shrink-0"><Banknote className="w-3 h-3" />Sin Pago</span>
+                                                    }
                                                 </div>
                                                 <h3 className="font-bold text-foreground text-xs mt-1">
                                                     {ticket.Servicio || 'Servicio Técnico'}
@@ -1193,9 +1198,14 @@ export default function TicketsCalendarPage() {
                                 >
                                     <option value="">Seleccione un rango...</option>
                                     <option value="07:00 am - 10:00 am">07:00 am - 10:00 am</option>
+                                    <option value="08:00 am - 11:00 am">08:00 am - 11:00 am</option>
                                     <option value="09:00 am - 12:00 pm">09:00 am - 12:00 pm</option>
+                                    <option value="10:00 am - 01:00 pm">10:00 am - 01:00 pm</option>
+                                    <option value="11:00 am - 02:00 pm">11:00 am - 02:00 pm</option>
                                     <option value="12:00 pm - 03:00 pm">12:00 pm - 03:00 pm</option>
+                                    <option value="01:00 pm - 04:00 pm">01:00 pm - 04:00 pm</option>
                                     <option value="02:00 pm - 05:00 pm">02:00 pm - 05:00 pm</option>
+                                    <option value="03:00 pm - 06:00 pm">03:00 pm - 06:00 pm</option>
                                     <option value="04:00 pm - 07:00 pm">04:00 pm - 07:00 pm</option>
                                 </select>
                             </div>
@@ -1359,7 +1369,7 @@ export default function TicketsCalendarPage() {
                                     <div className="text-xs font-bold text-primary mb-1 uppercase tracking-widest">Datos Izipay / POS</div>
                                     
                                     <div>
-                                        <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Código de Autorización</label>
+                                        <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Código de Autorización (AP)</label>
                                         <input
                                             type="text"
                                             inputMode="numeric"
@@ -1371,12 +1381,12 @@ export default function TicketsCalendarPage() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Número de Voucher / Operación</label>
+                                        <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Referencia / Voucher / Op.</label>
                                         <input
                                             type="text"
                                             inputMode="numeric"
                                             required
-                                            placeholder="Ej: 000311"
+                                            placeholder="Nro. de Referencia"
                                             value={voucherPago}
                                             onChange={(e) => setVoucherPago(e.target.value)}
                                             className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-background text-foreground focus:outline-none"
@@ -1396,7 +1406,7 @@ export default function TicketsCalendarPage() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Serie POS (Terminal)</label>
+                                            <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Nro. de Izipay</label>
                                             <input
                                                 type="text"
                                                 inputMode="numeric"

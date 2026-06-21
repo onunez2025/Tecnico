@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "prepare": "bash install-hooks.sh || true",
     "dev": "vite",
     "server": "tsx --watch server.ts",
     "build": "tsc && vite build",

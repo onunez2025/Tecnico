@@ -559,7 +559,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
         });
     } catch (err: any) {
         console.error('❌ Error en Login:', err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -630,7 +630,7 @@ app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
                 apps: user.Apps || ''
             }
         });
-    } catch (err: any) { res.status(500).json({ error: 'Error interno del servidor' }); }
+    } catch (err: any) { res.status(500).json({ error: safeError(err) }); }
 });
 
 app.post('/api/auth/refresh', async (req: Request, res: Response) => {
@@ -642,7 +642,7 @@ app.post('/api/auth/refresh', async (req: Request, res: Response) => {
     try {
         const decoded = jwt.verify(token, JWT_SECRET as string, { ignoreExpiration: true }) as any;
         const now = Math.floor(Date.now() / 1000);
-        if (decoded.exp && (now - decoded.exp) > 7 * 24 * 60 * 60) {
+        if (decoded.exp && (now - decoded.exp) > 24 * 60 * 60) {
             return res.status(401).json({ error: 'Sesión demasiado antigua. Inicia sesión nuevamente.' });
         }
         const db = await getDb();
@@ -764,7 +764,7 @@ app.get('/api/dashboard/stats', verifyToken, checkPermission('tec.dashboard.view
         res.json(stats.recordset[0]);
     } catch (err: any) {
         console.error('❌ ERROR DASHBOARD STATS:', err.message);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -795,7 +795,7 @@ app.get('/api/dashboard/technicians', verifyToken, checkPermission('tec.dashboar
         res.json(result.recordset);
     } catch (err: any) { 
         console.error('❌ ERROR SQL (technicians):', err.message);
-        res.status(500).json({ error: 'Error interno del servidor' }); 
+        res.status(500).json({ error: safeError(err) }); 
     }
 });
 
@@ -956,7 +956,7 @@ app.get('/api/dashboard/cas-performance', verifyToken, checkPermission('tec.dash
         res.json(result.recordset);
     } catch (err: any) {
         console.error('❌ ERROR CAS PERFORMANCE:', err.message);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -976,7 +976,7 @@ app.get('/api/dashboard/technician/:name/metrics', verifyToken, checkPermission(
         const recordsets = result.recordsets as any;
         res.json({ monthly_trend: recordsets[0], services: recordsets[1], materials: recordsets[2] });
     } catch (err: any) {
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -1086,7 +1086,7 @@ app.get('/api/sap/tickets/search', verifyToken, checkPermission('tec.payments.vi
         res.json(result.recordset);
     } catch (err: any) {
         console.error('Error en /api/sap/tickets/search:', err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -1116,7 +1116,7 @@ app.get('/api/tickets-pagos/:ticketId/details', verifyToken, checkPermission('te
         res.json({ sap: { header: result.recordset[0] || null } });
     } catch (err: any) {
         console.error('Error en /api/tickets-pagos/:ticketId/details:', err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -1162,7 +1162,7 @@ app.get('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.view'),
         res.json({ data: recordsets[0], total: recordsets[1][0]?.total ?? 0 });
     } catch (err: any) {
         console.error('Error en GET /api/tickets-pagos:', err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -1206,7 +1206,7 @@ app.post('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.view')
         res.status(201).json({ message: 'Pago registrado', id: idTransaccion });
     } catch (err: any) {
         console.error('Error en POST /api/tickets-pagos:', err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -1246,7 +1246,7 @@ app.get('/api/tickets-pagos/:id/pdf', verifyToken, checkPermission('tec.payments
         res.download(filePath, targetFile);
     } catch (err: any) {
         console.error('Error in GET /api/tickets-pagos/:id/pdf:', err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -1275,7 +1275,7 @@ app.get('/api/tec/tickets/calendar-summary', verifyToken, checkPermission('tec.t
         res.json(summary);
     } catch (err: any) {
         console.error('❌ Error in /api/tec/tickets/calendar-summary:', err.message);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -1320,7 +1320,7 @@ app.get('/api/tec/tickets', verifyToken, checkPermission('tec.tickets.view'), as
         res.json(result.recordset);
     } catch (err: any) {
         console.error('❌ Error in /api/tec/tickets:', err.message);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -1367,7 +1367,7 @@ app.post('/api/tec/tickets/rango-horario', verifyToken, checkPermission('tec.tic
         res.json({ message: 'Rango horario asignado correctamente', updatedTickets: ticketsToUpdate });
     } catch (err: any) {
         console.error('❌ Error in POST /api/tec/tickets/rango-horario:', err.message);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -1380,7 +1380,7 @@ app.get('/api/config/rango-horario-limit', verifyToken, async (_req: Request, re
         const data = { limit: result.recordset[0]?.Valor || '09:30', description: result.recordset[0]?.Descripcion || '' };
         cacheSet('rango-horario-limit', data, 5 * 60 * 1000);
         res.json(data);
-    } catch (err: any) { res.status(500).json({ error: 'Error interno del servidor' }); }
+    } catch (err: any) { res.status(500).json({ error: safeError(err) }); }
 });
 
 app.post('/api/config/rango-horario-limit', verifyToken, checkPermission('tec.config.users'), async (req: Request, res: Response) => {
@@ -1395,7 +1395,7 @@ app.post('/api/config/rango-horario-limit', verifyToken, checkPermission('tec.co
         cacheInvalidate('rango-horario-limit');
         await logAudit(req, 'TEC:UPDATE_CONFIG_LIMIT', 'SystemConfig', 'HORA_MAXIMA_RANGO_HORARIO', { limit });
         res.json({ message: 'Configuración actualizada' });
-    } catch (err: any) { res.status(500).json({ error: 'Error interno del servidor' }); }
+    } catch (err: any) { res.status(500).json({ error: safeError(err) }); }
 });
 
 app.get('/api/tec/tickets/:ticketId/pagos', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
@@ -1409,7 +1409,7 @@ app.get('/api/tec/tickets/:ticketId/pagos', verifyToken, checkPermission('tec.ti
         }
         const paymentsResult = await db.request().input('ticketId', sql.VarChar(255), ticketId).query(`SELECT ID_transaccion, Fecha_creacion, Ticket, Fecha_transaccion, Voucher, Lote, Codigo_Izipay, Importe, Estado, Canal, Observacion, CodigoAutorizacion, Folio, Adjunto FROM [dbo].[GAC_APP_TB_TICKETS_PAGOS] WHERE EXISTS (SELECT 1 FROM STRING_SPLIT(Ticket, ',') WHERE LTRIM(RTRIM(value)) = @ticketId) ORDER BY Fecha_creacion DESC`);
         res.json(paymentsResult.recordset);
-    } catch (err: any) { res.status(500).json({ error: 'Error interno del servidor' }); }
+    } catch (err: any) { res.status(500).json({ error: safeError(err) }); }
 });
 
 app.post('/api/tec/tickets/:ticketId/pago', verifyToken, checkPermission('tec.tickets.view'), upload.single('adjunto'), async (req: Request, res: Response) => {
@@ -1470,7 +1470,7 @@ app.get('/api/tec/today-tickets', verifyToken, checkPermission('tec.tickets.view
         if (role?.toLowerCase() !== 'administrador') { query += " AND (NombreTecnico + ' ' + ApellidoTecnico) = @userFullName"; sqlReq.input('userFullName', sql.NVarChar(sql.MAX), full_name); }
         const result = await sqlReq.query(query);
         res.json(result.recordset);
-    } catch (err: any) { res.status(500).json({ error: 'Error interno del servidor' }); }
+    } catch (err: any) { res.status(500).json({ error: safeError(err) }); }
 });
 
 app.get('/api/tec/schedule', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
@@ -1479,7 +1479,7 @@ app.get('/api/tec/schedule', verifyToken, checkPermission('tec.tickets.view'), a
         const db = await getDb();
         const result = await db.request().input('user', sql.NVarChar(sql.MAX), full_name).query(`SELECT ID_empleado_calendario_labores as id, Fecha_Labor as date, Labor as title, 'Taller/Reunión' as type FROM [dbo].[GAC_APP_TB_EMPLEADOS_CALENDARIO_LABORES] WHERE Empleado = @user AND Fecha_Labor >= CONVERT(DATE, GETDATE()) ORDER BY Fecha_Labor ASC`);
         res.json(result.recordset);
-    } catch (err: any) { res.status(500).json({ error: 'Error interno del servidor' }); }
+    } catch (err: any) { res.status(500).json({ error: safeError(err) }); }
 });
 
 app.post('/api/tec/sales', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
@@ -1497,7 +1497,7 @@ app.post('/api/tec/sales', verifyToken, checkPermission('tec.tickets.view'), asy
             .input('user', sql.NVarChar(sql.MAX), full_name)
             .query(`INSERT INTO [dbo].[GAC_APP_TB_VENTAS] (ID_Venta, Ticket, Nro_pedido_venta, Observacion, Comentario_tecnico, Venta_registrada_por, Venta_registrada_el, Venta_realizada) VALUES (@id, @ticket, @pedido, @obs, @coment, @user, GETDATE(), 'SI')`);
         res.json({ message: 'Oportunidad de venta registrada', id: idVenta });
-    } catch (err: any) { res.status(500).json({ error: 'Error interno del servidor' }); }
+    } catch (err: any) { res.status(500).json({ error: safeError(err) }); }
 });
 
 app.patch('/api/tec/time-range', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
@@ -1514,7 +1514,7 @@ app.patch('/api/tec/time-range', verifyToken, checkPermission('tec.tickets.view'
         res.json({ message: 'Rango horario actualizado' });
     } catch (err: any) {
         console.error('[PATCH /api/tec/time-range]', err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -1556,7 +1556,7 @@ app.get('/api/users', verifyToken, checkPermission('tec.config.users'), async (r
         res.json(users);
     } catch (err: any) {
         console.error('[GET /api/users]', err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -1582,7 +1582,7 @@ app.post('/api/users', verifyToken, checkPermission('tec.config.users'), async (
         res.status(201).json({ id: String(newId), username, full_name, email, role_id: String(role_id), apps: apps || APP_IDENTIFIER, is_active });
     } catch (err: any) {
         console.error('[POST /api/users]', err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -1608,7 +1608,7 @@ app.put('/api/users/:id', verifyToken, checkPermission('tec.config.users'), asyn
         res.json({ id, full_name, email, role_id: String(role_id), apps, is_active });
     } catch (err: any) {
         console.error('[PUT /api/users/:id]', err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -1623,7 +1623,7 @@ app.delete('/api/users/:id', verifyToken, checkPermission('tec.config.users'), a
         res.status(204).send();
     } catch (err: any) {
         console.error('[DELETE /api/users/:id]', err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -1648,7 +1648,7 @@ app.get('/api/roles', verifyToken, checkPermission('tec.config.roles'), async (r
         })));
     } catch (err: any) {
         console.error('[GET /api/roles]', err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -1671,7 +1671,7 @@ app.post('/api/roles', verifyToken, checkPermission('tec.config.roles'), async (
         res.status(201).json({ id: String(newId), name, permissions, apps });
     } catch (err: any) {
         console.error('[POST /api/roles]', err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -1698,7 +1698,7 @@ app.put('/api/roles/:id', verifyToken, checkPermission('tec.config.roles'), asyn
         res.json({ id, name, permissions, apps });
     } catch (err: any) {
         console.error('[PUT /api/roles/:id]', err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -1715,7 +1715,7 @@ app.delete('/api/roles/:id', verifyToken, checkPermission('tec.config.roles'), a
         res.status(204).send();
     } catch (err: any) {
         console.error('[DELETE /api/roles/:id]', err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -1772,7 +1772,7 @@ app.post('/api/user/preferences', verifyToken, async (req: Request, res: Respons
         res.json({ ok: true });
     } catch (err: any) {
         console.error('[POST /api/user/preferences]', err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 
@@ -1800,7 +1800,7 @@ app.get('/api/config/audit-logs', verifyToken, checkPermission('tec.config.audit
         res.json({ data: result.recordset, page, limit });
     } catch (err: any) {
         console.error('[GET /api/config/audit-logs]', err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: safeError(err) });
     }
 });
 

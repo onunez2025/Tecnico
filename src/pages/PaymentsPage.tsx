@@ -212,7 +212,7 @@ export default function PaymentsPage() {
             </div>
 
             {/* List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <div className="flex-1 overflow-y-auto p-4 pb-20 space-y-3 lg:pb-4">
                 {isLoading ? (
                     <div className="flex justify-center p-8">
                         <RefreshCw className="w-6 h-6 text-primary animate-spin" />

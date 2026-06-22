@@ -89,7 +89,7 @@ export default function TodayTicketsPage() {
             </div>
 
             {/* List Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 pb-20 space-y-4 lg:pb-4">
                 {isLoading ? (
                     <div className="flex justify-center p-12">
                         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>

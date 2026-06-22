@@ -607,7 +607,7 @@ export default function TicketsCalendarPage() {
                 </div>
 
                 {/* Tickets list */}
-                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                <div className="flex-1 overflow-y-auto p-3 pb-20 space-y-3 lg:pb-3">
                     {isLoading ? (
                         <div className="flex justify-center py-20">
                             <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>

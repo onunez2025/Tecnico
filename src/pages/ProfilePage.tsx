@@ -146,7 +146,7 @@ export default function ProfilePage() {
         .split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
 
     return (
-        <div className="h-full overflow-y-auto pr-2 pb-8">
+        <div className="h-full overflow-y-auto pr-2 pb-20 lg:pb-8">
             <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in zoom-in-95">
                 {/* Header */}
                 <div>

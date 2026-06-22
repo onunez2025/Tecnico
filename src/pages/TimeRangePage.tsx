@@ -71,7 +71,7 @@ export default function TimeRangePage() {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4 pb-20 lg:pb-4">
                 {isSuccess && (
                     <div className="mb-4 bg-emerald-50 border border-emerald-100 p-4 rounded-2xl flex items-center gap-3 text-emerald-700 animate-in fade-in slide-in-from-top-2">
                         <CheckCircle2 className="w-5 h-5 shrink-0" />

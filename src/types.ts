@@ -42,7 +42,9 @@ export type Permission =
   | 'tec.config.audit'
   | 'tec.tickets.view'
   | 'tec.dashboard.view'
-  | 'tec.payments.view';
+  | 'tec.payments.view'
+  | 'tec.payments.view.all'
+  | 'tec.payments.register';
 
 export interface User {
   id: string;

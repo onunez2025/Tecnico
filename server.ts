@@ -902,6 +902,17 @@ async function runMigrations() {
                         WHERE rp2.RoleId = r.Id AND rp2.Permission = 'tec.payments.view'
                     )`
         },
+        {
+            name: 'Add tec.payments.register permission to roles that already have tec.payments.view',
+            sql: `INSERT INTO EBM.RolePermissions (RoleId, Permission)
+                  SELECT DISTINCT rp.RoleId, 'tec.payments.register'
+                  FROM EBM.RolePermissions rp
+                  WHERE rp.Permission = 'tec.payments.view'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM EBM.RolePermissions rp2
+                        WHERE rp2.RoleId = rp.RoleId AND rp2.Permission = 'tec.payments.register'
+                    )`
+        },
     ];
 
     for (const step of steps) {
@@ -1133,14 +1144,25 @@ app.get('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.view'),
             .input('offset', sql.Int, offset)
             .input('search', sql.NVarChar(sql.MAX), `%${search}%`);
 
-        // RLS: usuario CAS solo ve sus propios datos
         const currentUser = (req as any).user; // eslint-disable-line @typescript-eslint/no-explicit-any
         const conditions: string[] = [];
         if (search) conditions.push(`(C.Ticket_Original LIKE @search OR C.Clientes LIKE @search OR C.CodigoAutorizacion LIKE @search OR C.Voucher LIKE @search)`);
+
+        // RLS por empresa CAS (usuarios externos)
         if (currentUser?.casId) {
             conditions.push('C.ID_cas = @casId');
             sqlReq.input('casId', sql.VarChar(50), currentUser.casId);
         }
+
+        // RLS por técnico: solo ve sus propios pagos salvo que tenga tec.payments.view.all
+        const userPerms: string[] = currentUser?.permissions || currentUser?.perms || [];
+        const isAdmin = (currentUser?.role || '').trim().toLowerCase() === 'administrador';
+        const hasViewAll = isAdmin || userPerms.includes('tec.payments.view.all');
+        if (!hasViewAll) {
+            conditions.push(`C.Tecnicos LIKE @techName`);
+            sqlReq.input('techName', sql.NVarChar(sql.MAX), `%${currentUser.full_name}%`);
+        }
+
         const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
         const data = await sqlReq.query(`
@@ -1167,7 +1189,7 @@ app.get('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.view'),
 });
 
 // Crear pago (soporta uno o varios tickets en una transacción)
-app.post('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.view'), async (req: Request, res: Response) => {
+app.post('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.register'), async (req: Request, res: Response) => {
     try {
         const { ticket, fecha_transaccion, voucher, lote, codigo_izipay, codigo_autorizacion, folio, importe, canal, observacion } = req.body;
         if (!ticket || String(ticket).trim() === '') return res.status(400).json({ error: 'Debe incluir al menos un ticket' });

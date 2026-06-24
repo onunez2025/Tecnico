@@ -58,6 +58,8 @@ export const SIATC_THEME = {
         CONTENT_CONTAINER: "flex-1 min-h-0 flex flex-col bg-card border border-cb-border rounded-cb-card shadow-cb-level-1 overflow-hidden",
         MAX_WIDTH: "mx-auto max-w-7xl w-full",
         SECTION_SPACING: "space-y-4",
+        CARD_GRID: "flex-1 overflow-y-auto custom-scrollbar relative px-4 py-3",
+        CARD_GRID_COLUMNS: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3",
         SIDEBAR_CONTAINER: "w-64 shrink-0 flex flex-col bg-card rounded-cb-card border border-cb-border overflow-hidden",
         SIDEBAR_INNER: "flex flex-col h-full bg-transparent text-cb-text-primary transition-all duration-500",
         SIDEBAR_ITEM_ACTIVE: "group/item flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-bold transition-all duration-300 relative overflow-hidden bg-primary text-primary-foreground shadow-lg shadow-primary/25 translate-x-1",

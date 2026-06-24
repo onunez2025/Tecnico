@@ -205,7 +205,8 @@ export default function PaymentsPage() {
                 </div>
 
                 {/* Scrollable Payment List */}
-                <div className={cn(SIATC_THEME.LAYOUT.VIEWPORT, 'gap-2 py-2')}>
+                <div className={SIATC_THEME.LAYOUT.CARD_GRID}>
+                  <div className={isLoading || payments.length === 0 ? 'flex flex-col flex-1' : SIATC_THEME.LAYOUT.CARD_GRID_COLUMNS}>
                     {isLoading ? (
                         <div className="flex justify-center items-center flex-1 p-12">
                             <RefreshCw className="w-6 h-6 text-primary animate-spin" />
@@ -284,6 +285,7 @@ export default function PaymentsPage() {
                             );
                         })
                     )}
+                  </div>
                 </div>
 
                 {/* Pagination Footer */}

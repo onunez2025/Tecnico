@@ -63,6 +63,7 @@ export function useInactivityTimer({ timeoutMinutes, warningMinutes, onTimeout, 
 
     useEffect(() => {
         if (!enabled) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             stopTimers();
             return;
         }

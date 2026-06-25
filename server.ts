@@ -68,12 +68,14 @@ const limiter = rateLimit({
     store: new RedisStore({ sendCommand: (...args: string[]) => (getRedisClient() as any).call(...args) as any, prefix: 'rl:tec:' }),
 });
 
-const authLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000,
-    max: 50,
+// Auth rate limiter — starts with safe defaults, overwritten from EBM.AppSessionConfig at startup
+let authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
     standardHeaders: true,
     legacyHeaders: false,
-    message: { error: 'Demasiados intentos de inicio de sesión. Espera 1 hora.' },
+    skipSuccessfulRequests: true,
+    message: { error: 'Demasiados intentos de inicio de sesión. Intenta más tarde.' },
     store: new RedisStore({ sendCommand: (...args: string[]) => (getRedisClient() as any).call(...args) as any, prefix: 'rl:tec:auth:' }),
 });
 
@@ -152,9 +154,8 @@ app.use(helmet({
     hsts: IS_PRODUCTION ? { maxAge: 31536000, includeSubDomains: true } : false,
 }));
 
-// [SECURITY] Rate limiting general (1000 req / 15 min) y auth-específico (50 req / 1 hora)
 app.use(limiter);
-app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/login', (req: Request, res: Response, next: NextFunction) => authLimiter(req, res, next));
 
 // [SECURITY] Limitar tamaño de body para prevenir DoS
 app.use(express.json({ limit: '1mb' }));
@@ -491,7 +492,8 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     try {
         const db = await getDb();
         const result = await db.request().input('u', sql.NVarChar(sql.MAX), username).input('app', sql.NVarChar(sql.MAX), APP_IDENTIFIER).query(`
-            SELECT u.*, r.Name as RoleName, uc.CASId as cas_id, c.Nombre_CAS as cas_name, LTRIM(RTRIM(c.Abrev_nombre_colaboradores)) as cas_prefijo
+            SELECT u.*, r.Name as RoleName, uc.CASId as cas_id, c.Nombre_CAS as cas_name, LTRIM(RTRIM(c.Abrev_nombre_colaboradores)) as cas_prefijo,
+                r.InactivityTimeoutMinutes as role_timeout, r.WarningBeforeMinutes as role_warning
             FROM EBM.Users u
             LEFT JOIN EBM.Roles r ON u.RoleId = r.Id
             LEFT JOIN EBM.UserCAS uc ON u.Id = uc.UserId
@@ -505,6 +507,12 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
         }
 
         const perms = (await db.request().input('rid', sql.UniqueIdentifier, user.RoleId).query("SELECT Permission FROM EBM.RolePermissions WHERE RoleId = @rid")).recordset.map((p: any) => p.Permission);
+
+        const appCfgResult = await db.request().input('appCode', sql.VarChar(20), APP_IDENTIFIER)
+            .query('SELECT DefaultInactivityTimeoutMinutes, DefaultWarningBeforeMinutes FROM EBM.AppSessionConfig WHERE UPPER(AppCode) = UPPER(@appCode)');
+        const appCfg = appCfgResult.recordset[0];
+        const timeoutMinutes: number = user.role_timeout ?? appCfg?.DefaultInactivityTimeoutMinutes ?? 30;
+        const warningMinutes: number = user.role_warning ?? appCfg?.DefaultWarningBeforeMinutes ?? 2;
 
         // [SECURITY] Token "Recuérdame" reducido de 30d a 7d para limitar ventana de compromiso
         const expiresIn = remember ? '7d' : '12h';
@@ -555,7 +563,8 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
                 perms: perms,
                 apps: user.Apps || '',
                 requires_password_change: user.RequiresPasswordChange === 1
-            }
+            },
+            sessionConfig: { timeoutMinutes, warningMinutes }
         });
     } catch (err: any) {
         console.error('❌ Error en Login:', err);
@@ -1968,9 +1977,38 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     res.status(500).json({ error: safeError(err) });
 });
 
+interface SessionConfig { rateLimitMaxAttempts: number; rateLimitWindowMinutes: number; }
+
+async function fetchSessionConfig(): Promise<SessionConfig> {
+    try {
+        const db = await getDb();
+        const result = await db.request().input('code', sql.VarChar(20), APP_IDENTIFIER)
+            .query('SELECT RateLimitMaxAttempts, RateLimitWindowMinutes FROM EBM.AppSessionConfig WHERE UPPER(AppCode) = UPPER(@code)');
+        if (result.recordset.length > 0) {
+            const row = result.recordset[0];
+            return { rateLimitMaxAttempts: row.RateLimitMaxAttempts, rateLimitWindowMinutes: row.RateLimitWindowMinutes };
+        }
+    } catch (err: unknown) {
+        console.warn('[SessionConfig] Could not fetch from DB, using defaults:', (err as Error).message);
+    }
+    return { rateLimitMaxAttempts: 10, rateLimitWindowMinutes: 15 };
+}
+
 // --- INICIO DEL SERVIDOR ---
 app.listen(port, () => {
     console.log(`🚀 Servidor Gestión Técnica escuchando en puerto ${port}`);
     runMigrations().catch(err => console.error('❌ Migration failed:', err.message));
     setTimeout(() => syncAllMissingTickets(), 15000);
+    fetchSessionConfig().then(cfg => {
+        authLimiter = rateLimit({
+            windowMs: cfg.rateLimitWindowMinutes * 60 * 1000,
+            max: cfg.rateLimitMaxAttempts,
+            standardHeaders: true,
+            legacyHeaders: false,
+            skipSuccessfulRequests: true,
+            message: { error: `Demasiados intentos de inicio de sesión. Espera ${cfg.rateLimitWindowMinutes} minutos.` },
+            store: new RedisStore({ sendCommand: (...args: string[]) => (getRedisClient() as any).call(...args) as any, prefix: 'rl:tec:auth:' }),
+        });
+        console.log(`[SessionConfig] Auth limiter: ${cfg.rateLimitMaxAttempts} intentos / ${cfg.rateLimitWindowMinutes} min`);
+    }).catch(err => console.error('[SessionConfig] Failed to load rate limit config:', err));
 });

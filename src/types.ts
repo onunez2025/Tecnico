@@ -46,6 +46,11 @@ export type Permission =
   | 'tec.payments.view.all'
   | 'tec.payments.register';
 
+export interface SessionConfig {
+  timeoutMinutes: number;
+  warningMinutes: number;
+}
+
 export interface User {
   id: string;
   full_name: string;

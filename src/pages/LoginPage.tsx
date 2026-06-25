@@ -40,7 +40,7 @@ export default function LoginPage() {
 
             const data = await response.json();
 
-            login(data.user, data.token, rememberMe);
+            login(data.user, data.token, rememberMe, data.sessionConfig);
             refreshApplications();
             navigate('/');
 

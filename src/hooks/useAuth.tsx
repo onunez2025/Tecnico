@@ -33,6 +33,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const logout = useCallback(() => {
         const token = StorageService.getToken();
         if (token) {
+            // blacklistToken — el servidor invalida el JWT en Redis via POST /auth/logout
             fetch(`${API_BASE_URL}/auth/logout`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },

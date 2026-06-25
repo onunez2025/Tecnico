@@ -31,6 +31,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     const logout = useCallback(() => {
+        const token = StorageService.getToken();
+        if (token) {
+            fetch(`${API_BASE_URL}/auth/logout`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+            }).catch(() => { /* token ya expirado o red caída — limpiar igual */ });
+        }
+
         setUser(null);
         setSessionConfig(null);
         localStorage.removeItem('session_config');

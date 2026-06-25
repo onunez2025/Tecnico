@@ -11,9 +11,9 @@ export function useInactivityTimer({ timeoutMinutes, warningMinutes, onTimeout, 
     const [showWarning, setShowWarning] = useState(false);
     const [remainingSeconds, setRemainingSeconds] = useState(warningMinutes * 60);
 
-    const logoutTimerRef = useRef<ReturnType<typeof setTimeout>>();
-    const warningTimerRef = useRef<ReturnType<typeof setTimeout>>();
-    const countdownRef = useRef<ReturnType<typeof setInterval>>();
+    const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    const warningTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    const countdownRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
     const showWarningRef = useRef(false);
     const onTimeoutRef = useRef(onTimeout);
     const startTimersRef = useRef<() => void>(() => {});
@@ -26,10 +26,14 @@ export function useInactivityTimer({ timeoutMinutes, warningMinutes, onTimeout, 
         clearInterval(countdownRef.current);
     }, []);
 
-    const startTimers = useCallback(() => {
+    const stopTimers = useCallback(() => {
         clearAllTimers();
         setShowWarning(false);
         showWarningRef.current = false;
+    }, [clearAllTimers]);
+
+    const startTimers = useCallback(() => {
+        stopTimers();
 
         const warningMs = Math.max(0, (timeoutMinutes - warningMinutes) * 60 * 1000);
         const logoutMs = timeoutMinutes * 60 * 1000;
@@ -49,7 +53,7 @@ export function useInactivityTimer({ timeoutMinutes, warningMinutes, onTimeout, 
             clearAllTimers();
             onTimeoutRef.current();
         }, logoutMs);
-    }, [timeoutMinutes, warningMinutes, clearAllTimers]);
+    }, [timeoutMinutes, warningMinutes, clearAllTimers, stopTimers]);
 
     useEffect(() => { startTimersRef.current = startTimers; }, [startTimers]);
 
@@ -59,8 +63,7 @@ export function useInactivityTimer({ timeoutMinutes, warningMinutes, onTimeout, 
 
     useEffect(() => {
         if (!enabled) {
-            clearAllTimers();
-            setShowWarning(false);
+            stopTimers();
             return;
         }
 
@@ -74,7 +77,7 @@ export function useInactivityTimer({ timeoutMinutes, warningMinutes, onTimeout, 
             clearAllTimers();
             activityEvents.forEach(e => window.removeEventListener(e, handleActivity));
         };
-    }, [enabled, startTimers, clearAllTimers]);
+    }, [enabled, startTimers, stopTimers, clearAllTimers]);
 
     return { showWarning, remainingSeconds, resetTimer };
 }

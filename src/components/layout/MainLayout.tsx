@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Menu, X, Sun, Moon, Settings, Calendar, User, DollarSign, Clock } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Menu, X, Sun, Moon, Settings, Calendar, User, DollarSign, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useInactivityTimer } from '../../hooks/useInactivityTimer';
 import { NavLink, Navigate, Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
@@ -13,6 +13,36 @@ export function MainLayout() {
     const { isAuthenticated, isLoading, user, hasPermission, logout, sessionConfig } = useAuth();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const { theme, setTheme } = useTheme();
+
+    const COLLAPSED_KEY = 'tec_sidebar_collapsed';
+    const [isCollapsed, setIsCollapsed] = useState(() => localStorage.getItem(COLLAPSED_KEY) === 'true');
+    const [isHovering,  setIsHovering]  = useState(false);
+    const allowCollapse  = true;
+    const hoverExpand    = true;
+    const expandedWidth  = '288px';
+    const collapsedWidth = '64px';
+    const isHoverExpanded       = isCollapsed && isHovering && hoverExpand && allowCollapse;
+    const isEffectivelyExpanded = !isCollapsed || isHoverExpanded;
+    const sidebarPanelWidth     = isEffectivelyExpanded ? expandedWidth : collapsedWidth;
+    const spacerWidth           = (allowCollapse && isCollapsed) ? collapsedWidth : expandedWidth;
+
+    const handleToggle = useCallback(() => {
+        const next = !isCollapsed;
+        setIsCollapsed(next);
+        localStorage.setItem(COLLAPSED_KEY, String(next));
+        if (!next) setIsHovering(false);
+    }, [isCollapsed]);
+
+    useEffect(() => {
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key === 'b') {
+                e.preventDefault();
+                if (allowCollapse) handleToggle();
+            }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [allowCollapse, handleToggle]);
 
     const toggleTheme = () => {
         setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -52,16 +82,41 @@ export function MainLayout() {
                 onClick={() => setSidebarOpen(false)}
             />
 
-            {/* Sidebar Container: SIATC Platinum 288px (w-72), Glassmorphism */}
+            {/* Desktop spacer */}
+            <div
+                className="hidden lg:block shrink-0 transition-[width] duration-300 ease-in-out"
+                style={{ width: spacerWidth }}
+            />
+
+            {/* Sidebar — fixed, overlays on hover-expand */}
             <aside
                 className={cn(
-                    "fixed inset-y-0 left-0 z-[70] w-72 transition-transform duration-500 ease-in-out lg:static lg:translate-x-0",
-                    sidebarOpen ? "translate-x-0" : "-translate-x-full"
+                    "fixed inset-y-0 left-0 z-[70] transition-[transform,width] duration-300 ease-in-out",
+                    sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
                 )}
+                style={{ width: sidebarOpen ? expandedWidth : sidebarPanelWidth }}
+                onMouseEnter={() => setIsHovering(true)}
+                onMouseLeave={() => setIsHovering(false)}
             >
-                <div className="h-full flex flex-col p-4 bg-transparent">
+                {allowCollapse && !sidebarOpen && (
+                    <button
+                        type="button"
+                        onClick={handleToggle}
+                        onMouseEnter={() => setIsHovering(false)}
+                        onMouseLeave={() => setIsHovering(false)}
+                        title={isEffectivelyExpanded ? 'Colapsar sidebar' : 'Expandir sidebar'}
+                        className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-full z-20 h-10 w-5 rounded-r-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border border-l-0 border-border/40 dark:border-white/10 shadow-[2px_0_8px_rgba(0,0,0,0.08)] items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/5 hover:border-primary/20 transition-all duration-200 cursor-pointer"
+                    >
+                        {isEffectivelyExpanded ? <ChevronLeft className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                    </button>
+                )}
+                <div className={cn(
+                    "h-full flex flex-col bg-transparent transition-all duration-300",
+                    (isEffectivelyExpanded || sidebarOpen) ? 'p-4' : 'p-1'
+                )}>
                     <div className={cn(
-                        "flex-1 flex flex-col overflow-hidden relative rounded-[2.5rem] border border-white dark:border-white/5 shadow-2xl shadow-slate-200/50 dark:shadow-none",
+                        "flex-1 flex flex-col overflow-hidden relative border border-white dark:border-white/5 shadow-2xl shadow-slate-200/50 dark:shadow-none transition-all duration-300",
+                        (isEffectivelyExpanded || sidebarOpen) ? 'rounded-[2.5rem]' : 'rounded-2xl',
                         SIATC_THEME.TOKENS.SIDEBAR_BG
                     )}>
                         <div className="flex items-center justify-end p-6 lg:hidden">
@@ -72,7 +127,7 @@ export function MainLayout() {
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
-                        <Sidebar className="flex-1" onNavigate={handleMobileNavClose} />
+                        <Sidebar className="flex-1" onNavigate={handleMobileNavClose} isEffectivelyExpanded={isEffectivelyExpanded || sidebarOpen} />
                     </div>
                 </div>
             </aside>

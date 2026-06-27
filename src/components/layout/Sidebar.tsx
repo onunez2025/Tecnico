@@ -6,7 +6,8 @@ import {
     LogOut,
     Calendar,
     ChevronRight,
-    DollarSign
+    DollarSign,
+    Building2
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAuth } from '../../hooks/useAuth';
@@ -20,7 +21,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ className, onNavigate, isEffectivelyExpanded = true }: SidebarProps) {
-    const { logout, hasPermission } = useAuth();
+    const { logout, hasPermission, user } = useAuth();
     const appConfig = useAppConfig();
     const logoUrl = appConfig?.logoUrl || '/Logo.png';
     const showFull = isEffectivelyExpanded;
@@ -122,6 +123,25 @@ export function Sidebar({ className, onNavigate, isEffectivelyExpanded = true }:
                         </NavLink>
                     ))}
                 </nav>
+            )}
+
+            {/* CAS Tenant Widget */}
+            {user?.cas_name && (
+                showFull ? (
+                    <div className="mx-4 mb-4 p-4 rounded-[1.5rem] bg-muted/20 border border-border/50 flex items-center gap-3 shrink-0">
+                        <Building2 className="w-5 h-5 text-primary shrink-0" />
+                        <div className="overflow-hidden">
+                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider leading-none">CAS Asignado</p>
+                            <p className="text-xs font-bold text-foreground truncate mt-1">{user.cas_name}</p>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex justify-center mb-2 shrink-0">
+                        <div title={user.cas_name} className="w-9 h-9 rounded-xl bg-muted/20 border border-border/50 flex items-center justify-center">
+                            <Building2 className="w-4 h-4 text-primary" />
+                        </div>
+                    </div>
+                )
             )}
 
             {/* Footer */}

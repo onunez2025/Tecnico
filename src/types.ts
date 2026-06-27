@@ -69,6 +69,8 @@ export interface User {
   permissions?: Permission[];
   requires_password_change?: boolean;
   apps?: string;
+  cas_id?: string | null;
+  cas_name?: string | null;
 }
 
 export interface Role {

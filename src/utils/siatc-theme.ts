@@ -193,7 +193,15 @@ export const SIATC_THEME = {
         STATUS_ALERT_BASE: "p-4 rounded-cb-btn flex items-center gap-3 text-sm font-bold shadow-sm animate-in fade-in duration-300",
         STATUS_ALERT_SUCCESS: "bg-[#E6F6EF] text-[#05B169] dark:bg-emerald-950/20 dark:text-emerald-400 border border-[#E6F6EF] dark:border-emerald-800",
         STATUS_ALERT_ERROR: "bg-[#FDECEE] text-[#DF2935] dark:bg-red-950/20 dark:text-red-400 border border-[#FDECEE] dark:border-red-800",
-    }
+    },
+
+    SIDEBAR: {
+        EXPANDED_WIDTH:           '288px',
+        COLLAPSED_WIDTH:          '64px',
+        ALLOW_COLLAPSE:           true,
+        HOVER_EXPAND:             true,
+        MOBILE_CLOSE_ON_NAVIGATE: true,
+    },
 };
 
 export const CRYPTO_BLUE_THEME = SIATC_THEME;

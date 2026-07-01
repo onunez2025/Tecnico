@@ -26,15 +26,17 @@ import { ApiClient } from '../services/apiClient';
 import { cn } from '../utils/cn';
 import { useAuth } from '../hooks/useAuth';
 import { AssignedTicket, TicketPago } from '../types';
+import { useTranslation } from 'react-i18next';
 
 export default function TicketsCalendarPage() {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const isAdmin = user?.role_name?.toLowerCase() === 'administrador';
 
     // Dates state
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
-    
+
     // Tickets state
     const [tickets, setTickets] = useState<AssignedTicket[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -99,7 +101,6 @@ export default function TicketsCalendarPage() {
     const [isSavingPayment, setIsSavingPayment] = useState(false);
     const [paymentError, setPaymentError] = useState<string | null>(null);
 
-    // Fetch payments for ticket
     // [FIX FE-M10] Added paymentsError state to surface load failures in the UI
     const [paymentsError, setPaymentsError] = useState<string | null>(null);
     const fetchPaymentsForActiveTicket = async (ticketId: string) => {
@@ -110,7 +111,7 @@ export default function TicketsCalendarPage() {
             setActiveTicketPayments(data || []);
         } catch (err: unknown) {
             console.error('Error loading payments for ticket:', err);
-            setPaymentsError('No se pudieron cargar los pagos. Intenta nuevamente.');
+            setPaymentsError(t('calendar.paymentFields.paymentsError'));
         } finally {
             setIsLoadingPayments(false);
         }
@@ -152,7 +153,7 @@ export default function TicketsCalendarPage() {
             formData.append('importe', importePago);
             formData.append('canal', canalPago);
             formData.append('observacion', observacionPago);
-            
+
             if (canalPago === 'POS') {
                 formData.append('voucher', voucherPago);
                 formData.append('lote', lotePago);
@@ -231,7 +232,6 @@ export default function TicketsCalendarPage() {
             return true;
         }
 
-        // It is today! Check the limit time
         const localTimeStr = now.toLocaleTimeString('en-US', { timeZone: 'America/Lima', hour12: false });
         const [currHour, currMin] = localTimeStr.split(':').map(Number);
         const [limitHour, limitMin] = limitTime.split(':').map(Number);
@@ -300,10 +300,9 @@ export default function TicketsCalendarPage() {
 
                 const data = (await ApiClient.request(url)) as AssignedTicket[];
                 setTickets(data);
-                
-                // If drawer is open, update activeTicket data if it was reloaded
+
                 if (activeTicket) {
-                    const updated = data.find((t: AssignedTicket) => t.id === activeTicket.id);
+                    const updated = data.find((tkt: AssignedTicket) => tkt.id === activeTicket.id);
                     if (updated) {
                         setActiveTicket(updated);
                     }
@@ -319,7 +318,6 @@ export default function TicketsCalendarPage() {
         fetchTickets();
     }, [selectedDate, techFilterCode, refreshKey, isAdmin]);
 
-    // Handle Month Navigation in Calendar
     const prevMonth = () => {
         setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
     };
@@ -327,8 +325,6 @@ export default function TicketsCalendarPage() {
     const nextMonth = () => {
         setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
     };
-
-
 
     // [FIX FE-M3] Memoize filteredTickets to avoid recomputing on every keystroke render
     const filteredTickets = useMemo(() => tickets.filter(ticket => {
@@ -347,7 +343,7 @@ export default function TicketsCalendarPage() {
     // [FIX FE-M3] Memoize metrics and daysGrid
     const totalCount = tickets.length;
     const completedCount = useMemo(
-        () => tickets.filter(t => t.VisitaRealizada === 'true' || t.Estado?.toLowerCase() === 'closed').length,
+        () => tickets.filter(tkt => tkt.VisitaRealizada === 'true' || tkt.Estado?.toLowerCase() === 'closed').length,
         [tickets]
     );
     const pendingCount = totalCount - completedCount;
@@ -368,7 +364,6 @@ export default function TicketsCalendarPage() {
 
     const monthName = currentMonth.toLocaleString('es-PE', { month: 'long', year: 'numeric' });
 
-    // Helper for formatting times
     const formatTime = (dateStr?: string) => {
         if (!dateStr) return '';
         try {
@@ -379,7 +374,6 @@ export default function TicketsCalendarPage() {
         }
     };
 
-    // Helper to get status color badge
     const getStatusBadge = (ticket: AssignedTicket) => {
         const isRealizada = ticket.VisitaRealizada === 'true';
         const estado = ticket.Estado?.toLowerCase();
@@ -388,28 +382,28 @@ export default function TicketsCalendarPage() {
             return (
                 <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-green-500/10 text-green-600 border border-green-500/20 flex items-center gap-1 shrink-0">
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    Realizado
+                    {t('calendar.status.done')}
                 </span>
             );
         } else if (estado === 'cancelled' || estado === 'rechazado') {
             return (
                 <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-500 border border-red-500/20 flex items-center gap-1 shrink-0">
                     <XCircle className="w-3.5 h-3.5" />
-                    Cancelado
+                    {t('calendar.status.cancelled')}
                 </span>
             );
         } else if (estado === 'observado' || ticket.SolicitaNuevaVisita === 'true') {
             return (
                 <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center gap-1 shrink-0">
                     <AlertCircle className="w-3.5 h-3.5" />
-                    Observado
+                    {t('calendar.status.observed')}
                 </span>
             );
         } else {
             return (
                 <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20 flex items-center gap-1 shrink-0">
                     <Clock className="w-3.5 h-3.5" />
-                    Programado
+                    {t('calendar.status.scheduled')}
                 </span>
             );
         }
@@ -420,7 +414,7 @@ export default function TicketsCalendarPage() {
             {/* Calendar Sidebar (Left) */}
             <div className="w-80 bg-card border-r border-border flex flex-col shrink-0 p-5 hidden md:flex">
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Calendario</h2>
+                    <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('calendar.calendar')}</h2>
                     <div className="flex gap-1">
                         <button
                             onClick={prevMonth}
@@ -492,23 +486,23 @@ export default function TicketsCalendarPage() {
                     })}
                 </div>
 
-                <button 
+                <button
                     onClick={() => {
                         setSelectedDate(new Date());
                         setCurrentMonth(new Date());
                     }}
                     className="mt-6 w-full py-2 border border-border rounded-xl text-xs font-bold text-foreground hover:bg-muted transition-colors"
                 >
-                    Ir a Hoy
+                    {t('calendar.goToday')}
                 </button>
 
                 {isAdmin && (
                     <div className="mt-8 border-t border-border pt-6">
                         <div className="flex items-center gap-2 mb-3">
                             <Lock className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Filtro Administrativo</span>
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('calendar.adminFilter.label')}</span>
                         </div>
-                        <label className="block text-xs font-medium text-muted-foreground mb-1">Código de Técnico</label>
+                        <label className="block text-xs font-medium text-muted-foreground mb-1">{t('calendar.adminFilter.techCode')}</label>
                         <input
                             type="text"
                             placeholder="Ej. 3838"
@@ -517,11 +511,11 @@ export default function TicketsCalendarPage() {
                             className="w-full px-3 py-2 text-xs border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                         />
                         {techFilterCode && (
-                            <button 
+                            <button
                                 onClick={() => setTechFilterCode('')}
                                 className="mt-2 text-[10px] text-red-500 hover:underline font-bold"
                             >
-                                Limpiar filtro
+                                {t('calendar.adminFilter.clear')}
                             </button>
                         )}
                     </div>
@@ -534,14 +528,14 @@ export default function TicketsCalendarPage() {
                 <div className="bg-card border-b border-border p-4 flex flex-col gap-3">
                     <div className="flex justify-between items-start md:items-center flex-col md:flex-row gap-4">
                         <div>
-                            <span className="text-xs font-bold text-primary uppercase tracking-wider">Mis Tickets Asignados</span>
+                            <span className="text-xs font-bold text-primary uppercase tracking-wider">{t('calendar.myTickets')}</span>
                         </div>
-                        
+
                         <div className="flex items-center gap-2 self-stretch md:self-auto">
                             {/* Mobile Datepicker */}
                             <div className="relative md:hidden flex-1">
-                                <input 
-                                    type="date" 
+                                <input
+                                    type="date"
                                     value={selectedDate.toISOString().split('T')[0]}
                                     onChange={(e) => {
                                         if (e.target.value) {
@@ -553,7 +547,7 @@ export default function TicketsCalendarPage() {
                                 />
                             </div>
 
-                            <button 
+                            <button
                                 onClick={() => setRefreshKey(k => k + 1)}
                                 className="p-2 border border-border hover:bg-muted rounded-xl transition-colors shrink-0 text-foreground"
                                 title="Recargar lista"
@@ -566,15 +560,15 @@ export default function TicketsCalendarPage() {
                     {/* Summary Metrics Cards */}
                     <div className="grid grid-cols-3 gap-3">
                         <div className="bg-primary/10 border border-primary/20 rounded-2xl p-3 flex flex-col justify-between">
-                            <span className="text-xs font-bold text-primary">Total</span>
+                            <span className="text-xs font-bold text-primary">{t('calendar.metrics.total')}</span>
                             <span className="text-2xl font-black text-foreground mt-1">{totalCount}</span>
                         </div>
                         <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-3 flex flex-col justify-between">
-                            <span className="text-xs font-bold text-green-500">Realizados</span>
+                            <span className="text-xs font-bold text-green-500">{t('calendar.metrics.done')}</span>
                             <span className="text-2xl font-black text-green-900 dark:text-green-200 mt-1">{completedCount}</span>
                         </div>
                         <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 flex flex-col justify-between">
-                            <span className="text-xs font-bold text-amber-500">Pendientes</span>
+                            <span className="text-xs font-bold text-amber-500">{t('calendar.metrics.pending')}</span>
                             <span className="text-2xl font-black text-amber-900 dark:text-amber-200 mt-1">{pendingCount}</span>
                         </div>
                     </div>
@@ -582,9 +576,9 @@ export default function TicketsCalendarPage() {
                     {/* Search and Filters */}
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
-                        <input 
+                        <input
                             type="text"
-                            placeholder="Buscar por ticket, cliente, distrito o servicio..."
+                            placeholder={t('calendar.searchPlaceholder')}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full pl-9 pr-4 py-2 border border-border rounded-xl text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -594,7 +588,7 @@ export default function TicketsCalendarPage() {
                     {/* Mobile Admin Filter */}
                     {isAdmin && (
                         <div className="md:hidden flex gap-2 items-center">
-                            <label className="text-xs font-bold text-muted-foreground whitespace-nowrap">Código Técnico:</label>
+                            <label className="text-xs font-bold text-muted-foreground whitespace-nowrap">{t('calendar.mobileTechCode')}:</label>
                             <input
                                 type="text"
                                 placeholder="Ej. 3838"
@@ -615,13 +609,13 @@ export default function TicketsCalendarPage() {
                     ) : errorMsg ? (
                         <div className="text-center py-12 bg-destructive/10 border border-destructive/20 rounded-3xl p-6 max-w-lg mx-auto">
                             <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-3" />
-                            <h3 className="font-bold text-foreground text-lg">Error de Carga</h3>
+                            <h3 className="font-bold text-foreground text-lg">{t('calendar.loadError.title')}</h3>
                             <p className="text-sm text-muted-foreground mt-1">{errorMsg}</p>
-                            <button 
+                            <button
                                 onClick={() => setRefreshKey(k => k + 1)}
                                 className="mt-4 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs font-bold transition-colors"
                             >
-                                Intentar Nuevamente
+                                {t('calendar.loadError.retry')}
                             </button>
                         </div>
                     ) : filteredTickets.length === 0 ? (
@@ -629,9 +623,9 @@ export default function TicketsCalendarPage() {
                             <div className="w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <CalendarIcon className="w-8 h-8 text-muted-foreground/60" />
                             </div>
-                            <h3 className="font-bold text-foreground text-lg">Sin tickets asignados</h3>
+                            <h3 className="font-bold text-foreground text-lg">{t('calendar.emptyTitle')}</h3>
                             <p className="text-sm text-muted-foreground mt-1 font-medium">
-                                No se encontraron tickets de servicio asignados para este técnico en la fecha seleccionada.
+                                {t('calendar.emptyDesc')}
                             </p>
                         </div>
                     ) : (
@@ -657,12 +651,12 @@ export default function TicketsCalendarPage() {
                                                     </span>
                                                     {getStatusBadge(ticket)}
                                                     {ticket.tienePago
-                                                        ? <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center gap-1 shrink-0"><Banknote className="w-3 h-3" />Con Pago</span>
-                                                        : <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-slate-400/10 text-slate-400 border border-slate-300/40 flex items-center gap-1 shrink-0"><Banknote className="w-3 h-3" />Sin Pago</span>
+                                                        ? <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center gap-1 shrink-0"><Banknote className="w-3 h-3" />{t('calendar.withPayment')}</span>
+                                                        : <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-slate-400/10 text-slate-400 border border-slate-300/40 flex items-center gap-1 shrink-0"><Banknote className="w-3 h-3" />{t('calendar.withoutPayment')}</span>
                                                     }
                                                 </div>
                                                 <h3 className="font-bold text-foreground text-xs mt-1">
-                                                    {ticket.Servicio || 'Servicio Técnico'}
+                                                    {ticket.Servicio || t('calendar.defaultService')}
                                                 </h3>
                                                 {ticket.Asunto && (
                                                     <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
@@ -678,7 +672,7 @@ export default function TicketsCalendarPage() {
                                         <div className="space-y-1.5 pt-2 border-t border-border/50">
                                             <div className="flex items-start gap-2.5 text-xs">
                                                 <UserIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                                                <span className="font-semibold text-foreground">{ticket.Cliente || 'Sin Cliente'}</span>
+                                                <span className="font-semibold text-foreground">{ticket.Cliente || t('calendar.noClient')}</span>
                                             </div>
                                             <div className="flex items-start gap-2.5 text-xs">
                                                 <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
@@ -692,7 +686,7 @@ export default function TicketsCalendarPage() {
                                             {ticket.FechaVisita && (
                                                 <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
                                                     <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                                                    <span>Visita: {formatTime(ticket.FechaVisita)}</span>
+                                                    <span>{t('calendar.visitTime')}: {formatTime(ticket.FechaVisita)}</span>
                                                 </div>
                                             )}
 
@@ -712,7 +706,7 @@ export default function TicketsCalendarPage() {
                                                     className="mt-3 w-full py-2 bg-primary/10 hover:bg-primary/20 border border-primary/20 hover:border-primary/30 text-primary rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
                                                 >
                                                     <Clock className="w-3.5 h-3.5" />
-                                                    Asignar Rango Horario
+                                                    {t('calendar.assignRange')}
                                                 </button>
                                             )}
 
@@ -724,7 +718,7 @@ export default function TicketsCalendarPage() {
                                                     return (
                                                         <div className="mt-3 w-full py-2 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 opacity-80 cursor-not-allowed">
                                                             <Lock className="w-3.5 h-3.5" />
-                                                            Bloqueado (Límite vencido)
+                                                            {t('calendar.blocked')}
                                                         </div>
                                                     );
                                                 }
@@ -743,26 +737,26 @@ export default function TicketsCalendarPage() {
             {activeTicket && (
                 <div className="absolute inset-0 z-50 flex justify-end">
                     {/* Overlay background */}
-                    <div 
+                    <div
                         className="absolute inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity duration-300"
                         onClick={() => setActiveTicket(null)}
                     />
-                    
+
                     {/* Drawer content */}
                     <div className="relative w-full max-w-lg h-full bg-card shadow-2xl flex flex-col animate-in fade-in slide-in-from-right duration-300">
                         {/* Header */}
                         <div className="p-6 border-b border-border flex items-center justify-between bg-muted/30">
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Detalles de Ticket</span>
+                                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('calendar.ticketDetails')}</span>
                                     {getStatusBadge(activeTicket)}
                                 </div>
-                                <h2 className="text-xl font-black text-foreground mt-1">Ticket #{activeTicket.id}</h2>
+                                <h2 className="text-xl font-black text-foreground mt-1">{t('calendar.ticketTitle', { id: activeTicket.id })}</h2>
                             </div>
                             <button
                                 onClick={() => setActiveTicket(null)}
                                 className="p-2 hover:bg-accent hover:text-accent-foreground rounded-xl transition-colors border border-border min-w-[44px] min-h-[44px] flex items-center justify-center"
-                                aria-label="Cerrar detalle"
+                                aria-label={t('calendar.closeDetail')}
                             >
                                 <X className="w-5 h-5 text-foreground" />
                             </button>
@@ -774,53 +768,52 @@ export default function TicketsCalendarPage() {
                             <div className="bg-muted/30 rounded-2xl p-4 border border-border/50">
                                 <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
                                     <UserIcon className="w-3.5 h-3.5" />
-                                    Cliente
+                                    {t('calendar.sections.client')}
                                 </h3>
                                 <div className="space-y-3">
                                     <div>
                                         <p className="text-sm font-bold text-foreground">{activeTicket.Cliente || 'No especificado'}</p>
-                                        <p className="text-xs text-muted-foreground mt-0.5 font-medium">Código Cliente: {activeTicket.IdCliente || 'No especificado'}</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5 font-medium">{t('calendar.clientFields.code')}: {activeTicket.IdCliente || 'No especificado'}</p>
                                     </div>
-                                    
+
                                     {activeTicket.Email && (
                                         <div>
-                                            <p className="text-[10px] text-muted-foreground uppercase font-semibold">Correo Electrónico</p>
+                                            <p className="text-[10px] text-muted-foreground uppercase font-semibold">{t('calendar.clientFields.email')}</p>
                                             <a href={`mailto:${activeTicket.Email}`} className="text-xs font-semibold text-primary hover:underline block break-all mt-0.5">
                                                 {activeTicket.Email}
                                             </a>
                                         </div>
                                     )}
 
-                                    {/* Phone Contact details */}
                                     {(activeTicket.Celular1 || activeTicket.Celular2 || activeTicket.Telefono1) && (
                                         <div className="pt-2 border-t border-border/50">
-                                            <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-2">Contacto Telefónico</p>
+                                            <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-2">{t('calendar.clientFields.contact')}</p>
                                             <div className="flex flex-col gap-2">
                                                 {activeTicket.Celular1 && (
-                                                    <a 
-                                                        href={`tel:${activeTicket.Celular1}`} 
+                                                    <a
+                                                        href={`tel:${activeTicket.Celular1}`}
                                                         className="flex items-center gap-2 text-xs font-bold text-foreground bg-card hover:bg-accent hover:text-accent-foreground border border-border p-2 rounded-xl transition-colors max-w-max"
                                                     >
                                                         <Phone className="w-3.5 h-3.5 text-primary" />
-                                                        Llamar: {activeTicket.Celular1}
+                                                        {t('calendar.clientFields.call')}: {activeTicket.Celular1}
                                                     </a>
                                                 )}
                                                 {activeTicket.Celular2 && (
-                                                    <a 
-                                                        href={`tel:${activeTicket.Celular2}`} 
+                                                    <a
+                                                        href={`tel:${activeTicket.Celular2}`}
                                                         className="flex items-center gap-2 text-xs font-bold text-foreground bg-card hover:bg-accent hover:text-accent-foreground border border-border p-2 rounded-xl transition-colors max-w-max"
                                                     >
                                                         <Phone className="w-3.5 h-3.5 text-primary" />
-                                                        Llamar Alt: {activeTicket.Celular2}
+                                                        {t('calendar.clientFields.callAlt')}: {activeTicket.Celular2}
                                                     </a>
                                                 )}
                                                 {activeTicket.Telefono1 && (
-                                                    <a 
-                                                        href={`tel:${activeTicket.Telefono1}`} 
+                                                    <a
+                                                        href={`tel:${activeTicket.Telefono1}`}
                                                         className="flex items-center gap-2 text-xs font-bold text-foreground bg-card hover:bg-accent hover:text-accent-foreground border border-border p-2 rounded-xl transition-colors max-w-max"
                                                     >
                                                         <Phone className="w-3.5 h-3.5 text-primary" />
-                                                        Fijo: {activeTicket.Telefono1}
+                                                        {t('calendar.clientFields.landline')}: {activeTicket.Telefono1}
                                                     </a>
                                                 )}
                                             </div>
@@ -833,7 +826,7 @@ export default function TicketsCalendarPage() {
                             <div className="bg-muted/30 rounded-2xl p-4 border border-border/50">
                                 <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
                                     <MapPin className="w-3.5 h-3.5" />
-                                    Dirección y Ruta
+                                    {t('calendar.sections.address')}
                                 </h3>
                                 <div className="space-y-3">
                                     <div>
@@ -847,12 +840,11 @@ export default function TicketsCalendarPage() {
 
                                     {activeTicket.Referencia && (
                                         <div className="bg-card p-2.5 rounded-xl border border-border/50 text-xs">
-                                            <span className="font-bold text-muted-foreground block mb-0.5">Referencia:</span>
+                                            <span className="font-bold text-muted-foreground block mb-0.5">{t('calendar.addressFields.reference')}:</span>
                                             <span className="text-foreground">{activeTicket.Referencia}</span>
                                         </div>
                                     )}
 
-                                    {/* Google Maps navigation button */}
                                     {activeTicket.Latitud && activeTicket.Longitud && (
                                         <a
                                             href={`https://www.google.com/maps/search/?api=1&query=${activeTicket.Latitud},${activeTicket.Longitud}`}
@@ -861,7 +853,7 @@ export default function TicketsCalendarPage() {
                                             className="flex items-center gap-2 text-xs font-bold text-white bg-primary hover:bg-primary/95 p-2.5 rounded-xl transition-all max-w-max shadow-sm"
                                         >
                                             <Navigation className="w-3.5 h-3.5" />
-                                            Ver Ruta en Google Maps
+                                            {t('calendar.addressFields.mapsRoute')}
                                         </a>
                                     )}
                                 </div>
@@ -872,13 +864,13 @@ export default function TicketsCalendarPage() {
                                 <div className="flex justify-between items-center mb-3">
                                     <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                                         <Database className="w-3.5 h-3.5" />
-                                        Cobros del Cliente
+                                        {t('calendar.sections.payments')}
                                     </h3>
                                     <button
                                         onClick={openPaymentModal}
                                         className="text-[10px] font-black text-primary hover:underline uppercase tracking-wider"
                                     >
-                                        + Registrar Pago
+                                        {t('calendar.paymentFields.registerPayment')}
                                     </button>
                                 </div>
 
@@ -894,12 +886,12 @@ export default function TicketsCalendarPage() {
                                             onClick={() => activeTicket && fetchPaymentsForActiveTicket(activeTicket.id)}
                                             className="text-primary hover:underline font-bold"
                                         >
-                                            Reintentar
+                                            {t('calendar.loadError.retry')}
                                         </button>
                                     </div>
                                 ) : activeTicketPayments.length === 0 ? (
                                     <div className="text-center py-4 bg-card rounded-xl border border-dashed border-border text-xs text-muted-foreground">
-                                        No se han registrado pagos para este ticket.
+                                        {t('calendar.paymentFields.noPayments')}
                                     </div>
                                 ) : (
                                     <div className="space-y-3">
@@ -909,7 +901,6 @@ export default function TicketsCalendarPage() {
                                                     <span className="font-extrabold text-foreground">S/ {pago.Importe}</span>
                                                     <span className={cn(
                                                         "px-2 py-0.5 rounded text-[9px] font-bold tracking-tighter uppercase",
-                                                        // [FIX UX-M2] Added all missing Estado badge styles
                                                         pago.Estado === 'NUEVO' && "bg-slate-500/10 text-slate-500",
                                                         pago.Estado === 'LIQUIDADO' && "bg-green-500/10 text-green-500",
                                                         pago.Estado === 'APROBADO' && "bg-emerald-500/10 text-emerald-500",
@@ -924,10 +915,10 @@ export default function TicketsCalendarPage() {
                                                     </span>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] text-muted-foreground">
-                                                    <div>Canal: <span className="font-bold text-foreground">{pago.Canal}</span></div>
-                                                    <div>Fecha: <span className="font-semibold text-foreground">{new Date(pago.Fecha_transaccion).toLocaleDateString('es-PE')}</span></div>
+                                                    <div>{t('calendar.paymentFields.channel')}: <span className="font-bold text-foreground">{pago.Canal}</span></div>
+                                                    <div>{t('calendar.paymentFields.date')}: <span className="font-semibold text-foreground">{new Date(pago.Fecha_transaccion).toLocaleDateString('es-PE')}</span></div>
                                                     {pago.Voucher && (
-                                                        <div className="col-span-2">Ref/Voucher: <span className="font-mono text-foreground font-semibold">{pago.Voucher}</span></div>
+                                                        <div className="col-span-2">{t('calendar.paymentFields.refVoucher')}: <span className="font-mono text-foreground font-semibold">{pago.Voucher}</span></div>
                                                     )}
                                                 </div>
                                                 {pago.Observacion && (
@@ -936,14 +927,14 @@ export default function TicketsCalendarPage() {
                                                     </p>
                                                 )}
                                                 {pago.Adjunto && (
-                                                    <a 
-                                                        href={pago.Adjunto} 
-                                                        target="_blank" 
-                                                        rel="noopener noreferrer" 
+                                                    <a
+                                                        href={pago.Adjunto}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
                                                         className="inline-flex items-center gap-1 text-[10px] font-bold text-primary hover:underline pt-1"
                                                     >
                                                         <FileText className="w-3.5 h-3.5" />
-                                                        Ver Comprobante
+                                                        {t('calendar.paymentFields.viewReceipt')}
                                                     </a>
                                                 )}
                                             </div>
@@ -956,7 +947,7 @@ export default function TicketsCalendarPage() {
                             <div className="bg-muted/30 rounded-2xl p-4 border border-border/50">
                                 <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
                                     <FileText className="w-3.5 h-3.5" />
-                                    Informe Técnico
+                                    {t('calendar.sections.report')}
                                 </h3>
                                 <button
                                     onClick={() => handleVerInforme(activeTicket.id)}
@@ -964,9 +955,9 @@ export default function TicketsCalendarPage() {
                                     className="w-full flex items-center justify-center gap-2 py-2.5 bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary rounded-xl text-xs font-bold transition-all disabled:opacity-50"
                                 >
                                     {isLoadingInforme ? (
-                                        <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Cargando informe...</>
+                                        <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> {t('calendar.reportSection.loading')}</>
                                     ) : (
-                                        <><FileText className="w-3.5 h-3.5" /> Ver Informe Técnico (C4C)</>
+                                        <><FileText className="w-3.5 h-3.5" /> {t('calendar.reportSection.view')}</>
                                     )}
                                 </button>
                             </div>
@@ -975,24 +966,24 @@ export default function TicketsCalendarPage() {
                             <div className="bg-muted/30 rounded-2xl p-4 border border-border/50">
                                 <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
                                     <Clock className="w-3.5 h-3.5" />
-                                    Horario Programado
+                                    {t('calendar.sections.schedule')}
                                 </h3>
                                 <div className="space-y-3">
                                     {activeTicket.RangoHorario ? (
                                         <div className="space-y-2">
                                             <div className="grid grid-cols-2 gap-4 text-xs">
                                                 <div>
-                                                    <span className="text-[10px] text-muted-foreground uppercase font-semibold">Rango Horario</span>
+                                                    <span className="text-[10px] text-muted-foreground uppercase font-semibold">{t('calendar.scheduleFields.range')}</span>
                                                     <p className="font-bold text-foreground">{activeTicket.RangoHorario}</p>
                                                 </div>
                                                 <div>
-                                                    <span className="text-[10px] text-muted-foreground uppercase font-semibold">Orden de Atención</span>
+                                                    <span className="text-[10px] text-muted-foreground uppercase font-semibold">{t('calendar.scheduleFields.order')}</span>
                                                     <p className="font-bold text-foreground">{activeTicket.OrdenAtencion || 'No asignada'}</p>
                                                 </div>
                                             </div>
                                             {activeTicket.ComentarioHorario && (
                                                 <div className="text-xs">
-                                                    <span className="text-[10px] text-muted-foreground uppercase font-semibold">Comentario de Horario</span>
+                                                    <span className="text-[10px] text-muted-foreground uppercase font-semibold">{t('calendar.scheduleFields.comment')}</span>
                                                     <p className="font-medium text-foreground mt-1 bg-card p-2 rounded-xl border border-border/50">
                                                         {activeTicket.ComentarioHorario}
                                                     </p>
@@ -1000,7 +991,7 @@ export default function TicketsCalendarPage() {
                                             )}
                                         </div>
                                     ) : (
-                                        <p className="text-xs text-muted-foreground font-medium">No se ha asignado un rango horario para este servicio.</p>
+                                        <p className="text-xs text-muted-foreground font-medium">{t('calendar.noSchedule')}</p>
                                     )}
 
                                     {checkCanEdit(activeTicket) ? (
@@ -1009,12 +1000,12 @@ export default function TicketsCalendarPage() {
                                             className="w-full py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 mt-2"
                                         >
                                             <Clock className="w-3.5 h-3.5" />
-                                            {activeTicket.RangoHorario ? 'Modificar Rango Horario' : 'Asignar Rango Horario'}
+                                            {activeTicket.RangoHorario ? t('calendar.scheduleFields.modify') : t('calendar.assignRange')}
                                         </button>
                                     ) : (
                                         <div className="flex items-center gap-1.5 text-xs text-red-500 font-bold bg-red-500/10 border border-red-500/20 p-2.5 rounded-xl mt-2">
                                             <Lock className="w-3.5 h-3.5 shrink-0" />
-                                            <span>Asignación bloqueada (Límite vencido o fecha pasada)</span>
+                                            <span>{t('calendar.scheduleFields.blocked')}</span>
                                         </div>
                                     )}
                                 </div>
@@ -1024,30 +1015,30 @@ export default function TicketsCalendarPage() {
                             <div className="bg-muted/30 rounded-2xl p-4 border border-border/50">
                                 <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
                                     <FileText className="w-3.5 h-3.5" />
-                                    Detalle del Servicio
+                                    {t('calendar.sections.service')}
                                 </h3>
                                 <div className="space-y-3 text-xs">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <span className="text-[10px] text-muted-foreground uppercase font-semibold">Servicio</span>
+                                            <span className="text-[10px] text-muted-foreground uppercase font-semibold">{t('calendar.serviceFields.service')}</span>
                                             <p className="font-bold text-foreground">{activeTicket.Servicio || 'No especificado'}</p>
                                         </div>
                                         <div>
-                                            <span className="text-[10px] text-muted-foreground uppercase font-semibold">Código FSM</span>
+                                            <span className="text-[10px] text-muted-foreground uppercase font-semibold">{t('calendar.serviceFields.fsmCode')}</span>
                                             <p className="font-bold text-foreground">{activeTicket.LlamadaFSM || 'No especificado'}</p>
                                         </div>
                                     </div>
-                                    
+
                                     {activeTicket.Asunto && (
                                         <div>
-                                            <span className="text-[10px] text-muted-foreground uppercase font-semibold">Asunto</span>
+                                            <span className="text-[10px] text-muted-foreground uppercase font-semibold">{t('calendar.serviceFields.subject')}</span>
                                             <p className="font-semibold text-foreground mt-0.5">{activeTicket.Asunto}</p>
                                         </div>
                                     )}
 
                                     {activeTicket.ComentarioProgramador && (
                                         <div>
-                                            <span className="text-[10px] text-muted-foreground uppercase font-semibold">Comentario Programador</span>
+                                            <span className="text-[10px] text-muted-foreground uppercase font-semibold">{t('calendar.serviceFields.schedulerComment')}</span>
                                             <p className="font-semibold text-amber-700 dark:text-amber-300 mt-0.5 whitespace-pre-line bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20">
                                                 {activeTicket.ComentarioProgramador}
                                             </p>
@@ -1060,27 +1051,27 @@ export default function TicketsCalendarPage() {
                             <div className="bg-muted/30 rounded-2xl p-4 border border-border/50">
                                 <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
                                     <Tag className="w-3.5 h-3.5" />
-                                    Equipo
+                                    {t('calendar.sections.equipment')}
                                 </h3>
                                 <div className="space-y-2 text-xs">
                                     <div>
-                                        <span className="text-[10px] text-muted-foreground uppercase font-semibold">Nombre del Equipo</span>
-                                        <p className="font-bold text-foreground">{activeTicket.NombreEquipo || 'Sin equipo registrado'}</p>
+                                        <span className="text-[10px] text-muted-foreground uppercase font-semibold">{t('calendar.equipmentFields.name')}</span>
+                                        <p className="font-bold text-foreground">{activeTicket.NombreEquipo || t('calendar.equipmentFields.none')}</p>
                                     </div>
                                     {activeTicket.CodigoExternoEquipo && (
                                         <div>
-                                            <span className="text-[10px] text-muted-foreground uppercase font-semibold">Código Externo Equipo</span>
+                                            <span className="text-[10px] text-muted-foreground uppercase font-semibold">{t('calendar.equipmentFields.code')}</span>
                                             <p className="font-semibold text-muted-foreground mt-0.5">{activeTicket.CodigoExternoEquipo}</p>
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Section: Reporte del Técnico (Progreso) */}
+                            {/* Section: Reporte del Técnico */}
                             <div className="bg-muted/30 rounded-2xl p-4 border border-border/50">
                                 <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
                                     <Sliders className="w-3.5 h-3.5" />
-                                    Reporte del Técnico
+                                    {t('calendar.sections.techReport')}
                                 </h3>
                                 <div className="space-y-4 text-xs">
                                     <div className="grid grid-cols-2 gap-4">
@@ -1091,9 +1082,9 @@ export default function TicketsCalendarPage() {
                                                 <XCircle className="w-4 h-4 text-muted-foreground/40 shrink-0" />
                                             )}
                                             <div>
-                                                <span className="text-[9px] text-muted-foreground uppercase font-semibold block">Visita Realizada</span>
+                                                <span className="text-[9px] text-muted-foreground uppercase font-semibold block">{t('calendar.techReportFields.visitDone')}</span>
                                                 <span className="font-bold text-foreground">
-                                                    {activeTicket.VisitaRealizada === 'true' ? 'SÍ' : 'NO'}
+                                                    {activeTicket.VisitaRealizada === 'true' ? t('common.yes') : t('common.no')}
                                                 </span>
                                             </div>
                                         </div>
@@ -1105,9 +1096,9 @@ export default function TicketsCalendarPage() {
                                                 <XCircle className="w-4 h-4 text-muted-foreground/40 shrink-0" />
                                             )}
                                             <div>
-                                                <span className="text-[9px] text-muted-foreground uppercase font-semibold block">Trabajo Realizado</span>
+                                                <span className="text-[9px] text-muted-foreground uppercase font-semibold block">{t('calendar.techReportFields.workDone')}</span>
                                                 <span className="font-bold text-foreground">
-                                                    {activeTicket.TrabajoRealizado === 'true' ? 'SÍ' : 'NO'}
+                                                    {activeTicket.TrabajoRealizado === 'true' ? t('common.yes') : t('common.no')}
                                                 </span>
                                             </div>
                                         </div>
@@ -1117,7 +1108,7 @@ export default function TicketsCalendarPage() {
                                         <div className="bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20 flex items-start gap-2">
                                             <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                                             <div>
-                                                <span className="font-bold text-amber-700 dark:text-amber-300 block">Solicita Nueva Visita</span>
+                                                <span className="font-bold text-amber-700 dark:text-amber-300 block">{t('calendar.techReportFields.newVisit')}</span>
                                                 {activeTicket.MotivoNuevaVisita && (
                                                     <p className="text-amber-600 dark:text-amber-400 mt-0.5 font-medium">{activeTicket.MotivoNuevaVisita}</p>
                                                 )}
@@ -1127,7 +1118,7 @@ export default function TicketsCalendarPage() {
 
                                     {activeTicket.ComentarioTecnico && (
                                         <div>
-                                            <span className="text-[10px] text-muted-foreground uppercase font-semibold">Comentario del Técnico</span>
+                                            <span className="text-[10px] text-muted-foreground uppercase font-semibold">{t('calendar.techReportFields.comment')}</span>
                                             <p className="font-semibold text-foreground mt-1 whitespace-pre-line bg-card p-3 rounded-xl border border-border/50">
                                                 {activeTicket.ComentarioTecnico}
                                             </p>
@@ -1136,7 +1127,7 @@ export default function TicketsCalendarPage() {
 
                                     {activeTicket.CheckOut && (
                                         <div>
-                                            <span className="text-[10px] text-muted-foreground uppercase font-semibold">Hora de Cierre (Check Out)</span>
+                                            <span className="text-[10px] text-muted-foreground uppercase font-semibold">{t('calendar.techReportFields.checkout')}</span>
                                             <p className="font-bold text-foreground mt-0.5">
                                                 {new Date(activeTicket.CheckOut).toLocaleDateString('es-PE')} - {formatTime(activeTicket.CheckOut)}
                                             </p>
@@ -1152,17 +1143,15 @@ export default function TicketsCalendarPage() {
             {/* Modal de Asignación de Rango Horario */}
             {isAssignModalOpen && assignTicket && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    {/* Backdrop */}
-                    <div 
+                    <div
                         className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
                         onClick={() => !isSubmitting && setIsAssignModalOpen(false)}
                     />
-                    
-                    {/* Modal Content */}
+
                     <div className="relative bg-card border border-border rounded-3xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col gap-4">
                         <div className="flex justify-between items-start">
                             <div>
-                                <span className="text-xs font-bold text-primary uppercase tracking-wider">Planificación Horaria</span>
+                                <span className="text-xs font-bold text-primary uppercase tracking-wider">{t('calendar.assignModal.subtitle')}</span>
                                 <h3 className="text-lg font-black text-foreground mt-1">Ticket #{assignTicket.id}</h3>
                             </div>
                             <button
@@ -1176,8 +1165,8 @@ export default function TicketsCalendarPage() {
                         </div>
 
                         <div className="text-xs border-b border-border/50 pb-3 space-y-1">
-                            <p className="font-bold text-foreground">Cliente: <span className="font-medium text-muted-foreground">{assignTicket.Cliente}</span></p>
-                            <p className="font-bold text-foreground">Dirección: <span className="font-medium text-muted-foreground">{assignTicket.Calle} {assignTicket.NumeroCalle}, {assignTicket.Distrito}</span></p>
+                            <p className="font-bold text-foreground">{t('calendar.assignModal.clientLabel')}: <span className="font-medium text-muted-foreground">{assignTicket.Cliente}</span></p>
+                            <p className="font-bold text-foreground">{t('calendar.assignModal.addressLabel')}: <span className="font-medium text-muted-foreground">{assignTicket.Calle} {assignTicket.NumeroCalle}, {assignTicket.Distrito}</span></p>
                         </div>
 
                         {modalError && (
@@ -1189,14 +1178,14 @@ export default function TicketsCalendarPage() {
 
                         <form onSubmit={handleSaveRangoHorario} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Rango Horario</label>
+                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{t('calendar.assignModal.rangeLabel')}</label>
                                 <select
                                     value={rangoHorario}
                                     onChange={(e) => setRangoHorario(e.target.value)}
                                     required
                                     className="w-full px-3 py-2 text-sm border border-border rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                                 >
-                                    <option value="">Seleccione un rango...</option>
+                                    <option value="">{t('calendar.assignModal.rangePlaceholder')}</option>
                                     <option value="07:00 am - 10:00 am">07:00 am - 10:00 am</option>
                                     <option value="08:00 am - 11:00 am">08:00 am - 11:00 am</option>
                                     <option value="09:00 am - 12:00 pm">09:00 am - 12:00 pm</option>
@@ -1212,13 +1201,13 @@ export default function TicketsCalendarPage() {
 
                             <div className="grid grid-cols-1 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Orden de Atención</label>
+                                    <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{t('calendar.assignModal.orderLabel')}</label>
                                     <select
                                         value={ordenAtencion}
                                         onChange={(e) => setOrdenAtencion(e.target.value)}
                                         className="w-full px-3 py-2 text-sm border border-border rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                                     >
-                                        <option value="">Sin orden específica</option>
+                                        <option value="">{t('calendar.assignModal.orderNone')}</option>
                                         <option value="1">1 (Primero)</option>
                                         <option value="2">2 (Segundo)</option>
                                         <option value="3">3 (Tercero)</option>
@@ -1230,18 +1219,18 @@ export default function TicketsCalendarPage() {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Comentario / Observación</label>
+                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{t('calendar.assignModal.commentLabel')}</label>
                                 <textarea
                                     value={comentario}
                                     onChange={(e) => setComentario(e.target.value)}
-                                    placeholder="Comentario sobre la programación horaria..."
+                                    placeholder={t('calendar.assignModal.commentPlaceholder')}
                                     rows={3}
                                     className="w-full px-3 py-2 text-sm border border-border rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                                 />
                             </div>
 
                             {/* Bulk assignment check */}
-                            {tickets.filter(t => t.IdCliente === assignTicket.IdCliente && t.id !== assignTicket.id).length > 0 && (
+                            {tickets.filter(tkt => tkt.IdCliente === assignTicket.IdCliente && tkt.id !== assignTicket.id).length > 0 && (
                                 <div className="bg-primary/5 border border-primary/10 p-3 rounded-2xl flex items-start gap-2.5">
                                     <input
                                         type="checkbox"
@@ -1251,7 +1240,7 @@ export default function TicketsCalendarPage() {
                                         className="mt-0.5 rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
                                     />
                                     <label htmlFor="bulkCheck" className="text-xs font-semibold text-foreground cursor-pointer select-none">
-                                        Asignar este mismo rango de hora a todos los tickets de este cliente para el día de hoy ({tickets.filter(t => t.IdCliente === assignTicket.IdCliente).length} servicios)
+                                        {t('calendar.assignModal.bulkLabel', { count: tickets.filter(tkt => tkt.IdCliente === assignTicket.IdCliente).length })}
                                     </label>
                                 </div>
                             )}
@@ -1263,7 +1252,7 @@ export default function TicketsCalendarPage() {
                                     disabled={isSubmitting}
                                     className="flex-1 py-2 border border-border hover:bg-muted text-foreground text-xs font-bold rounded-xl transition-colors"
                                 >
-                                    Cancelar
+                                    {t('calendar.assignModal.cancel')}
                                 </button>
                                 <button
                                     type="submit"
@@ -1275,7 +1264,7 @@ export default function TicketsCalendarPage() {
                                     ) : (
                                         <>
                                             <Check className="w-4 h-4" />
-                                            Guardar
+                                            {t('calendar.assignModal.save')}
                                         </>
                                     )}
                                 </button>
@@ -1288,18 +1277,16 @@ export default function TicketsCalendarPage() {
             {/* Modal de Registro de Pago de Cliente */}
             {isPaymentModalOpen && activeTicket && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    {/* Backdrop */}
-                    <div 
+                    <div
                         className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
                         onClick={() => !isSavingPayment && setIsPaymentModalOpen(false)}
                     />
-                    
-                    {/* Modal Content */}
+
                     <div className="relative bg-card border border-border rounded-3xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col gap-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
                         <div className="flex justify-between items-start">
                             <div>
-                                <span className="text-xs font-bold text-primary uppercase tracking-wider">Transacción de Cobro</span>
-                                <h3 className="text-lg font-black text-foreground mt-1">Registrar Pago - Ticket #{activeTicket.id}</h3>
+                                <span className="text-xs font-bold text-primary uppercase tracking-wider">{t('calendar.paymentModal.subtitle')}</span>
+                                <h3 className="text-lg font-black text-foreground mt-1">{t('calendar.paymentModal.title', { id: activeTicket.id })}</h3>
                             </div>
                             <button
                                 type="button"
@@ -1321,7 +1308,7 @@ export default function TicketsCalendarPage() {
                         <form onSubmit={handleSavePayment} className="space-y-4">
                             {/* Importe */}
                             <div>
-                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Importe Cobrado (S/)</label>
+                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{t('calendar.paymentModal.amountLabel')}</label>
                                 <input
                                     type="number"
                                     step="0.01"
@@ -1336,24 +1323,24 @@ export default function TicketsCalendarPage() {
 
                             {/* Canal */}
                             <div>
-                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Canal de Pago</label>
+                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{t('calendar.paymentModal.channelLabel')}</label>
                                 <select
                                     value={canalPago}
                                     onChange={(e) => setCanalPago(e.target.value as any)}
                                     required
                                     className="w-full px-3 py-2 text-sm border border-border rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                                 >
-                                    <option value="POS">Tarjeta (POS)</option>
-                                    <option value="Transferencia">Transferencia Bancaria</option>
-                                    <option value="Link">Pago por Link</option>
-                                    <option value="DEPÓSITO">Depósito</option>
-                                    <option value="Efectivo">Efectivo</option>
+                                    <option value="POS">{t('calendar.paymentModal.channels.POS')}</option>
+                                    <option value="Transferencia">{t('calendar.paymentModal.channels.Transferencia')}</option>
+                                    <option value="Link">{t('calendar.paymentModal.channels.Link')}</option>
+                                    <option value="DEPÓSITO">{t('calendar.paymentModal.channels.DEPOSITO')}</option>
+                                    <option value="Efectivo">{t('calendar.paymentModal.channels.Efectivo')}</option>
                                 </select>
                             </div>
 
                             {/* Fecha de Pago */}
                             <div>
-                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Fecha de Transacción</label>
+                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{t('calendar.paymentModal.dateLabel')}</label>
                                 <input
                                     type="date"
                                     required
@@ -1366,10 +1353,10 @@ export default function TicketsCalendarPage() {
                             {/* Condicionales POS */}
                             {canalPago === 'POS' && (
                                 <div className="space-y-4 bg-muted/40 p-4 rounded-2xl border border-border/40">
-                                    <div className="text-xs font-bold text-primary mb-1 uppercase tracking-widest">Datos Izipay / POS</div>
-                                    
+                                    <div className="text-xs font-bold text-primary mb-1 uppercase tracking-widest">{t('calendar.paymentModal.posTitle')}</div>
+
                                     <div>
-                                        <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Código de Autorización (AP)</label>
+                                        <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{t('calendar.paymentModal.authLabel')}</label>
                                         <input
                                             type="text"
                                             inputMode="numeric"
@@ -1381,7 +1368,7 @@ export default function TicketsCalendarPage() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Referencia / Voucher / Op.</label>
+                                        <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{t('calendar.paymentModal.voucherLabel')}</label>
                                         <input
                                             type="text"
                                             inputMode="numeric"
@@ -1394,7 +1381,7 @@ export default function TicketsCalendarPage() {
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
-                                            <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Lote</label>
+                                            <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{t('calendar.paymentModal.loteLabel')}</label>
                                             <input
                                                 type="text"
                                                 inputMode="numeric"
@@ -1406,7 +1393,7 @@ export default function TicketsCalendarPage() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Nro. de Izipay</label>
+                                            <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{t('calendar.paymentModal.izipayLabel')}</label>
                                             <input
                                                 type="text"
                                                 inputMode="numeric"
@@ -1424,10 +1411,10 @@ export default function TicketsCalendarPage() {
                             {/* Condicionales Transferencia / Link / Deposito */}
                             {['Transferencia', 'Link', 'DEPÓSITO'].includes(canalPago) && (
                                 <div className="space-y-4 bg-muted/40 p-4 rounded-2xl border border-border/40">
-                                    <div className="text-xs font-bold text-primary mb-1 uppercase tracking-widest">Datos Bancarios / Link</div>
-                                    
+                                    <div className="text-xs font-bold text-primary mb-1 uppercase tracking-widest">{t('calendar.paymentModal.bankTitle')}</div>
+
                                     <div>
-                                        <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Número de Transacción / Operación</label>
+                                        <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{t('calendar.paymentModal.opLabel')}</label>
                                         <input
                                             type="text"
                                             required
@@ -1440,10 +1427,10 @@ export default function TicketsCalendarPage() {
                                 </div>
                             )}
 
-                            {/* Foto / Adjunto (Obligatorio si no es Efectivo) */}
+                            {/* Foto / Adjunto */}
                             {canalPago !== 'Efectivo' && (
                                 <div>
-                                    <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Foto del Voucher / Recibo</label>
+                                    <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{t('calendar.paymentModal.receiptLabel')}</label>
                                     <input
                                         type="file"
                                         accept="image/*,application/pdf"
@@ -1451,17 +1438,17 @@ export default function TicketsCalendarPage() {
                                         onChange={(e) => setAdjuntoFile(e.target.files?.[0] || null)}
                                         className="w-full text-xs text-muted-foreground border border-border rounded-xl bg-background p-2.5 outline-none cursor-pointer file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[11px] file:font-black file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                                     />
-                                    <p className="text-[10px] text-muted-foreground mt-1">Sube una imagen o PDF nítido de la transacción bancaria.</p>
+                                    <p className="text-[10px] text-muted-foreground mt-1">{t('calendar.paymentModal.receiptHint')}</p>
                                 </div>
                             )}
 
                             {/* Observacion */}
                             <div>
-                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Comentarios</label>
+                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{t('calendar.paymentModal.observationLabel')}</label>
                                 <textarea
                                     value={observacionPago}
                                     onChange={(e) => setObservacionPago(e.target.value)}
-                                    placeholder="Detalles adicionales o aclaraciones..."
+                                    placeholder={t('calendar.paymentModal.observationPlaceholder')}
                                     rows={2}
                                     className="w-full px-3 py-2 text-sm border border-border rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                                 />
@@ -1474,7 +1461,7 @@ export default function TicketsCalendarPage() {
                                     disabled={isSavingPayment}
                                     className="flex-1 py-2.5 border border-border hover:bg-muted text-foreground text-xs font-bold rounded-xl transition-colors"
                                 >
-                                    Cancelar
+                                    {t('calendar.paymentModal.cancel')}
                                 </button>
                                 <button
                                     type="submit"
@@ -1486,7 +1473,7 @@ export default function TicketsCalendarPage() {
                                     ) : (
                                         <>
                                             <Check className="w-4 h-4" />
-                                            Confirmar Pago
+                                            {t('calendar.paymentModal.confirm')}
                                         </>
                                     )}
                                 </button>

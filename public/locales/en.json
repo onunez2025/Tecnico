@@ -2,7 +2,22 @@
   "common": {
     "welcome": "Welcome to Técnico!",
     "logout": "Log Out",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "search": "Search",
+    "refresh": "Refresh",
+    "actions": "Actions",
+    "previous": "Previous",
+    "next": "Next",
+    "na": "N/A",
+    "yes": "YES",
+    "no": "NO",
+    "confirm": "Confirm",
+    "retry": "Retry",
+    "noResults": "No results"
   },
   "auth": {
     "subtitle": "Enter your credentials to access the platform.",
@@ -15,5 +30,468 @@
     "errors": {
       "invalid": "Invalid credentials"
     }
+  },
+  "nav": {
+    "menuTitle": "Main Menu",
+    "tickets": "My Tickets",
+    "payments": "My Payments",
+    "audit": "Audit Logs",
+    "casLabel": "Assigned CAS"
+  },
+  "dashboard": {
+    "greeting": "Hello, {{name}}",
+    "summary": "Here is your activity and services summary.",
+    "updatedAt": "Updated",
+    "stats": {
+      "total": "My Total Collection",
+      "settled": "Settled Payments",
+      "pending": "Pending",
+      "observed": "Observed",
+      "subs": {
+        "total": "Accumulated amount",
+        "settled": "Confirmed payments",
+        "pending": "In settlement process",
+        "observed": "Require attention"
+      }
+    },
+    "registerPayment": {
+      "title": "Register Payment",
+      "desc": "Enter the payment for your completed services."
+    }
+  },
+  "today": {
+    "title": "Today's Tickets",
+    "searchPlaceholder": "Search by ticket, client or district...",
+    "emptyTitle": "No tickets for today",
+    "emptyDesc": "Enjoy your free time or check back later.",
+    "blockLabel": "Block",
+    "pending": "Pending"
+  },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "Manage your personal information and credentials.",
+    "info": "Information",
+    "statusActive": "Active",
+    "noRole": "No role",
+    "account": {
+      "title": "Account",
+      "desc": "Your username and email address.",
+      "readonlyNote": "These fields are read-only. If you need a change, contact your system administrator."
+    },
+    "security": {
+      "title": "Security",
+      "desc": "Change your access password.",
+      "hint": "Leave fields empty to keep your current password. Minimum 4 characters."
+    },
+    "labels": {
+      "username": "Username",
+      "email": "Email",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "management": "Management",
+      "status": "Status"
+    },
+    "changePhoto": "Change profile photo",
+    "saving": "Saving...",
+    "saveChanges": "Save Changes",
+    "errors": {
+      "passwordMismatch": "Passwords do not match",
+      "passwordMin": "Password must be at least 4 characters",
+      "imageError": "Error processing image",
+      "updateFailed": "Error updating profile"
+    },
+    "success": {
+      "updated": "Profile updated successfully"
+    }
+  },
+  "payments": {
+    "title": {
+      "all": "All Payments",
+      "mine": "My Payments"
+    },
+    "subtitle": {
+      "all": "Complete history of team records",
+      "mine": "History of your records and collections"
+    },
+    "register": "Register Payment",
+    "searchPlaceholder": "Search by ticket or authorization...",
+    "count": "{{count}} records",
+    "noTicket": "No Ticket",
+    "empty": {
+      "noPayments": "No payments found",
+      "noResults": "Try a different search.",
+      "registerHint": "Register a payment using the button above.",
+      "noRegistry": "You have no registered payments yet."
+    },
+    "pagination": {
+      "page": "Page {{page}} / {{total}}",
+      "records": "{{count}} records"
+    },
+    "modal": {
+      "title": "Register Payment",
+      "searchTicket": "Search Ticket",
+      "searchPlaceholder": "Type the ticket number",
+      "noTickets": "No tickets found in SAP",
+      "noClient": "No client",
+      "fields": {
+        "amount": "Amount (S/)",
+        "channel": "Channel",
+        "date": "Date",
+        "lote": "Batch",
+        "voucher": "Voucher",
+        "izipay": "Izipay Code",
+        "auth": "Authorization",
+        "opCode": "Operation Code",
+        "opPlaceholder": "Bank operation number",
+        "observation": "Observation (Optional)",
+        "observationPlaceholder": "Additional notes..."
+      },
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving..."
+    },
+    "detail": {
+      "lote": "Batch",
+      "voucher": "Voucher",
+      "izipay": "Izipay",
+      "auth": "Authorization",
+      "opCode": "Operation Code"
+    },
+    "errors": {
+      "noTicket": "You must add at least one ticket.",
+      "registerFailed": "Error registering payment"
+    },
+    "success": "Payment registered successfully"
+  },
+  "schedule": {
+    "title": "Schedule",
+    "searchPlaceholder": "Search workshops or meetings...",
+    "emptyTitle": "No upcoming events",
+    "emptyDesc": "You have no workshops or meetings scheduled.",
+    "confirmed": "Confirmed",
+    "presential": "In-person"
+  },
+  "sales": {
+    "title": "New Opportunity",
+    "subtitle": "Register products offered to the client",
+    "success": "Sale registered successfully!",
+    "labels": {
+      "ticket": "Related Ticket",
+      "order": "Order Number (Optional)",
+      "observations": "Sale Observations",
+      "internalComment": "Internal Comment"
+    },
+    "placeholders": {
+      "ticket": "Eg: T-12345",
+      "order": "Eg: P-6789",
+      "observations": "What products or services were offered?",
+      "internalComment": "Additional notes for the office..."
+    },
+    "submit": "Register Opportunity",
+    "submitting": "Registering...",
+    "errors": {
+      "default": "Error registering the sale"
+    }
+  },
+  "timerange": {
+    "title": "My Availability",
+    "subtitle": "Assign the time block to your tickets",
+    "ticketLabel": "Ticket Number",
+    "ticketPlaceholder": "Enter the ticket number",
+    "rangeLabel": "Select Time Range",
+    "submit": "Save Time Range",
+    "submitting": "Updating...",
+    "success": "Time range updated successfully!",
+    "errors": {
+      "selectRange": "Please select a time range",
+      "updateFailed": "Error updating time range"
+    }
+  },
+  "calendar": {
+    "myTickets": "My Assigned Tickets",
+    "calendar": "Calendar",
+    "goToday": "Go to Today",
+    "adminFilter": {
+      "label": "Administrative Filter",
+      "techCode": "Technician Code",
+      "placeholder": "Eg. 3838",
+      "clear": "Clear filter"
+    },
+    "metrics": {
+      "total": "Total",
+      "done": "Completed",
+      "pending": "Pending"
+    },
+    "searchPlaceholder": "Search by ticket, client, district or service...",
+    "mobileTechCode": "Tech Code:",
+    "status": {
+      "done": "Completed",
+      "cancelled": "Cancelled",
+      "observed": "Observed",
+      "scheduled": "Scheduled"
+    },
+    "withPayment": "With Payment",
+    "withoutPayment": "No Payment",
+    "defaultService": "Technical Service",
+    "noClient": "No Client",
+    "visitTime": "Visit",
+    "assignRange": "Assign Time Range",
+    "blocked": "Blocked (Limit expired)",
+    "ticketDetails": "Ticket Details",
+    "ticketTitle": "Ticket #{{id}}",
+    "closeDetail": "Close detail",
+    "loadError": {
+      "title": "Load Error",
+      "retry": "Try Again"
+    },
+    "emptyTitle": "No assigned tickets",
+    "emptyDesc": "No service tickets were found assigned to this technician on the selected date.",
+    "noSchedule": "No time range has been assigned for this service.",
+    "sections": {
+      "client": "Client",
+      "address": "Address & Route",
+      "payments": "Client Charges",
+      "report": "Technical Report",
+      "schedule": "Scheduled Hours",
+      "service": "Service Details",
+      "equipment": "Equipment",
+      "techReport": "Technician Report"
+    },
+    "clientFields": {
+      "notSpecified": "Not specified",
+      "clientCode": "Client Code",
+      "email": "Email Address",
+      "phones": "Phone Contact",
+      "call": "Call",
+      "callAlt": "Call Alt",
+      "landline": "Landline"
+    },
+    "addressFields": {
+      "reference": "Reference",
+      "mapsLink": "View Route in Google Maps"
+    },
+    "paymentFields": {
+      "register": "+ Register Payment",
+      "noPayments": "No payments have been registered for this ticket.",
+      "channel": "Channel",
+      "date": "Date",
+      "voucher": "Ref/Voucher",
+      "receipt": "View Receipt",
+      "paymentsError": "Could not load payments. Please try again."
+    },
+    "reportSection": {
+      "view": "View Technical Report (C4C)",
+      "loading": "Loading report..."
+    },
+    "scheduleFields": {
+      "rangoHorario": "Time Range",
+      "ordenAtencion": "Service Order",
+      "noOrden": "Not assigned",
+      "comentario": "Schedule Comment",
+      "modify": "Modify Time Range",
+      "assign": "Assign Time Range",
+      "blocked": "Assignment blocked (Limit expired or past date)"
+    },
+    "serviceFields": {
+      "service": "Service",
+      "fsmCode": "FSM Code",
+      "notSpecified": "Not specified",
+      "subject": "Subject",
+      "devComment": "Scheduler Comment"
+    },
+    "equipmentFields": {
+      "name": "Equipment Name",
+      "noEquipment": "No equipment registered",
+      "externalCode": "External Equipment Code"
+    },
+    "techReportFields": {
+      "visitDone": "Visit Completed",
+      "workDone": "Work Done",
+      "newVisit": "Requests New Visit",
+      "techComment": "Technician Comment",
+      "checkout": "Check-Out Time"
+    },
+    "assignModal": {
+      "title": "Time Planning",
+      "clientLabel": "Client",
+      "addressLabel": "Address",
+      "rangoLabel": "Time Range",
+      "rangoPlaceholder": "Select a range...",
+      "ordenLabel": "Service Order",
+      "ordenDefault": "No specific order",
+      "comentarioLabel": "Comment / Note",
+      "comentarioPlaceholder": "Comment about the schedule...",
+      "bulkLabel": "Assign this same time range to all tickets for this client today ({{count}} services)",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "paymentModal": {
+      "badge": "Payment Transaction",
+      "title": "Register Payment - Ticket #{{id}}",
+      "amountLabel": "Amount Charged (S/)",
+      "channelLabel": "Payment Channel",
+      "dateLabel": "Transaction Date",
+      "posSection": "Izipay / POS Data",
+      "authLabel": "Authorization Code (AP)",
+      "voucherLabel": "Reference / Voucher / Op.",
+      "loteLabel": "Batch",
+      "izipayLabel": "Izipay Number",
+      "bankSection": "Bank / Link Data",
+      "txLabel": "Transaction / Operation Number",
+      "receiptLabel": "Voucher / Receipt Photo",
+      "receiptHint": "Upload a clear image or PDF of the bank transaction.",
+      "commentsLabel": "Comments",
+      "commentsPlaceholder": "Additional details or clarifications...",
+      "cancel": "Cancel",
+      "confirm": "Confirm Payment",
+      "channels": {
+        "POS": "Card (POS)",
+        "Transferencia": "Bank Transfer",
+        "Link": "Payment Link",
+        "DEPOSITO": "Deposit",
+        "Efectivo": "Cash"
+      }
+    }
+  },
+  "users": {
+    "title": "User Management",
+    "subtitle": "Manage permissions and access to the Technical Management ecosystem",
+    "breadcrumb": {
+      "config": "Configuration",
+      "page": "User Management"
+    },
+    "newUser": "New User",
+    "searchPlaceholder": "Search by name, username or email...",
+    "syncing": "Synchronizing identities...",
+    "emptyFilter": "No identities found for the selected filter",
+    "suspended": "Suspended",
+    "suspendedAccount": "Account suspended",
+    "table": {
+      "user": "Responsible / ID",
+      "email": "Corporate Email",
+      "role": "Security Profile",
+      "apps": "Ecosystem Scope",
+      "actions": "Actions"
+    },
+    "footer": {
+      "total": "Total records",
+      "engine": "Technical Management Engine"
+    },
+    "modal": {
+      "titleNew": "New Access Identity",
+      "titleEdit": "Identity Management",
+      "labels": {
+        "fullName": "Full name",
+        "username": "Access ID / Username",
+        "email": "Corporate email",
+        "passwordNew": "Access credential",
+        "passwordEdit": "Update credential",
+        "role": "Security profile",
+        "management": "Business unit / CeCo",
+        "apps": "Ecosystem application scope"
+      },
+      "placeholders": {
+        "fullName": "Eg: John Doe",
+        "username": "eg: jdoe",
+        "email": "example@siatc.com",
+        "passwordNew": "••••••••  (min. 8 characters)",
+        "passwordEdit": "Only if you want to change",
+        "role": "Select profile...",
+        "management": "Select unit..."
+      },
+      "status": {
+        "label": "Operational status",
+        "enabled": "Enabled",
+        "suspended": "Suspended"
+      },
+      "cancel": "Cancel",
+      "save": "Save changes",
+      "create": "Create identity"
+    },
+    "sysconfig": {
+      "title": "System Parameters",
+      "desc": "Global configuration for Technical Management",
+      "limitLabel": "Time range limit hour",
+      "saveLimit": "Save Limit",
+      "saving": "...",
+      "errorLoad": "Could not load current configuration.",
+      "saved": "Limit updated successfully."
+    },
+    "delete": {
+      "title": "Delete access identity",
+      "message": "Are you sure you want to delete this user? The user ID will be permanently revoked in the Technical Management system.",
+      "confirmText": "Revoke access"
+    }
+  },
+  "roles": {
+    "title": "Profile Management",
+    "subtitle": "Define powers and access levels for ecosystem identities",
+    "breadcrumb": {
+      "config": "Configuration",
+      "page": "Profiles & Permissions"
+    },
+    "newRole": "New Profile",
+    "loading": "Synchronizing security...",
+    "cards": {
+      "active": "Active",
+      "permissions": "{{count}} powers",
+      "noPermissions": "No powers assigned"
+    },
+    "footer": {
+      "engine": "Technical Management"
+    },
+    "modal": {
+      "titleNew": "New Security Profile",
+      "titleEdit": "Profile Configuration",
+      "nameLabel": "Profile name",
+      "namePlaceholder": "Eg: Purchase Admin, Auditor",
+      "appsLabel": "Ecosystem application scope",
+      "permissionsLabel": "Powers matrix",
+      "permissionsOf": "{{selected}} of {{total}} active",
+      "cancel": "Cancel",
+      "save": "Save changes",
+      "confirm": "Confirm profile"
+    },
+    "delete": {
+      "title": "Revoke security profile",
+      "message": "Are you sure you want to delete this role? Assigned users will lose their current powers in the Technical Management system.",
+      "confirmText": "Delete role"
+    }
+  },
+  "audit": {
+    "title": "Audit Log",
+    "subtitle": "Transactional monitoring and critical event logging for the settlement engine",
+    "breadcrumb": {
+      "config": "Configuration",
+      "page": "Security Traceability"
+    },
+    "sync": "Sync Events",
+    "searchPlaceholder": "Search by user, action or technical entity...",
+    "filter": {
+      "all": "Logs: All events",
+      "denied": "Critical: Denied access",
+      "login": "Access: Login sessions",
+      "userUpdate": "Security: Profile changes"
+    },
+    "table": {
+      "dateTime": "Date & Time",
+      "user": "Responsible User",
+      "action": "Operation",
+      "entity": "Entity Ref.",
+      "payload": "Payload / Technical Detail"
+    },
+    "loading": "Indexing Audit",
+    "empty": "No critical transactions recorded",
+    "footer": {
+      "total": "Total records",
+      "synced": "Synchronized"
+    }
+  },
+  "config": {
+    "title": "Centralized Configuration",
+    "desc": "User, profile and permission administration has been strictly migrated to <1>{{console}}</1> to ensure the integrity and synchronization of data across the SIATC ecosystem.",
+    "centralConsole": "Central Console",
+    "goConsole": "Go to Console",
+    "version": "Unified SIATC Ecosystem v3.5"
   }
 }

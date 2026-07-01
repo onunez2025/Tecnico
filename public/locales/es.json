@@ -2,7 +2,22 @@
   "common": {
     "welcome": "¡Bienvenido a Técnico!",
     "logout": "Cerrar Sesión",
-    "loading": "Cargando..."
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "search": "Buscar",
+    "refresh": "Actualizar",
+    "actions": "Acciones",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "na": "N/D",
+    "yes": "SÍ",
+    "no": "NO",
+    "confirm": "Confirmar",
+    "retry": "Reintentar",
+    "noResults": "Sin resultados"
   },
   "auth": {
     "subtitle": "Ingresa tus credenciales para acceder a la plataforma.",
@@ -15,5 +30,468 @@
     "errors": {
       "invalid": "Credenciales inválidas"
     }
+  },
+  "nav": {
+    "menuTitle": "Menú Principal",
+    "tickets": "Mis Tickets",
+    "payments": "Mis Pagos",
+    "audit": "Logs de Auditoría",
+    "casLabel": "CAS Asignado"
+  },
+  "dashboard": {
+    "greeting": "Hola, {{name}}",
+    "summary": "Este es tu resumen de actividades y servicios.",
+    "updatedAt": "Actualizado",
+    "stats": {
+      "total": "Mi Recaudación Total",
+      "settled": "Pagos Liquidados",
+      "pending": "Pendientes",
+      "observed": "Observados",
+      "subs": {
+        "total": "Monto acumulado",
+        "settled": "Pagos confirmados",
+        "pending": "En proceso de liquidación",
+        "observed": "Requieren atención"
+      }
+    },
+    "registerPayment": {
+      "title": "Registrar Pago",
+      "desc": "Ingresa el pago de tus servicios finalizados."
+    }
+  },
+  "today": {
+    "title": "Tickets de Hoy",
+    "searchPlaceholder": "Buscar por ticket, cliente o distrito...",
+    "emptyTitle": "No hay tickets para hoy",
+    "emptyDesc": "Disfruta de tu tiempo libre o revisa más tarde.",
+    "blockLabel": "Bloque",
+    "pending": "Pendiente"
+  },
+  "profile": {
+    "title": "Mi Perfil",
+    "subtitle": "Gestiona tu información personal y credenciales.",
+    "info": "Información",
+    "statusActive": "Activo",
+    "noRole": "Sin rol",
+    "account": {
+      "title": "Cuenta",
+      "desc": "Tu nombre de usuario y correo electrónico.",
+      "readonlyNote": "Estos campos son de solo lectura. Si necesitas un cambio, contacta al administrador del sistema."
+    },
+    "security": {
+      "title": "Seguridad",
+      "desc": "Cambia tu contraseña de acceso.",
+      "hint": "Deja los campos vacíos para mantener tu contraseña actual. Mínimo 4 caracteres."
+    },
+    "labels": {
+      "username": "Usuario",
+      "email": "Email",
+      "newPassword": "Nueva Contraseña",
+      "confirmPassword": "Confirmar Contraseña",
+      "management": "Gerencia",
+      "status": "Estado"
+    },
+    "changePhoto": "Cambiar foto de perfil",
+    "saving": "Guardando...",
+    "saveChanges": "Guardar Cambios",
+    "errors": {
+      "passwordMismatch": "Las contraseñas no coinciden",
+      "passwordMin": "La contraseña debe tener al menos 4 caracteres",
+      "imageError": "Error al procesar la imagen",
+      "updateFailed": "Error al actualizar el perfil"
+    },
+    "success": {
+      "updated": "Perfil actualizado correctamente"
+    }
+  },
+  "payments": {
+    "title": {
+      "all": "Todos los Pagos",
+      "mine": "Mis Pagos"
+    },
+    "subtitle": {
+      "all": "Historial completo de registros del equipo",
+      "mine": "Historial de tus registros y cobros"
+    },
+    "register": "Registrar Pago",
+    "searchPlaceholder": "Buscar por ticket o autorización...",
+    "count": "{{count}} registros",
+    "noTicket": "Sin Ticket",
+    "empty": {
+      "noPayments": "No se encontraron pagos",
+      "noResults": "Intenta con otra búsqueda.",
+      "registerHint": "Registra un pago con el botón superior.",
+      "noRegistry": "No tienes pagos registrados aún."
+    },
+    "pagination": {
+      "page": "Pág. {{page}} / {{total}}",
+      "records": "{{count}} registros"
+    },
+    "modal": {
+      "title": "Registrar Pago",
+      "searchTicket": "Buscar Ticket",
+      "searchPlaceholder": "Escribe el número de ticket",
+      "noTickets": "No se encontraron tickets en SAP",
+      "noClient": "Sin cliente",
+      "fields": {
+        "amount": "Monto (S/)",
+        "channel": "Canal",
+        "date": "Fecha",
+        "lote": "Lote",
+        "voucher": "Voucher",
+        "izipay": "Cód. Izipay",
+        "auth": "Autorización",
+        "opCode": "Código de Operación",
+        "opPlaceholder": "N° de operación bancaria",
+        "observation": "Observación (Opcional)",
+        "observationPlaceholder": "Notas adicionales..."
+      },
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "saving": "Guardando..."
+    },
+    "detail": {
+      "lote": "Lote",
+      "voucher": "Voucher",
+      "izipay": "Izipay",
+      "auth": "Autorización",
+      "opCode": "Cód. Operación"
+    },
+    "errors": {
+      "noTicket": "Debe agregar al menos un ticket.",
+      "registerFailed": "Error al registrar pago"
+    },
+    "success": "Pago registrado correctamente"
+  },
+  "schedule": {
+    "title": "Cronograma",
+    "searchPlaceholder": "Buscar talleres o reuniones...",
+    "emptyTitle": "Sin eventos próximos",
+    "emptyDesc": "No tienes talleres o reuniones programadas.",
+    "confirmed": "Confirmado",
+    "presential": "Presencial"
+  },
+  "sales": {
+    "title": "Nueva Oportunidad",
+    "subtitle": "Registra productos ofrecidos al cliente",
+    "success": "¡Venta registrada con éxito!",
+    "labels": {
+      "ticket": "Ticket Relacionado",
+      "order": "Número de Pedido (Opcional)",
+      "observations": "Observaciones de Venta",
+      "internalComment": "Comentario Interno"
+    },
+    "placeholders": {
+      "ticket": "Ej: T-12345",
+      "order": "Ej: P-6789",
+      "observations": "¿Qué productos o servicios se ofrecieron?",
+      "internalComment": "Notas adicionales para oficina..."
+    },
+    "submit": "Registrar Oportunidad",
+    "submitting": "Registrando...",
+    "errors": {
+      "default": "Error al registrar la venta"
+    }
+  },
+  "timerange": {
+    "title": "Mi Disponibilidad",
+    "subtitle": "Asigna el bloque horario a tus tickets",
+    "ticketLabel": "Número de Ticket",
+    "ticketPlaceholder": "Ingresa el número de ticket",
+    "rangeLabel": "Selecciona el Rango Horario",
+    "submit": "Guardar Rango Horario",
+    "submitting": "Actualizando...",
+    "success": "¡Rango actualizado correctamente!",
+    "errors": {
+      "selectRange": "Por favor selecciona un rango horario",
+      "updateFailed": "Error al actualizar el rango horario"
+    }
+  },
+  "calendar": {
+    "myTickets": "Mis Tickets Asignados",
+    "calendar": "Calendario",
+    "goToday": "Ir a Hoy",
+    "adminFilter": {
+      "label": "Filtro Administrativo",
+      "techCode": "Código de Técnico",
+      "placeholder": "Ej. 3838",
+      "clear": "Limpiar filtro"
+    },
+    "metrics": {
+      "total": "Total",
+      "done": "Realizados",
+      "pending": "Pendientes"
+    },
+    "searchPlaceholder": "Buscar por ticket, cliente, distrito o servicio...",
+    "mobileTechCode": "Código Técnico:",
+    "status": {
+      "done": "Realizado",
+      "cancelled": "Cancelado",
+      "observed": "Observado",
+      "scheduled": "Programado"
+    },
+    "withPayment": "Con Pago",
+    "withoutPayment": "Sin Pago",
+    "defaultService": "Servicio Técnico",
+    "noClient": "Sin Cliente",
+    "visitTime": "Visita",
+    "assignRange": "Asignar Rango Horario",
+    "blocked": "Bloqueado (Límite vencido)",
+    "ticketDetails": "Detalles de Ticket",
+    "ticketTitle": "Ticket #{{id}}",
+    "closeDetail": "Cerrar detalle",
+    "loadError": {
+      "title": "Error de Carga",
+      "retry": "Intentar Nuevamente"
+    },
+    "emptyTitle": "Sin tickets asignados",
+    "emptyDesc": "No se encontraron tickets de servicio asignados para este técnico en la fecha seleccionada.",
+    "noSchedule": "No se ha asignado un rango horario para este servicio.",
+    "sections": {
+      "client": "Cliente",
+      "address": "Dirección y Ruta",
+      "payments": "Cobros del Cliente",
+      "report": "Informe Técnico",
+      "schedule": "Horario Programado",
+      "service": "Detalle del Servicio",
+      "equipment": "Equipo",
+      "techReport": "Reporte del Técnico"
+    },
+    "clientFields": {
+      "notSpecified": "No especificado",
+      "clientCode": "Código Cliente",
+      "email": "Correo Electrónico",
+      "phones": "Contacto Telefónico",
+      "call": "Llamar",
+      "callAlt": "Llamar Alt",
+      "landline": "Fijo"
+    },
+    "addressFields": {
+      "reference": "Referencia",
+      "mapsLink": "Ver Ruta en Google Maps"
+    },
+    "paymentFields": {
+      "register": "+ Registrar Pago",
+      "noPayments": "No se han registrado pagos para este ticket.",
+      "channel": "Canal",
+      "date": "Fecha",
+      "voucher": "Ref/Voucher",
+      "receipt": "Ver Comprobante",
+      "paymentsError": "No se pudieron cargar los pagos. Intenta nuevamente."
+    },
+    "reportSection": {
+      "view": "Ver Informe Técnico (C4C)",
+      "loading": "Cargando informe..."
+    },
+    "scheduleFields": {
+      "rangoHorario": "Rango Horario",
+      "ordenAtencion": "Orden de Atención",
+      "noOrden": "No asignada",
+      "comentario": "Comentario de Horario",
+      "modify": "Modificar Rango Horario",
+      "assign": "Asignar Rango Horario",
+      "blocked": "Asignación bloqueada (Límite vencido o fecha pasada)"
+    },
+    "serviceFields": {
+      "service": "Servicio",
+      "fsmCode": "Código FSM",
+      "notSpecified": "No especificado",
+      "subject": "Asunto",
+      "devComment": "Comentario Programador"
+    },
+    "equipmentFields": {
+      "name": "Nombre del Equipo",
+      "noEquipment": "Sin equipo registrado",
+      "externalCode": "Código Externo Equipo"
+    },
+    "techReportFields": {
+      "visitDone": "Visita Realizada",
+      "workDone": "Trabajo Realizado",
+      "newVisit": "Solicita Nueva Visita",
+      "techComment": "Comentario del Técnico",
+      "checkout": "Hora de Cierre (Check Out)"
+    },
+    "assignModal": {
+      "title": "Planificación Horaria",
+      "clientLabel": "Cliente",
+      "addressLabel": "Dirección",
+      "rangoLabel": "Rango Horario",
+      "rangoPlaceholder": "Seleccione un rango...",
+      "ordenLabel": "Orden de Atención",
+      "ordenDefault": "Sin orden específica",
+      "comentarioLabel": "Comentario / Observación",
+      "comentarioPlaceholder": "Comentario sobre la programación horaria...",
+      "bulkLabel": "Asignar este mismo rango de hora a todos los tickets de este cliente para el día de hoy ({{count}} servicios)",
+      "cancel": "Cancelar",
+      "save": "Guardar"
+    },
+    "paymentModal": {
+      "badge": "Transacción de Cobro",
+      "title": "Registrar Pago - Ticket #{{id}}",
+      "amountLabel": "Importe Cobrado (S/)",
+      "channelLabel": "Canal de Pago",
+      "dateLabel": "Fecha de Transacción",
+      "posSection": "Datos Izipay / POS",
+      "authLabel": "Código de Autorización (AP)",
+      "voucherLabel": "Referencia / Voucher / Op.",
+      "loteLabel": "Lote",
+      "izipayLabel": "Nro. de Izipay",
+      "bankSection": "Datos Bancarios / Link",
+      "txLabel": "Número de Transacción / Operación",
+      "receiptLabel": "Foto del Voucher / Recibo",
+      "receiptHint": "Sube una imagen o PDF nítido de la transacción bancaria.",
+      "commentsLabel": "Comentarios",
+      "commentsPlaceholder": "Detalles adicionales o aclaraciones...",
+      "cancel": "Cancelar",
+      "confirm": "Confirmar Pago",
+      "channels": {
+        "POS": "Tarjeta (POS)",
+        "Transferencia": "Transferencia Bancaria",
+        "Link": "Pago por Link",
+        "DEPOSITO": "Depósito",
+        "Efectivo": "Efectivo"
+      }
+    }
+  },
+  "users": {
+    "title": "Gestión de Usuarios",
+    "subtitle": "Administra los permisos y accesos al ecosistema de Gestión Técnica",
+    "breadcrumb": {
+      "config": "Configuración",
+      "page": "Gestión de Usuarios"
+    },
+    "newUser": "Nuevo Usuario",
+    "searchPlaceholder": "Buscar por nombre, usuario o email...",
+    "syncing": "Sincronizando identidades...",
+    "emptyFilter": "No se encontraron identidades para el filtro seleccionado",
+    "suspended": "Suspendido",
+    "suspendedAccount": "Cuenta suspendida",
+    "table": {
+      "user": "Responsable / ID",
+      "email": "Correo Corporativo",
+      "role": "Perfil de Seguridad",
+      "apps": "Alcance Ecosistema",
+      "actions": "Acciones"
+    },
+    "footer": {
+      "total": "Total de registros",
+      "engine": "Gestión Técnica Engine"
+    },
+    "modal": {
+      "titleNew": "Nueva Identidad de Acceso",
+      "titleEdit": "Gestión de Identidad",
+      "labels": {
+        "fullName": "Nombre completo",
+        "username": "ID de acceso / Usuario",
+        "email": "Correo corporativo",
+        "passwordNew": "Credencial de acceso",
+        "passwordEdit": "Actualizar credencial",
+        "role": "Perfil de seguridad",
+        "management": "Unidad de negocio / CeCo",
+        "apps": "Ámbito del ecosistema de aplicaciones"
+      },
+      "placeholders": {
+        "fullName": "Ej: Juan Pérez",
+        "username": "ej: jperez",
+        "email": "ejemplo@siatc.com",
+        "passwordNew": "••••••••  (mín. 8 caracteres)",
+        "passwordEdit": "Solo si desea cambiar",
+        "role": "Seleccionar perfil...",
+        "management": "Seleccionar unidad..."
+      },
+      "status": {
+        "label": "Estado operativo",
+        "enabled": "Habilitado",
+        "suspended": "Suspendido"
+      },
+      "cancel": "Cancelar",
+      "save": "Guardar cambios",
+      "create": "Crear identidad"
+    },
+    "sysconfig": {
+      "title": "Parámetros del Sistema",
+      "desc": "Configuración global de Gestión Técnica",
+      "limitLabel": "Hora límite rango horario",
+      "saveLimit": "Guardar Límite",
+      "saving": "...",
+      "errorLoad": "No se pudo cargar la configuración actual.",
+      "saved": "Límite actualizado correctamente."
+    },
+    "delete": {
+      "title": "Eliminar identidad de acceso",
+      "message": "¿Estás seguro de que deseas eliminar este usuario? El ID de usuario será revocado permanentemente en el sistema de Gestión Técnica.",
+      "confirmText": "Revocar acceso"
+    }
+  },
+  "roles": {
+    "title": "Gestión de Perfiles",
+    "subtitle": "Define las facultades y niveles de acceso para las identidades del ecosistema",
+    "breadcrumb": {
+      "config": "Configuración",
+      "page": "Perfiles y Permisos"
+    },
+    "newRole": "Nuevo Perfil",
+    "loading": "Sincronizando seguridad...",
+    "cards": {
+      "active": "Activo",
+      "permissions": "{{count}} facultades",
+      "noPermissions": "Sin facultades asignadas"
+    },
+    "footer": {
+      "engine": "Gestión Técnica"
+    },
+    "modal": {
+      "titleNew": "Nuevo Perfil de Seguridad",
+      "titleEdit": "Configuración de Perfil",
+      "nameLabel": "Nombre del perfil",
+      "namePlaceholder": "Ej: Administrador Compras, Auditor",
+      "appsLabel": "Ámbito del ecosistema de aplicaciones",
+      "permissionsLabel": "Matriz de facultades",
+      "permissionsOf": "{{selected}} de {{total}} activos",
+      "cancel": "Cancelar",
+      "save": "Guardar cambios",
+      "confirm": "Confirmar perfil"
+    },
+    "delete": {
+      "title": "Revocar perfil de seguridad",
+      "message": "¿Estás seguro de que deseas eliminar este rol? Los usuarios asignados perderán sus facultades actuales en el sistema de Gestión Técnica.",
+      "confirmText": "Eliminar rol"
+    }
+  },
+  "audit": {
+    "title": "Bitácora de Auditoría",
+    "subtitle": "Monitoreo transaccional y registro de eventos críticos del motor de liquidaciones",
+    "breadcrumb": {
+      "config": "Configuración",
+      "page": "Trazabilidad de Seguridad"
+    },
+    "sync": "Sincronizar Eventos",
+    "searchPlaceholder": "Buscar por usuario, acción o entidad técnica...",
+    "filter": {
+      "all": "Logs: Todos los eventos",
+      "denied": "Crítico: Accesos denegados",
+      "login": "Acceso: Inicios de sesión",
+      "userUpdate": "Seguridad: Cambios de perfil"
+    },
+    "table": {
+      "dateTime": "Fecha y Hora",
+      "user": "Usuario Responsable",
+      "action": "Operación",
+      "entity": "Ref. Entidad",
+      "payload": "Payload / Detalle Técnico"
+    },
+    "loading": "Indexando Auditoría",
+    "empty": "No se registran transacciones críticas",
+    "footer": {
+      "total": "Total de registros",
+      "synced": "Sincronizado"
+    }
+  },
+  "config": {
+    "title": "Configuración Centralizada",
+    "desc": "La administración de usuarios, perfiles y permisos ha sido migrada estrictamente a <1>{{console}}</1> para garantizar la integridad y sincronización de datos de todo el ecosistema SIATC.",
+    "centralConsole": "Consola Central",
+    "goConsole": "Ir a Consola",
+    "version": "Ecosistema Unificado SIATC v3.5"
   }
 }

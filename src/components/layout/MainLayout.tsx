@@ -51,9 +51,6 @@ export function MainLayout() {
         setTheme(theme === 'dark' ? 'light' : 'dark');
     };
 
-    // Close sidebar when a nav item is tapped on mobile
-    const handleMobileNavClose = () => setSidebarOpen(false);
-
     const { showWarning, remainingSeconds, resetTimer } = useInactivityTimer({
         timeoutMinutes: sessionConfig?.timeoutMinutes ?? 30,
         warningMinutes: sessionConfig?.warningMinutes ?? 5,

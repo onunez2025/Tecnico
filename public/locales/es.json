@@ -1,0 +1,19 @@
+{
+  "common": {
+    "welcome": "¡Bienvenido a Técnico!",
+    "logout": "Cerrar Sesión",
+    "loading": "Cargando..."
+  },
+  "auth": {
+    "subtitle": "Ingresa tus credenciales para acceder a la plataforma.",
+    "username": "Usuario",
+    "password": "Contraseña",
+    "rememberMe": "Recordarme",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "forgotPasswordMessage": "Por favor, contacta a tu administrador de sistemas para recuperar tu clave.",
+    "loginButton": "Iniciar Sesión",
+    "errors": {
+      "invalid": "Credenciales inválidas"
+    }
+  }
+}

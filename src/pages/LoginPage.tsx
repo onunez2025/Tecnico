@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { useAppConfig } from '../context/AppConfigContext';
 import { useTheme } from '../context/ThemeContext';
-import { User, Lock, Eye, EyeOff, Moon, Sun } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, Moon, Sun, Globe } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { API_BASE_URL } from '../services/apiClient';
 import { SIATC_THEME } from '../utils/siatc-theme';
 
 export default function LoginPage() {
+    const { t, i18n } = useTranslation();
     const { login } = useAuth();
     const { refreshApplications } = useAppConfig();
     const { theme, setTheme } = useTheme();
@@ -35,7 +37,7 @@ export default function LoginPage() {
 
             if (!response.ok) {
                 const errData = await response.json();
-                throw new Error(errData.error || 'Credenciales inválidas');
+                throw new Error(errData.error || t('auth.errors.invalid'));
             }
 
             const data = await response.json();
@@ -46,7 +48,7 @@ export default function LoginPage() {
 
         } catch (err: any) {
             console.error('Login error:', err);
-            setError(err.message || 'Credenciales inválidas');
+            setError(err.message || t('auth.errors.invalid'));
         } finally {
             setLoading(false);
         }
@@ -54,6 +56,10 @@ export default function LoginPage() {
 
     const toggleTheme = () => {
         setTheme(theme === 'dark' ? 'light' : 'dark');
+    };
+
+    const toggleLanguage = () => {
+        i18n.changeLanguage(i18n.language === 'es' ? 'en' : 'es');
     };
 
     return (
@@ -78,9 +84,9 @@ export default function LoginPage() {
                         <p>Administración centralizada de identidades, perfiles, accesos y logs de auditoría.</p>
                         <div className="flex flex-col w-fit gap-2">
                             <span className="text-2xl font-bold text-slate-100 tracking-tight">Gerencia de Atención al Cliente</span>
-                            <img 
-                                src="/Logo - Grupo Sole - Transparente blanco-.png" 
-                                alt="Logo Grupo Sole" 
+                            <img
+                                src="/Logo - Grupo Sole - Transparente blanco-.png"
+                                alt="Logo Grupo Sole"
                                 className="h-auto max-w-[12rem] object-contain"
                             />
                         </div>
@@ -103,13 +109,20 @@ export default function LoginPage() {
                     >
                         {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                     </button>
+                    <button
+                        onClick={toggleLanguage}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border hover:bg-accent text-sm font-medium transition-colors cursor-pointer"
+                    >
+                        <Globe className="w-4 h-4" />
+                        {i18n.language === 'es' ? 'ES' : 'EN'}
+                    </button>
                 </div>
 
                 <div className="w-full max-w-md space-y-8">
                     <div className="text-center">
-                        <h2 className={SIATC_THEME.LOGIN_LAYOUT.TITLE}>¡Bienvenido a Técnico!</h2>
+                        <h2 className={SIATC_THEME.LOGIN_LAYOUT.TITLE}>{t('common.welcome')}</h2>
                         <p className={SIATC_THEME.LOGIN_LAYOUT.SUBTITLE}>
-                            Ingresa tus credenciales para acceder a la plataforma.
+                            {t('auth.subtitle')}
                         </p>
                     </div>
 
@@ -118,7 +131,7 @@ export default function LoginPage() {
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium mb-1.5 ml-1">
-                                        Usuario
+                                        {t('auth.username')}
                                     </label>
                                     <div className={SIATC_THEME.LOGIN_LAYOUT.INPUT_WRAPPER}>
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
@@ -138,7 +151,7 @@ export default function LoginPage() {
 
                                 <div>
                                     <label className="block text-sm font-medium mb-1.5 ml-1">
-                                        Contraseña
+                                        {t('auth.password')}
                                     </label>
                                     <div className={SIATC_THEME.LOGIN_LAYOUT.INPUT_WRAPPER}>
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
@@ -165,20 +178,20 @@ export default function LoginPage() {
 
                             <div className="flex items-center justify-between text-sm">
                                 <label className="flex items-center gap-2 cursor-pointer">
-                                    <input 
-                                        type="checkbox" 
+                                    <input
+                                        type="checkbox"
                                         checked={rememberMe}
                                         onChange={(e) => setRememberMe(e.target.checked)}
-                                        className="w-4 h-4 rounded border-input text-primary focus:ring-primary" 
+                                        className="w-4 h-4 rounded border-input text-primary focus:ring-primary"
                                     />
-                                    <span className="text-muted-foreground">Recordarme</span>
+                                    <span className="text-muted-foreground">{t('auth.rememberMe')}</span>
                                 </label>
                                 <button
                                     type="button"
-                                    onClick={() => setError('Por favor, contacta a tu administrador de sistemas para recuperar tu clave.')}
+                                    onClick={() => setError(t('auth.forgotPasswordMessage'))}
                                     className="font-medium text-primary hover:text-primary/80 transition-colors bg-transparent border-none p-0 cursor-pointer text-xs"
                                 >
-                                    ¿Olvidaste tu contraseña?
+                                    {t('auth.forgotPassword')}
                                 </button>
                             </div>
 
@@ -196,7 +209,7 @@ export default function LoginPage() {
                                     "w-full flex justify-center disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
                                 )}
                             >
-                                {loading ? 'Cargando...' : 'Iniciar Sesión'}
+                                {loading ? t('common.loading') : t('auth.loginButton')}
                             </button>
                         </form>
                     </div>

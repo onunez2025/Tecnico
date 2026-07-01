@@ -1,0 +1,19 @@
+{
+  "common": {
+    "welcome": "Welcome to Técnico!",
+    "logout": "Log Out",
+    "loading": "Loading..."
+  },
+  "auth": {
+    "subtitle": "Enter your credentials to access the platform.",
+    "username": "Username",
+    "password": "Password",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot your password?",
+    "forgotPasswordMessage": "Please contact your system administrator to recover your password.",
+    "loginButton": "Log In",
+    "errors": {
+      "invalid": "Invalid credentials"
+    }
+  }
+}

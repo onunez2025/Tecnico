@@ -25,6 +25,7 @@ export interface Application {
 interface AppConfigContextType {
     applications: Application[];
     refreshApplications: () => void;
+    logoUrl?: string | null;
 }
 
 const AppConfigContext = createContext<AppConfigContextType>({ applications: [], refreshApplications: () => {} });
@@ -123,6 +124,7 @@ function applyThemeConfig(theme: NonNullable<Application['theme_config']>) {
 
 export const AppConfigProvider = ({ children }: { children: React.ReactNode }) => {
     const [applications, setApplications] = useState<Application[]>([]);
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
     // Preferir cookie sobre localStorage: la cookie siempre tiene el token más reciente
     // (se actualiza tanto en SSO como en login directo), mientras que localStorage puede
@@ -145,6 +147,7 @@ export const AppConfigProvider = ({ children }: { children: React.ReactNode }) =
                 // Aplicar branding propio de esta app
                 const mine = data.find((a: Application) => a.code?.toUpperCase() === APP_CODE);
                 if (mine) {
+                    setLogoUrl(mine.logo_url ?? null);
                     // Favicon dinámico
                     if (mine.logo_url) {
                         const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
@@ -169,7 +172,7 @@ export const AppConfigProvider = ({ children }: { children: React.ReactNode }) =
     }, [refreshApplications]);
 
     return (
-        <AppConfigContext.Provider value={{ applications, refreshApplications }}>
+        <AppConfigContext.Provider value={{ applications, refreshApplications, logoUrl }}>
             {children}
         </AppConfigContext.Provider>
     );

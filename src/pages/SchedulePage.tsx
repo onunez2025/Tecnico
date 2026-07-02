@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Calendar, 
-    RefreshCw, 
+import {
+    Calendar,
+    RefreshCw,
     Briefcase,
     Users,
-    ChevronRight,
     Search,
     AlertCircle
 } from 'lucide-react';
 import { ApiClient } from '../services/apiClient';
 import { cn } from '../utils/cn';
+import { useTranslation } from 'react-i18next';
 
 interface ScheduleItem {
     id: number;
@@ -19,6 +19,7 @@ interface ScheduleItem {
 }
 
 export default function SchedulePage() {
+    const { t } = useTranslation();
     const [items, setItems] = useState<ScheduleItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -41,14 +42,14 @@ export default function SchedulePage() {
 
     const formatDate = (dateStr: string) => {
         const date = new Date(dateStr);
-        return date.toLocaleDateString('es-PE', { 
-            weekday: 'long', 
-            day: 'numeric', 
-            month: 'long' 
+        return date.toLocaleDateString('es-PE', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long'
         });
     };
 
-    const filteredItems = items.filter(item => 
+    const filteredItems = items.filter(item =>
         item.title.toLowerCase().includes(search.toLowerCase())
     );
 
@@ -59,9 +60,9 @@ export default function SchedulePage() {
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
                         <Calendar className="w-6 h-6 text-primary" />
-                        Cronograma
+                        {t('schedule.title')}
                     </h1>
-                    <button 
+                    <button
                         onClick={() => setRefreshKey(k => k + 1)}
                         className="p-2 hover:bg-slate-100 rounded-full transition-colors"
                         disabled={isLoading}
@@ -72,9 +73,9 @@ export default function SchedulePage() {
 
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input 
+                    <input
                         type="text"
-                        placeholder="Buscar talleres o reuniones..."
+                        placeholder={t('schedule.searchPlaceholder')}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full pl-9 pr-4 py-2.5 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20"
@@ -93,19 +94,18 @@ export default function SchedulePage() {
                         <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <AlertCircle className="w-8 h-8 text-slate-400" />
                         </div>
-                        <p className="font-bold text-slate-900">Sin eventos próximos</p>
-                        <p className="text-sm text-slate-500 mt-1">No tienes talleres o reuniones programadas.</p>
+                        <p className="font-bold text-slate-900">{t('schedule.emptyTitle')}</p>
+                        <p className="text-sm text-slate-500 mt-1">{t('schedule.emptyDesc')}</p>
                     </div>
                 ) : (
-                    // Group by date or just list? For mobile, a list with date labels is good
                     filteredItems.map((item) => (
-                        <div 
-                            key={item.id} 
+                        <div
+                            key={item.id}
                             className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 hover:border-primary/30 transition-all group relative overflow-hidden"
                         >
                             {/* Accent Line */}
                             <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/20 group-hover:bg-primary transition-colors" />
-                            
+
                             <div className="pl-2">
                                 <div className="flex justify-between items-start mb-2">
                                     <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider">
@@ -113,14 +113,14 @@ export default function SchedulePage() {
                                         {item.type}
                                     </div>
                                     <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 uppercase">
-                                        Confirmado
+                                        {t('schedule.confirmed')}
                                     </span>
                                 </div>
-                                
+
                                 <h3 className="font-bold text-slate-800 text-base mb-1 group-hover:text-primary transition-colors">
                                     {item.title}
                                 </h3>
-                                
+
                                 <div className="flex items-center gap-3 mt-3 pt-3 border-t border-slate-50">
                                     <div className="flex items-center gap-1.5 text-xs text-slate-500">
                                         <Calendar className="w-3.5 h-3.5" />
@@ -128,7 +128,7 @@ export default function SchedulePage() {
                                     </div>
                                     <div className="flex items-center gap-1.5 text-xs text-slate-500">
                                         <Briefcase className="w-3.5 h-3.5" />
-                                        <span>Presencial</span>
+                                        <span>{t('schedule.presential')}</span>
                                     </div>
                                 </div>
                             </div>

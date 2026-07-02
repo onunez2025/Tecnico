@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { 
-    Clock, 
-    Tag, 
+import {
+    Clock,
+    Tag,
     CheckCircle2,
     Loader2,
     AlertCircle,
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { ApiClient } from '../services/apiClient';
 import { cn } from '../utils/cn';
+import { useTranslation } from 'react-i18next';
 
 const RANGOS_HORARIOS = [
     "07:00 am - 10:00 am",
@@ -24,6 +25,7 @@ const RANGOS_HORARIOS = [
 ];
 
 export default function TimeRangePage() {
+    const { t } = useTranslation();
     const [ticket, setTicket] = useState('');
     const [selectedRango, setSelectedRango] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,13 +35,13 @@ export default function TimeRangePage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedRango) {
-            setError('Por favor selecciona un rango horario');
+            setError(t('timerange.errors.selectRange'));
             return;
         }
 
         setIsSubmitting(true);
         setError(null);
-        
+
         try {
             await ApiClient.request('/tec/time-range', {
                 method: 'PATCH',
@@ -53,7 +55,7 @@ export default function TimeRangePage() {
             setSelectedRango('');
             setTimeout(() => setIsSuccess(false), 5000);
         } catch (err: any) {
-            setError(err.message || 'Error al actualizar el rango horario');
+            setError(err.message || t('timerange.errors.updateFailed'));
         } finally {
             setIsSubmitting(false);
         }
@@ -65,9 +67,9 @@ export default function TimeRangePage() {
             <div className="bg-white p-6 shadow-sm border-b border-slate-200 sticky top-0 z-10">
                 <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
                     <Clock className="w-6 h-6 text-primary" />
-                    Mi Disponibilidad
+                    {t('timerange.title')}
                 </h1>
-                <p className="text-sm text-slate-500 mt-1">Asigna el bloque horario a tus tickets</p>
+                <p className="text-sm text-slate-500 mt-1">{t('timerange.subtitle')}</p>
             </div>
 
             {/* Content */}
@@ -75,7 +77,7 @@ export default function TimeRangePage() {
                 {isSuccess && (
                     <div className="mb-4 bg-emerald-50 border border-emerald-100 p-4 rounded-2xl flex items-center gap-3 text-emerald-700 animate-in fade-in slide-in-from-top-2">
                         <CheckCircle2 className="w-5 h-5 shrink-0" />
-                        <span className="text-sm font-medium">¡Rango actualizado correctamente!</span>
+                        <span className="text-sm font-medium">{t('timerange.success')}</span>
                     </div>
                 )}
 
@@ -89,14 +91,14 @@ export default function TimeRangePage() {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block px-1">
-                            Número de Ticket
+                            {t('timerange.ticketLabel')}
                         </label>
                         <div className="relative mb-6">
                             <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <input 
+                            <input
                                 required
                                 type="text"
-                                placeholder="Ingresa el número de ticket"
+                                placeholder={t('timerange.ticketPlaceholder')}
                                 value={ticket}
                                 onChange={(e) => setTicket(e.target.value)}
                                 className="w-full pl-10 pr-4 py-3.5 bg-slate-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20"
@@ -104,7 +106,7 @@ export default function TimeRangePage() {
                         </div>
 
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3 block px-1">
-                            Selecciona el Rango Horario
+                            {t('timerange.rangeLabel')}
                         </label>
                         <div className="grid grid-cols-1 gap-2">
                             {RANGOS_HORARIOS.map((rango) => (
@@ -114,8 +116,8 @@ export default function TimeRangePage() {
                                     onClick={() => setSelectedRango(rango)}
                                     className={cn(
                                         "flex items-center justify-between px-5 py-4 rounded-2xl border-2 transition-all text-sm font-bold",
-                                        selectedRango === rango 
-                                            ? "border-primary bg-primary/5 text-primary" 
+                                        selectedRango === rango
+                                            ? "border-primary bg-primary/5 text-primary"
                                             : "border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-200"
                                     )}
                                 >
@@ -126,7 +128,7 @@ export default function TimeRangePage() {
                         </div>
                     </div>
 
-                    <button 
+                    <button
                         type="submit"
                         disabled={isSubmitting}
                         className="w-full bg-primary text-white py-4 rounded-3xl font-bold text-sm shadow-lg shadow-primary/20 flex items-center justify-center gap-2 hover:bg-primary-dark transition-all active:scale-[0.98] disabled:opacity-70"
@@ -136,7 +138,7 @@ export default function TimeRangePage() {
                         ) : (
                             <Save className="w-5 h-5" />
                         )}
-                        {isSubmitting ? 'Actualizando...' : 'Guardar Rango Horario'}
+                        {isSubmitting ? t('timerange.submitting') : t('timerange.submit')}
                     </button>
                 </form>
             </div>

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { ApiClient } from '../services/apiClient';
 import { cn } from '../utils/cn';
+import { useTranslation } from 'react-i18next';
 
 interface Ticket {
     id: string;
@@ -26,6 +27,7 @@ interface Ticket {
 }
 
 export default function TodayTicketsPage() {
+    const { t } = useTranslation();
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -65,7 +67,7 @@ export default function TodayTicketsPage() {
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
                         <CalendarDays className="w-6 h-6 text-primary" />
-                        Tickets de Hoy
+                        {t('today.title')}
                     </h1>
                     <button
                         onClick={() => setRefreshKey(k => k + 1)}
@@ -80,7 +82,7 @@ export default function TodayTicketsPage() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
                         type="text"
-                        placeholder="Buscar por ticket, cliente o distrito..."
+                        placeholder={t('today.searchPlaceholder')}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full pl-9 pr-4 py-2.5 bg-muted border-none rounded-xl text-sm text-foreground focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground"
@@ -99,8 +101,8 @@ export default function TodayTicketsPage() {
                         <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                             <AlertCircle className="w-8 h-8 text-muted-foreground" />
                         </div>
-                        <p className="font-bold text-foreground">No hay tickets para hoy</p>
-                        <p className="text-sm text-muted-foreground mt-1">Disfruta de tu tiempo libre o revisa más tarde.</p>
+                        <p className="font-bold text-foreground">{t('today.emptyTitle')}</p>
+                        <p className="text-sm text-muted-foreground mt-1">{t('today.emptyDesc')}</p>
                     </div>
                 ) : (
                     filteredTickets.map((ticket) => (
@@ -118,7 +120,7 @@ export default function TodayTicketsPage() {
                                     </div>
                                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
                                         <Clock className="w-3 h-3" />
-                                        <span>Bloque: {ticket.BloqueHorario || 'Pendiente'}</span>
+                                        <span>{t('today.blockLabel')}: {ticket.BloqueHorario || t('today.pending')}</span>
                                     </div>
                                 </div>
                                 <div className="bg-primary/5 p-2 rounded-xl group-hover:bg-primary/10 transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center">

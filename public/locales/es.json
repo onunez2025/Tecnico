@@ -264,11 +264,14 @@
       "phones": "Contacto Telefónico",
       "call": "Llamar",
       "callAlt": "Llamar Alt",
-      "landline": "Fijo"
+      "landline": "Fijo",
+      "code": "Código Cliente",
+      "contact": "Contacto Telefónico"
     },
     "addressFields": {
       "reference": "Referencia",
-      "mapsLink": "Ver Ruta en Google Maps"
+      "mapsLink": "Ver Ruta en Google Maps",
+      "mapsRoute": "Ver Ruta"
     },
     "paymentFields": {
       "register": "+ Registrar Pago",
@@ -277,7 +280,8 @@
       "date": "Fecha",
       "voucher": "Ref/Voucher",
       "receipt": "Ver Comprobante",
-      "paymentsError": "No se pudieron cargar los pagos. Intenta nuevamente."
+      "paymentsError": "No se pudieron cargar los pagos. Intenta nuevamente.",
+      "registerPayment": "+ Registrar Pago"
     },
     "reportSection": {
       "view": "Ver Informe Técnico (C4C)",
@@ -290,19 +294,24 @@
       "comentario": "Comentario de Horario",
       "modify": "Modificar Rango Horario",
       "assign": "Asignar Rango Horario",
-      "blocked": "Asignación bloqueada (Límite vencido o fecha pasada)"
+      "blocked": "Asignación bloqueada (Límite vencido o fecha pasada)",
+      "range": "Rango Horario",
+      "order": "Orden de Atención"
     },
     "serviceFields": {
       "service": "Servicio",
       "fsmCode": "Código FSM",
       "notSpecified": "No especificado",
       "subject": "Asunto",
-      "devComment": "Comentario Programador"
+      "devComment": "Comentario Programador",
+      "schedulerComment": "Comentario Programador"
     },
     "equipmentFields": {
       "name": "Nombre del Equipo",
       "noEquipment": "Sin equipo registrado",
-      "externalCode": "Código Externo Equipo"
+      "externalCode": "Código Externo Equipo",
+      "none": "Sin equipo registrado",
+      "code": "Código Externo Equipo"
     },
     "techReportFields": {
       "visitDone": "Visita Realizada",
@@ -323,7 +332,9 @@
       "comentarioPlaceholder": "Comentario sobre la programación horaria...",
       "bulkLabel": "Asignar este mismo rango de hora a todos los tickets de este cliente para el día de hoy ({{count}} servicios)",
       "cancel": "Cancelar",
-      "save": "Guardar"
+      "save": "Guardar",
+      "subtitle": "Planificación Horaria",
+      "orderNone": "Sin orden específica"
     },
     "paymentModal": {
       "badge": "Transacción de Cobro",
@@ -350,7 +361,13 @@
         "Link": "Pago por Link",
         "DEPOSITO": "Depósito",
         "Efectivo": "Efectivo"
-      }
+      },
+      "subtitle": "Transacción de Cobro",
+      "posTitle": "Datos Izipay / POS",
+      "bankTitle": "Datos Bancarios / Link",
+      "opLabel": "Número de Transacción / Operación",
+      "observationLabel": "Comentarios",
+      "observationPlaceholder": "Detalles adicionales o aclaraciones..."
     }
   },
   "users": {

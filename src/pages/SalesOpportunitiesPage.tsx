@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
-import { 
-    ShoppingBag, 
-    Send, 
-    Tag, 
-    FileText, 
+import {
+    ShoppingBag,
+    Send,
+    Tag,
+    FileText,
     MessageSquare,
     CheckCircle2,
     Loader2
 } from 'lucide-react';
 import { ApiClient } from '../services/apiClient';
-import { cn } from '../utils/cn';
+import { useTranslation } from 'react-i18next';
 
 export default function SalesOpportunitiesPage() {
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({
         ticket: '',
         pedido: '',
@@ -26,7 +27,7 @@ export default function SalesOpportunitiesPage() {
         e.preventDefault();
         setIsSubmitting(true);
         setError(null);
-        
+
         try {
             await ApiClient.request('/tec/sales', {
                 method: 'POST',
@@ -36,7 +37,7 @@ export default function SalesOpportunitiesPage() {
             setFormData({ ticket: '', pedido: '', observacion: '', comentarioTecnico: '' });
             setTimeout(() => setIsSuccess(false), 5000);
         } catch (err: any) {
-            setError(err.message || 'Error al registrar la venta');
+            setError(err.message || t('sales.errors.default'));
         } finally {
             setIsSubmitting(false);
         }
@@ -48,9 +49,9 @@ export default function SalesOpportunitiesPage() {
             <div className="bg-white p-6 shadow-sm border-b border-slate-200 sticky top-0 z-10">
                 <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
                     <ShoppingBag className="w-6 h-6 text-primary" />
-                    Nueva Oportunidad
+                    {t('sales.title')}
                 </h1>
-                <p className="text-sm text-slate-500 mt-1">Registra productos ofrecidos al cliente</p>
+                <p className="text-sm text-slate-500 mt-1">{t('sales.subtitle')}</p>
             </div>
 
             {/* Form */}
@@ -58,7 +59,7 @@ export default function SalesOpportunitiesPage() {
                 {isSuccess && (
                     <div className="mb-4 bg-emerald-50 border border-emerald-100 p-4 rounded-2xl flex items-center gap-3 text-emerald-700 animate-in fade-in slide-in-from-top-2">
                         <CheckCircle2 className="w-5 h-5 shrink-0" />
-                        <span className="text-sm font-medium">¡Venta registrada con éxito!</span>
+                        <span className="text-sm font-medium">{t('sales.success')}</span>
                     </div>
                 )}
 
@@ -73,14 +74,14 @@ export default function SalesOpportunitiesPage() {
                     <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 space-y-4">
                         <div>
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block px-1">
-                                Ticket Relacionado
+                                {t('sales.labels.ticket')}
                             </label>
                             <div className="relative">
                                 <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                <input 
+                                <input
                                     required
                                     type="text"
-                                    placeholder="Ej: T-12345"
+                                    placeholder={t('sales.placeholders.ticket')}
                                     value={formData.ticket}
                                     onChange={(e) => setFormData({...formData, ticket: e.target.value})}
                                     className="w-full pl-10 pr-4 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-primary/20"
@@ -90,13 +91,13 @@ export default function SalesOpportunitiesPage() {
 
                         <div>
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block px-1">
-                                Número de Pedido (Opcional)
+                                {t('sales.labels.order')}
                             </label>
                             <div className="relative">
                                 <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                <input 
+                                <input
                                     type="text"
-                                    placeholder="Ej: P-6789"
+                                    placeholder={t('sales.placeholders.order')}
                                     value={formData.pedido}
                                     onChange={(e) => setFormData({...formData, pedido: e.target.value})}
                                     className="w-full pl-10 pr-4 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-primary/20"
@@ -106,12 +107,12 @@ export default function SalesOpportunitiesPage() {
 
                         <div>
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block px-1">
-                                Observaciones de Venta
+                                {t('sales.labels.observations')}
                             </label>
-                            <textarea 
+                            <textarea
                                 required
                                 rows={3}
-                                placeholder="¿Qué productos o servicios se ofrecieron?"
+                                placeholder={t('sales.placeholders.observations')}
                                 value={formData.observacion}
                                 onChange={(e) => setFormData({...formData, observacion: e.target.value})}
                                 className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 resize-none"
@@ -120,11 +121,11 @@ export default function SalesOpportunitiesPage() {
 
                         <div>
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block px-1">
-                                Comentario Interno
+                                {t('sales.labels.internalComment')}
                             </label>
-                            <textarea 
+                            <textarea
                                 rows={2}
-                                placeholder="Notas adicionales para oficina..."
+                                placeholder={t('sales.placeholders.internalComment')}
                                 value={formData.comentarioTecnico}
                                 onChange={(e) => setFormData({...formData, comentarioTecnico: e.target.value})}
                                 className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 resize-none"
@@ -132,7 +133,7 @@ export default function SalesOpportunitiesPage() {
                         </div>
                     </div>
 
-                    <button 
+                    <button
                         type="submit"
                         disabled={isSubmitting}
                         className="w-full bg-primary text-white py-4 rounded-3xl font-bold text-sm shadow-lg shadow-primary/20 flex items-center justify-center gap-2 hover:bg-primary-dark transition-all active:scale-[0.98] disabled:opacity-70"
@@ -142,7 +143,7 @@ export default function SalesOpportunitiesPage() {
                         ) : (
                             <Send className="w-5 h-5" />
                         )}
-                        {isSubmitting ? 'Registrando...' : 'Registrar Oportunidad'}
+                        {isSubmitting ? t('sales.submitting') : t('sales.submit')}
                     </button>
                 </form>
             </div>

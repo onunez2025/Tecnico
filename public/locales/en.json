@@ -264,11 +264,14 @@
       "phones": "Phone Contact",
       "call": "Call",
       "callAlt": "Call Alt",
-      "landline": "Landline"
+      "landline": "Landline",
+      "code": "Client Code",
+      "contact": "Phone Contact"
     },
     "addressFields": {
       "reference": "Reference",
-      "mapsLink": "View Route in Google Maps"
+      "mapsLink": "View Route in Google Maps",
+      "mapsRoute": "View Route"
     },
     "paymentFields": {
       "register": "+ Register Payment",
@@ -277,7 +280,8 @@
       "date": "Date",
       "voucher": "Ref/Voucher",
       "receipt": "View Receipt",
-      "paymentsError": "Could not load payments. Please try again."
+      "paymentsError": "Could not load payments. Please try again.",
+      "registerPayment": "+ Register Payment"
     },
     "reportSection": {
       "view": "View Technical Report (C4C)",
@@ -290,19 +294,24 @@
       "comentario": "Schedule Comment",
       "modify": "Modify Time Range",
       "assign": "Assign Time Range",
-      "blocked": "Assignment blocked (Limit expired or past date)"
+      "blocked": "Assignment blocked (Limit expired or past date)",
+      "range": "Time Range",
+      "order": "Service Order"
     },
     "serviceFields": {
       "service": "Service",
       "fsmCode": "FSM Code",
       "notSpecified": "Not specified",
       "subject": "Subject",
-      "devComment": "Scheduler Comment"
+      "devComment": "Scheduler Comment",
+      "schedulerComment": "Scheduler Comment"
     },
     "equipmentFields": {
       "name": "Equipment Name",
       "noEquipment": "No equipment registered",
-      "externalCode": "External Equipment Code"
+      "externalCode": "External Equipment Code",
+      "none": "No equipment registered",
+      "code": "External Equipment Code"
     },
     "techReportFields": {
       "visitDone": "Visit Completed",
@@ -323,7 +332,9 @@
       "comentarioPlaceholder": "Comment about the schedule...",
       "bulkLabel": "Assign this same time range to all tickets for this client today ({{count}} services)",
       "cancel": "Cancel",
-      "save": "Save"
+      "save": "Save",
+      "subtitle": "Time Planning",
+      "orderNone": "No specific order"
     },
     "paymentModal": {
       "badge": "Payment Transaction",
@@ -350,7 +361,13 @@
         "Link": "Payment Link",
         "DEPOSITO": "Deposit",
         "Efectivo": "Cash"
-      }
+      },
+      "subtitle": "Payment Transaction",
+      "posTitle": "Izipay / POS Data",
+      "bankTitle": "Bank / Link Data",
+      "opLabel": "Transaction / Operation Number",
+      "observationLabel": "Comments",
+      "observationPlaceholder": "Additional details or clarifications..."
     }
   },
   "users": {

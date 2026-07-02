@@ -18,6 +18,7 @@ import { useDialog } from '../context/DialogContext';
 import type { TicketPago } from '../types';
 import { cn } from '../utils/cn';
 import { SIATC_THEME } from '../utils/siatc-theme';
+import { useTranslation } from 'react-i18next';
 
 interface EnrichedTicketPago extends TicketPago {
     Tecnico?: string;
@@ -42,6 +43,7 @@ const getStatusConfig = (status: string | undefined) => {
 };
 
 export default function PaymentsPage() {
+    const { t } = useTranslation();
     const { hasPermission, user } = useAuth();
     const { alert } = useDialog();
     const [payments, setPayments] = useState<EnrichedTicketPago[]>([]);
@@ -106,7 +108,7 @@ export default function PaymentsPage() {
     useEffect(() => { fetchData(); }, [page, search]);
 
     const handleAddTicket = (ticketId: string) => {
-        const current = newPayment.ticket ? newPayment.ticket.split(',').map(t => t.trim()).filter(Boolean) : [];
+        const current = newPayment.ticket ? newPayment.ticket.split(',').map(tkId => tkId.trim()).filter(Boolean) : [];
         if (!current.includes(ticketId)) {
             setNewPayment(prev => ({ ...prev, ticket: [...current, ticketId].join(', ') }));
             fetchTicketData(ticketId);
@@ -116,8 +118,8 @@ export default function PaymentsPage() {
     };
 
     const handleRemoveTicket = (ticketId: string) => {
-        const current = newPayment.ticket.split(',').map(t => t.trim()).filter(Boolean);
-        setNewPayment(prev => ({ ...prev, ticket: current.filter(t => t !== ticketId).join(', ') }));
+        const current = newPayment.ticket.split(',').map(tkId => tkId.trim()).filter(Boolean);
+        setNewPayment(prev => ({ ...prev, ticket: current.filter(tkId => tkId !== ticketId).join(', ') }));
     };
 
     const fetchTicketData = async (ticketId: string) => {
@@ -137,7 +139,7 @@ export default function PaymentsPage() {
     const handleCreatePayment = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newPayment.ticket) {
-            alert({ title: 'Error', message: 'Debe agregar al menos un ticket.', type: 'error' });
+            alert({ title: 'Error', message: t('payments.errors.noTicket'), type: 'error' });
             return;
         }
         setIsSaving(true);
@@ -146,9 +148,9 @@ export default function PaymentsPage() {
             setShowCreateModal(false);
             setNewPayment({ ticket: '', fecha_transaccion: new Date().toISOString().split('T')[0], voucher: '', lote: '', codigo_izipay: '', codigo_autorizacion: '', folio: '', importe: '', canal: 'POS', observacion: '' });
             await fetchData();
-            alert({ title: 'Éxito', message: 'Pago registrado correctamente', type: 'success' });
+            alert({ title: 'Éxito', message: t('payments.success'), type: 'success' });
         } catch (err) {
-            alert({ title: 'Error', message: 'Error al registrar pago: ' + (err instanceof Error ? err.message : 'Error desconocido'), type: 'error' });
+            alert({ title: 'Error', message: t('payments.errors.registerFailed') + ': ' + (err instanceof Error ? err.message : ''), type: 'error' });
         } finally { setIsSaving(false); }
     };
 
@@ -166,11 +168,11 @@ export default function PaymentsPage() {
                             : <DollarSign className="w-5 h-5 text-primary shrink-0" />
                         }
                         <h1 className={SIATC_THEME.TYPOGRAPHY.PAGE_TITLE}>
-                            {canViewAll ? 'Todos los Pagos' : 'Mis Pagos'}
+                            {canViewAll ? t('payments.title.all') : t('payments.title.mine')}
                         </h1>
                     </div>
                     <p className={SIATC_THEME.TYPOGRAPHY.PAGE_SUBTITLE}>
-                        {canViewAll ? 'Historial completo de registros del equipo' : 'Historial de tus registros y cobros'}
+                        {canViewAll ? t('payments.subtitle.all') : t('payments.subtitle.mine')}
                     </p>
                 </div>
                 {canRegister && (
@@ -179,7 +181,7 @@ export default function PaymentsPage() {
                         className={cn(SIATC_THEME.COMPONENTS.BUTTON_PRIMARY, 'hidden sm:inline-flex')}
                     >
                         <Plus className="w-4 h-4" />
-                        Registrar Pago
+                        {t('payments.register')}
                     </button>
                 )}
             </div>
@@ -193,14 +195,14 @@ export default function PaymentsPage() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cb-neutral" />
                         <input
                             type="text"
-                            placeholder="Buscar por ticket o autorización..."
+                            placeholder={t('payments.searchPlaceholder')}
                             value={search}
                             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                             className={cn(SIATC_THEME.COMPONENTS.INPUT, 'pl-9')}
                         />
                     </div>
                     <span className="text-xs font-bold text-cb-neutral hidden sm:inline tabular-nums">
-                        {total.toLocaleString()} registros
+                        {t('payments.count', { count: total.toLocaleString() })}
                     </span>
                 </div>
 
@@ -214,11 +216,11 @@ export default function PaymentsPage() {
                     ) : payments.length === 0 ? (
                         <div className="flex flex-col items-center justify-center flex-1 gap-3 p-10 text-center">
                             <DollarSign className="w-10 h-10 text-cb-neutral/40" />
-                            <p className="font-bold text-cb-text-primary">No se encontraron pagos</p>
+                            <p className="font-bold text-cb-text-primary">{t('payments.empty.noPayments')}</p>
                             <p className="text-sm text-cb-text-secondary">
                                 {search
-                                    ? 'Intenta con otra búsqueda.'
-                                    : (canRegister ? 'Registra un pago con el botón superior.' : 'No tienes pagos registrados aún.')}
+                                    ? t('payments.empty.noResults')
+                                    : (canRegister ? t('payments.empty.registerHint') : t('payments.empty.noRegistry'))}
                             </p>
                         </div>
                     ) : (
@@ -233,7 +235,7 @@ export default function PaymentsPage() {
                                         <div className="min-w-0 flex-1">
                                             <div className="flex flex-wrap items-center gap-2 mb-0.5">
                                                 <span className={SIATC_THEME.TYPOGRAPHY.SECTION_TITLE}>
-                                                    {payment.Ticket || 'Sin Ticket'}
+                                                    {payment.Ticket || t('payments.noTicket')}
                                                 </span>
                                                 <span className={badge}>
                                                     <Icon className="w-3 h-3" />
@@ -262,10 +264,10 @@ export default function PaymentsPage() {
                                     {payment.Canal === 'POS' ? (
                                         <div className="grid grid-cols-2 gap-x-4 gap-y-2 bg-card border border-cb-border rounded-lg p-3 text-xs">
                                             {[
-                                                { label: 'Lote',         value: payment.Lote },
-                                                { label: 'Voucher',      value: payment.Voucher },
-                                                { label: 'Izipay',       value: payment.Codigo_Izipay },
-                                                { label: 'Autorización', value: payment.CodigoAutorizacion },
+                                                { label: t('payments.detail.lote'),    value: payment.Lote },
+                                                { label: t('payments.detail.voucher'), value: payment.Voucher },
+                                                { label: t('payments.detail.izipay'),  value: payment.Codigo_Izipay },
+                                                { label: t('payments.detail.auth'),    value: payment.CodigoAutorizacion },
                                             ].map(({ label: lbl, value }) => (
                                                 <div key={lbl}>
                                                     <span className="block text-[10px] font-bold uppercase tracking-wider text-cb-neutral mb-0.5">{lbl}</span>
@@ -275,7 +277,7 @@ export default function PaymentsPage() {
                                         </div>
                                     ) : (
                                         <div className="bg-card border border-cb-border rounded-lg p-3 text-xs">
-                                            <span className="block text-[10px] font-bold uppercase tracking-wider text-cb-neutral mb-0.5">Cód. Operación</span>
+                                            <span className="block text-[10px] font-bold uppercase tracking-wider text-cb-neutral mb-0.5">{t('payments.detail.opCode')}</span>
                                             <span className="font-medium text-cb-text-primary">
                                                 {payment.Codigo_transaccion || payment.CodigoAutorizacion || '—'}
                                             </span>
@@ -296,12 +298,12 @@ export default function PaymentsPage() {
                             disabled={page === 1}
                             className={cn(SIATC_THEME.COMPONENTS.BUTTON_SECONDARY, 'disabled:opacity-40')}
                         >
-                            Anterior
+                            {t('common.previous')}
                         </button>
                         <span className={SIATC_THEME.TYPOGRAPHY.FOOTER_STATS}>
-                            Pág. {page} / {Math.ceil(total / limit)}
+                            {t('payments.pagination.page', { page, total: Math.ceil(total / limit) })}
                             <span className="opacity-60 font-normal normal-case tracking-normal ml-2">
-                                · {total.toLocaleString()} registros
+                                · {t('payments.pagination.records', { count: total.toLocaleString() })}
                             </span>
                         </span>
                         <button
@@ -309,7 +311,7 @@ export default function PaymentsPage() {
                             disabled={page >= Math.ceil(total / limit)}
                             className={cn(SIATC_THEME.COMPONENTS.BUTTON_SECONDARY, 'disabled:opacity-40')}
                         >
-                            Siguiente
+                            {t('common.next')}
                         </button>
                     </div>
                 )}
@@ -320,18 +322,18 @@ export default function PaymentsPage() {
                 <button
                     onClick={() => setShowCreateModal(true)}
                     className="fixed bottom-20 right-5 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-20 sm:hidden"
-                    aria-label="Registrar pago"
+                    aria-label={t('payments.register')}
                 >
                     <Plus className="w-6 h-6" />
                 </button>
             )}
 
             {/* Modal crear pago */}
-            <Modal isOpen={showCreateModal} onClose={() => !isSaving && setShowCreateModal(false)} title="Registrar Pago">
+            <Modal isOpen={showCreateModal} onClose={() => !isSaving && setShowCreateModal(false)} title={t('payments.modal.title')}>
                 <form onSubmit={handleCreatePayment} className="space-y-4 p-1">
 
                     <div>
-                        <label className="block text-xs font-bold text-cb-neutral uppercase tracking-wider mb-1.5">Buscar Ticket</label>
+                        <label className="block text-xs font-bold text-cb-neutral uppercase tracking-wider mb-1.5">{t('payments.modal.searchTicket')}</label>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cb-neutral" />
                             <input
@@ -340,23 +342,23 @@ export default function PaymentsPage() {
                                 value={ticketSearch}
                                 onChange={(e) => setTicketSearch(e.target.value)}
                                 className={cn(inputClass, 'pl-9')}
-                                placeholder="Escribe el número de ticket"
+                                placeholder={t('payments.modal.searchPlaceholder')}
                             />
                             {isSearchingTicket && (
                                 <RefreshCw className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary animate-spin" />
                             )}
                             {showTicketDropdown && ticketSuggestions.length > 0 && (
                                 <div className="absolute z-50 w-full mt-1 bg-card border border-cb-border rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                                    {ticketSuggestions.map((t, i) => (
+                                    {ticketSuggestions.map((sugg, i) => (
                                         <div
                                             key={i}
-                                            onClick={() => handleAddTicket(t.id)}
+                                            onClick={() => handleAddTicket(sugg.id)}
                                             className="px-4 py-3 hover:bg-cb-bg cursor-pointer border-b border-cb-border last:border-0 flex justify-between items-center gap-2"
                                         >
-                                            <span className="font-bold text-cb-text-primary text-sm">{t.id}</span>
+                                            <span className="font-bold text-cb-text-primary text-sm">{sugg.id}</span>
                                             <div className="text-right">
-                                                {t.total && <span className="text-sm font-bold text-primary">S/ {t.total}</span>}
-                                                <p className="text-xs text-cb-text-secondary truncate max-w-[140px]">{t.cliente || 'Sin cliente'}</p>
+                                                {sugg.total && <span className="text-sm font-bold text-primary">S/ {sugg.total}</span>}
+                                                <p className="text-xs text-cb-text-secondary truncate max-w-[140px]">{sugg.cliente || t('payments.modal.noClient')}</p>
                                             </div>
                                         </div>
                                     ))}
@@ -364,7 +366,7 @@ export default function PaymentsPage() {
                             )}
                             {showTicketDropdown && ticketSearch.length >= 3 && ticketSuggestions.length === 0 && !isSearchingTicket && (
                                 <div className="absolute z-50 w-full mt-1 bg-card border border-cb-border rounded-xl shadow-lg p-4 text-center text-sm text-cb-text-secondary">
-                                    No se encontraron tickets en SAP
+                                    {t('payments.modal.noTickets')}
                                 </div>
                             )}
                         </div>
@@ -372,10 +374,10 @@ export default function PaymentsPage() {
 
                     {newPayment.ticket && (
                         <div className="flex flex-wrap gap-2">
-                            {newPayment.ticket.split(',').map(t => t.trim()).filter(Boolean).map(t => (
-                                <span key={t} className={cn(SIATC_THEME.STATES.BADGE_BASE, SIATC_THEME.STATES.PRIMARY, 'h-8 px-3 gap-2')}>
-                                    {t}
-                                    <button type="button" onClick={() => handleRemoveTicket(t)} className="hover:text-red-500 transition-colors">
+                            {newPayment.ticket.split(',').map(tkId => tkId.trim()).filter(Boolean).map(tkId => (
+                                <span key={tkId} className={cn(SIATC_THEME.STATES.BADGE_BASE, SIATC_THEME.STATES.PRIMARY, 'h-8 px-3 gap-2')}>
+                                    {tkId}
+                                    <button type="button" onClick={() => handleRemoveTicket(tkId)} className="hover:text-red-500 transition-colors">
                                         <X className="w-3.5 h-3.5" />
                                     </button>
                                 </span>
@@ -385,7 +387,7 @@ export default function PaymentsPage() {
 
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-xs font-bold text-cb-neutral uppercase tracking-wider mb-1.5">Monto (S/)</label>
+                            <label className="block text-xs font-bold text-cb-neutral uppercase tracking-wider mb-1.5">{t('payments.modal.fields.amount')}</label>
                             <input
                                 type="text" inputMode="decimal" required
                                 value={newPayment.importe}
@@ -395,7 +397,7 @@ export default function PaymentsPage() {
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-cb-neutral uppercase tracking-wider mb-1.5">Canal</label>
+                            <label className="block text-xs font-bold text-cb-neutral uppercase tracking-wider mb-1.5">{t('payments.modal.fields.channel')}</label>
                             <select required value={newPayment.canal} onChange={(e) => setNewPayment({ ...newPayment, canal: e.target.value })} className={cn(inputClass, 'font-bold')}>
                                 <option value="POS">POS IZIPAY</option>
                                 <option value="TRANSFERENCIA">TRANSFERENCIA</option>
@@ -406,17 +408,17 @@ export default function PaymentsPage() {
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold text-cb-neutral uppercase tracking-wider mb-1.5">Fecha</label>
+                        <label className="block text-xs font-bold text-cb-neutral uppercase tracking-wider mb-1.5">{t('payments.modal.fields.date')}</label>
                         <input type="date" required value={newPayment.fecha_transaccion} onChange={(e) => setNewPayment({ ...newPayment, fecha_transaccion: e.target.value })} className={inputClass} />
                     </div>
 
                     {newPayment.canal === 'POS' ? (
                         <div className="grid grid-cols-2 gap-3 bg-cb-bg border border-cb-border p-3 rounded-xl">
                             {[
-                                { label: 'Lote',         key: 'lote',                placeholder: 'Ej. 123',     required: false },
-                                { label: 'Voucher',      key: 'voucher',             placeholder: 'Ej. 456',     required: false },
-                                { label: 'Cód. Izipay',  key: 'codigo_izipay',       placeholder: 'Ej. 789',     required: false },
-                                { label: 'Autorización', key: 'codigo_autorizacion', placeholder: 'Obligatorio', required: true  },
+                                { label: t('payments.modal.fields.lote'),    key: 'lote',                placeholder: 'Ej. 123',     required: false },
+                                { label: t('payments.modal.fields.voucher'), key: 'voucher',             placeholder: 'Ej. 456',     required: false },
+                                { label: t('payments.modal.fields.izipay'),  key: 'codigo_izipay',       placeholder: 'Ej. 789',     required: false },
+                                { label: t('payments.modal.fields.auth'),    key: 'codigo_autorizacion', placeholder: 'Obligatorio', required: true  },
                             ].map(({ label: lbl, key, placeholder, required: req }) => (
                                 <div key={key}>
                                     <label className="block text-[10px] font-bold uppercase tracking-wider text-cb-neutral mb-1">{lbl}</label>
@@ -431,29 +433,29 @@ export default function PaymentsPage() {
                         </div>
                     ) : (
                         <div>
-                            <label className="block text-xs font-bold text-cb-neutral uppercase tracking-wider mb-1.5">Código de Operación</label>
+                            <label className="block text-xs font-bold text-cb-neutral uppercase tracking-wider mb-1.5">{t('payments.modal.fields.opCode')}</label>
                             <input type="text" inputMode="numeric" required value={newPayment.codigo_autorizacion}
                                 onChange={(e) => setNewPayment({ ...newPayment, codigo_autorizacion: e.target.value })}
-                                className={inputClass} placeholder="N° de operación bancaria" />
+                                className={inputClass} placeholder={t('payments.modal.fields.opPlaceholder')} />
                         </div>
                     )}
 
                     <div>
-                        <label className="block text-xs font-bold text-cb-neutral uppercase tracking-wider mb-1.5">Observación (Opcional)</label>
+                        <label className="block text-xs font-bold text-cb-neutral uppercase tracking-wider mb-1.5">{t('payments.modal.fields.observation')}</label>
                         <textarea
                             value={newPayment.observacion}
                             onChange={(e) => setNewPayment({ ...newPayment, observacion: e.target.value })}
                             className="w-full px-3 py-3 bg-cb-bg border border-cb-border rounded-lg text-sm text-cb-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none h-20"
-                            placeholder="Notas adicionales..."
+                            placeholder={t('payments.modal.fields.observationPlaceholder')}
                         />
                     </div>
 
                     <div className="flex gap-3 pt-1">
                         <button type="button" onClick={() => setShowCreateModal(false)} className={cn(SIATC_THEME.COMPONENTS.BUTTON_SECONDARY, 'flex-1 h-11')}>
-                            Cancelar
+                            {t('payments.modal.cancel')}
                         </button>
                         <button type="submit" disabled={isSaving || isFetchingTicket} className={cn(SIATC_THEME.COMPONENTS.BUTTON_PRIMARY, 'flex-1 h-11 disabled:opacity-50')}>
-                            {isSaving ? <><RefreshCw className="w-4 h-4 animate-spin" /> Guardando...</> : 'Guardar'}
+                            {isSaving ? <><RefreshCw className="w-4 h-4 animate-spin" /> {t('payments.modal.saving')}</> : t('payments.modal.save')}
                         </button>
                     </div>
                 </form>

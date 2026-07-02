@@ -6,6 +6,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { UsersService } from '../services/usersService';
 import { cn } from '../utils/cn';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Compresses and resizes an image file to a base64 DataURL.
@@ -21,7 +22,6 @@ function compressImage(file: File, maxSize = 256, quality = 0.8): Promise<string
                 let w = img.width;
                 let h = img.height;
 
-                // Scale down to maxSize while maintaining aspect ratio
                 if (w > h) {
                     if (w > maxSize) { h = Math.round((h * maxSize) / w); w = maxSize; }
                 } else {
@@ -43,6 +43,7 @@ function compressImage(file: File, maxSize = 256, quality = 0.8): Promise<string
 }
 
 export default function ProfilePage() {
+    const { t } = useTranslation();
     const { user, login } = useAuth();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -86,7 +87,7 @@ export default function ProfilePage() {
             setStatus('idle');
         } catch {
             setStatus('error');
-            setMessage('Error al procesar la imagen');
+            setMessage(t('profile.errors.imageError'));
         }
     };
 
@@ -94,16 +95,15 @@ export default function ProfilePage() {
         e.preventDefault();
         if (!user) return;
 
-        // Validate passwords match
         if (formData.password && formData.password !== formData.confirmPassword) {
             setStatus('error');
-            setMessage('Las contraseñas no coinciden');
+            setMessage(t('profile.errors.passwordMismatch'));
             return;
         }
 
         if (formData.password && formData.password.length < 4) {
             setStatus('error');
-            setMessage('La contraseña debe tener al menos 4 caracteres');
+            setMessage(t('profile.errors.passwordMin'));
             return;
         }
 
@@ -117,24 +117,22 @@ export default function ProfilePage() {
 
             const savedUser = await UsersService.saveUser(updatedUser);
 
-            // Merge only visual/profile fields — preserve session state
             const mergedUser = {
                 ...user,
                 avatar_url: savedUser.avatar_url,
                 full_name: savedUser.full_name,
-                // If user changed their password from this page, clear the flag
                 requires_password_change: formData.password ? false : user.requires_password_change
             };
             login(mergedUser);
 
             setStatus('success');
-            setMessage('Perfil actualizado correctamente');
+            setMessage(t('profile.success.updated'));
             setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
             setTimeout(() => setStatus('idle'), 4000);
         } catch (error) {
             console.error('Profile update error:', error);
             setStatus('error');
-            setMessage('Error al actualizar el perfil');
+            setMessage(t('profile.errors.updateFailed'));
         } finally {
             setIsSaving(false);
         }
@@ -150,8 +148,8 @@ export default function ProfilePage() {
             <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in zoom-in-95">
                 {/* Header */}
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Mi Perfil</h1>
-                    <p className="text-muted-foreground">Gestiona tu información personal y credenciales.</p>
+                    <h1 className="text-2xl font-bold tracking-tight">{t('profile.title')}</h1>
+                    <p className="text-muted-foreground">{t('profile.subtitle')}</p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -159,12 +157,10 @@ export default function ProfilePage() {
                     {/* Left Column: Profile Card */}
                     <div className="lg:col-span-1 space-y-4">
                         <div className="bg-card border rounded-lg shadow-sm overflow-hidden transition-all hover:shadow-md">
-                            {/* Gradient banner */}
                             <div className="h-24 bg-gradient-to-br from-primary/80 to-primary relative overflow-hidden">
                                 <div className="absolute inset-0 bg-white/10 opacity-30 backdrop-blur-3xl" />
                             </div>
 
-                            {/* Avatar */}
                             <div className="flex flex-col items-center -mt-14 px-6 pb-6">
                                 <div className="relative group">
                                     <div className="w-28 h-28 rounded-full border-4 border-card bg-muted flex items-center justify-center overflow-hidden shadow-xl ring-2 ring-primary/20">
@@ -178,7 +174,7 @@ export default function ProfilePage() {
                                         type="button"
                                         onClick={() => fileInputRef.current?.click()}
                                         className="absolute bottom-1 right-1 p-2 bg-primary text-primary-foreground rounded-full shadow-lg hover:bg-primary/90 hover:scale-110 transition-all duration-200 ring-2 ring-background"
-                                        title="Cambiar foto de perfil"
+                                        title={t('profile.changePhoto')}
                                     >
                                         <Camera className="w-4 h-4" />
                                     </button>
@@ -194,17 +190,16 @@ export default function ProfilePage() {
                                 <h2 className="mt-4 text-xl font-bold tracking-tight text-foreground">{user.full_name || user.username}</h2>
                                 <p className="text-sm text-primary font-medium">@{user.username}</p>
 
-                                {/* Role badge */}
                                 <div className="mt-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 dark:bg-primary/30 text-primary dark:text-primary text-xs font-bold border border-blue-100 dark:border-blue-800">
                                     <Shield className="w-3.5 h-3.5" />
-                                    {user.role_name || 'Sin rol'}
+                                    {user.role_name || t('profile.noRole')}
                                 </div>
                             </div>
                         </div>
 
                         {/* Quick Info Card */}
                         <div className="bg-card border rounded-lg shadow-sm p-6 space-y-5 transition-all hover:shadow-md">
-                            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Información</h3>
+                            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('profile.info')}</h3>
 
                             <div className="space-y-4">
                                 <div className="flex items-center gap-4 group">
@@ -212,7 +207,7 @@ export default function ProfilePage() {
                                         <Mail className="w-5 h-5 text-primary dark:text-primary" />
                                     </div>
                                     <div className="overflow-hidden">
-                                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Email</p>
+                                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{t('profile.labels.email')}</p>
                                         <p className="text-sm font-bold truncate text-foreground">{user.email}</p>
                                     </div>
                                 </div>
@@ -222,7 +217,7 @@ export default function ProfilePage() {
                                         <Building2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                                     </div>
                                     <div className="overflow-hidden">
-                                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Gerencia</p>
+                                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{t('profile.labels.management')}</p>
                                         <p className="text-sm font-bold truncate text-foreground">{user.management_name || user.management_id}</p>
                                     </div>
                                 </div>
@@ -232,8 +227,8 @@ export default function ProfilePage() {
                                         <BadgeCheck className="w-5 h-5 text-green-600 dark:text-green-400" />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Estado</p>
-                                        <p className="text-sm font-bold text-green-600 dark:text-green-400">Activo</p>
+                                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{t('profile.labels.status')}</p>
+                                        <p className="text-sm font-bold text-green-600 dark:text-green-400">{t('profile.statusActive')}</p>
                                     </div>
                                 </div>
                             </div>
@@ -248,16 +243,16 @@ export default function ProfilePage() {
                             <div className="px-6 py-5 border-b border-border bg-muted/30">
                                 <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
                                     <User className="w-4 h-4 text-primary" />
-                                    Cuenta
+                                    {t('profile.account.title')}
                                 </h3>
-                                <p className="text-xs text-muted-foreground mt-1">Tu nombre de usuario y correo electrónico.</p>
+                                <p className="text-xs text-muted-foreground mt-1">{t('profile.account.desc')}</p>
                             </div>
 
                             <div className="p-6 space-y-5">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                     <div>
                                         <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">
-                                            Usuario
+                                            {t('profile.labels.username')}
                                         </label>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
@@ -274,7 +269,7 @@ export default function ProfilePage() {
 
                                     <div>
                                         <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">
-                                            Email
+                                            {t('profile.labels.email')}
                                         </label>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
@@ -293,7 +288,7 @@ export default function ProfilePage() {
                                 <div className="p-3 bg-primary/5 dark:bg-primary/20 rounded-lg border border-blue-100 dark:border-blue-900/50">
                                     <p className="text-[11px] text-primary dark:text-primary font-medium flex items-center gap-2">
                                         <AlertCircle className="w-3.5 h-3.5 inline" />
-                                        Estos campos son de solo lectura. Si necesitas un cambio, contacta al administrador del sistema.
+                                        {t('profile.account.readonlyNote')}
                                     </p>
                                 </div>
                             </div>
@@ -305,16 +300,16 @@ export default function ProfilePage() {
                                 <div className="px-6 py-5 border-b border-border bg-muted/30">
                                     <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
                                         <Lock className="w-4 h-4 text-primary" />
-                                        Seguridad
+                                        {t('profile.security.title')}
                                     </h3>
-                                    <p className="text-xs text-muted-foreground mt-1">Cambia tu contraseña de acceso.</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{t('profile.security.desc')}</p>
                                 </div>
 
                                 <div className="p-6 space-y-5">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                         <div>
                                             <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">
-                                                Nueva Contraseña
+                                                {t('profile.labels.newPassword')}
                                             </label>
                                             <div className="relative">
                                                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
@@ -333,7 +328,7 @@ export default function ProfilePage() {
                                         </div>
                                         <div>
                                             <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">
-                                                Confirmar Contraseña
+                                                {t('profile.labels.confirmPassword')}
                                             </label>
                                             <div className="relative">
                                                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
@@ -356,7 +351,7 @@ export default function ProfilePage() {
                                     </div>
 
                                     <p className="text-[11px] text-muted-foreground font-medium">
-                                        Deja los campos vacíos para mantener tu contraseña actual. Mínimo 4 caracteres.
+                                        {t('profile.security.hint')}
                                     </p>
                                 </div>
                             </div>
@@ -391,7 +386,7 @@ export default function ProfilePage() {
                                     ) : (
                                         <Save className="w-4 h-4" />
                                     )}
-                                    {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+                                    {isSaving ? t('profile.saving') : t('profile.saveChanges')}
                                 </button>
                             </div>
                         </form>

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { 
-    CreditCard, 
-    CheckCircle2, 
-    Clock, 
+import {
+    CreditCard,
+    CheckCircle2,
+    Clock,
     Wallet,
     RefreshCcw,
     AlertCircle
@@ -11,8 +11,10 @@ import { cn } from '../utils/cn';
 import { DashboardService, type DashboardStats } from '../services/dashboardService';
 import { useAuth } from '../hooks/useAuth';
 import { SIATC_THEME } from '../utils/siatc-theme';
+import { useTranslation } from 'react-i18next';
 
 export default function DashboardPage() {
+    const { t } = useTranslation();
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const { user } = useAuth();
@@ -34,37 +36,37 @@ export default function DashboardPage() {
     };
 
     const cards = [
-        { 
-            label: 'Mi Recaudación Total', 
-            value: `S/ ${parseFloat(String(stats?.monto_total || 0)).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`, 
-            icon: Wallet, 
-            color: 'text-primary', 
+        {
+            label: t('dashboard.stats.total'),
+            value: `S/ ${parseFloat(String(stats?.monto_total || 0)).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`,
+            icon: Wallet,
+            color: 'text-primary',
             bg: 'bg-primary/10',
-            sub: 'Monto acumulado'
+            sub: t('dashboard.stats.subs.total')
         },
-        { 
-            label: 'Pagos Liquidados', 
-            value: stats?.liquidados_sap || '0', 
-            icon: CheckCircle2, 
-            color: 'text-emerald-600', 
+        {
+            label: t('dashboard.stats.settled'),
+            value: stats?.liquidados_sap || '0',
+            icon: CheckCircle2,
+            color: 'text-emerald-600',
             bg: 'bg-emerald-500/10',
-            sub: 'Pagos confirmados'
+            sub: t('dashboard.stats.subs.settled')
         },
-        { 
-            label: 'Pendientes', 
-            value: stats?.pendientes_recepcionar || '0', 
-            icon: Clock, 
-            color: 'text-amber-600', 
+        {
+            label: t('dashboard.stats.pending'),
+            value: stats?.pendientes_recepcionar || '0',
+            icon: Clock,
+            color: 'text-amber-600',
             bg: 'bg-amber-500/10',
-            sub: 'En proceso de liquidación'
+            sub: t('dashboard.stats.subs.pending')
         },
-        { 
-            label: 'Observados', 
-            value: stats?.alertas_pos || '0', 
-            icon: AlertCircle, 
-            color: 'text-red-600', 
+        {
+            label: t('dashboard.stats.observed'),
+            value: stats?.alertas_pos || '0',
+            icon: AlertCircle,
+            color: 'text-red-600',
             bg: 'bg-red-500/10',
-            sub: 'Requieren atención'
+            sub: t('dashboard.stats.subs.observed')
         },
     ];
 
@@ -74,16 +76,16 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-2">
                 <div>
                     <h1 className="text-xl font-bold tracking-tight text-foreground">
-                        Hola, {user?.username || 'Técnico'}
+                        {t('dashboard.greeting', { name: user?.username || 'Técnico' })}
                     </h1>
-                    <p className="text-muted-foreground text-xs font-medium">Este es tu resumen de actividades y servicios.</p>
+                    <p className="text-muted-foreground text-xs font-medium">{t('dashboard.summary')}</p>
                 </div>
                 <div className="flex items-center justify-between mt-2">
                     <div className="text-[10px] text-muted-foreground font-bold opacity-70">
-                        Actualizado: {new Date().toLocaleTimeString()}
+                        {t('dashboard.updatedAt')}: {new Date().toLocaleTimeString()}
                     </div>
-                    <button 
-                        onClick={loadData} 
+                    <button
+                        onClick={loadData}
                         disabled={isLoading}
                         className={cn(
                             "p-2 bg-card border border-border text-primary hover:bg-primary/10 transition-all shadow-sm active:scale-95 disabled:opacity-50",
@@ -120,10 +122,10 @@ export default function DashboardPage() {
                 SIATC_THEME.TOKENS.MASTER_ROUNDNESS
             )}>
                 <div>
-                    <h3 className="font-bold text-sm text-foreground">Registrar Pago</h3>
-                    <p className="text-xs text-muted-foreground mt-1">Ingresa el pago de tus servicios finalizados.</p>
+                    <h3 className="font-bold text-sm text-foreground">{t('dashboard.registerPayment.title')}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">{t('dashboard.registerPayment.desc')}</p>
                 </div>
-                <a 
+                <a
                     href="/payments"
                     className={cn(
                         "w-10 h-10 bg-primary text-primary-foreground flex items-center justify-center shadow-md active:scale-95 transition-transform",

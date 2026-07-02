@@ -37,19 +37,19 @@ export function Sidebar({ className, onNavigate, isEffectivelyExpanded = true }:
         {
             to: '/tickets',
             icon: Calendar,
-            label: 'Mis Tickets',
+            label: t('nav.tickets'),
             permission: 'tec.tickets.view' as const
         },
         {
             to: '/payments',
             icon: DollarSign,
-            label: 'Mis Pagos',
+            label: t('nav.payments'),
             permission: 'tec.payments.view' as const
         },
         {
             to: '/config/audit',
             icon: Terminal,
-            label: 'Logs de Auditoría',
+            label: t('nav.audit'),
             permission: 'tec.config.audit' as const
         }
     ];
@@ -85,7 +85,7 @@ export function Sidebar({ className, onNavigate, isEffectivelyExpanded = true }:
             {/* Navigation */}
             {showFull ? (
                 <nav className="flex-1 px-3 py-6 space-y-1.5 overflow-y-auto custom-scrollbar">
-                    <p className="text-[10px] font-black text-muted-foreground tracking-[0.2em] px-4 py-2 uppercase opacity-40">Menú Principal</p>
+                    <p className="text-[10px] font-black text-muted-foreground tracking-[0.2em] px-4 py-2 uppercase opacity-40">{t('nav.menuTitle')}</p>
                     {filteredNavItems.map((item) => (
                         <NavLink
                             key={item.to}
@@ -138,7 +138,7 @@ export function Sidebar({ className, onNavigate, isEffectivelyExpanded = true }:
                     <div className="mx-4 mb-4 p-4 rounded-[1.5rem] bg-muted/20 border border-border/50 flex items-center gap-3 shrink-0">
                         <Building2 className="w-5 h-5 text-primary shrink-0" />
                         <div className="overflow-hidden">
-                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider leading-none">CAS Asignado</p>
+                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider leading-none">{t('nav.casLabel')}</p>
                             <p className="text-xs font-bold text-foreground truncate mt-1">{user.cas_name}</p>
                         </div>
                     </div>

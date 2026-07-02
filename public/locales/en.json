@@ -522,6 +522,8 @@
     "footer": {
       "system": "SIATC System",
       "version": "Technical Mgmt v3.5"
-    }
+    },
+    "noPermissionsTitle": "No configuration permissions",
+    "noPermissionsMessage": "You don't have any permission assigned to view this module. Contact the system administrator if you believe this is an error."
   }
 }

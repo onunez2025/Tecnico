@@ -1420,7 +1420,7 @@ app.get('/api/config/rango-horario-limit', verifyToken, async (_req: Request, re
     } catch (err: any) { res.status(500).json({ error: safeError(err) }); }
 });
 
-app.post('/api/config/rango-horario-limit', verifyToken, checkPermission('tec.config.users'), async (req: Request, res: Response) => {
+app.post('/api/config/rango-horario-limit', verifyToken, checkPermission('tec.config.parameters'), async (req: Request, res: Response) => {
     try {
         const { limit } = req.body;
         if (!limit || !/^\d{2}:\d{2}$/.test(limit)) {

@@ -9,7 +9,6 @@ import { ConfigLayout } from './pages/config/ConfigLayout';
 // Pages - Lazy loaded
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
-const CentralizedConfigPage = lazy(() => import('./pages/config/CentralizedConfigPage'));
 const SystemConfigPage = lazy(() => import('./pages/config/SystemConfigPage'));
 const AuditLogPage = lazy(() => import('./pages/config/AuditLogPage'));
 const TicketsCalendarPage = lazy(() => import('./pages/TicketsCalendarPage'));
@@ -33,8 +32,8 @@ function HomeRedirect() {
   if (hasPermission('tec.tickets.view')) {
     return <Navigate to="/tickets" replace />;
   }
-  if (hasPermission('tec.config.users')) {
-    return <Navigate to="/config/users" replace />;
+  if (hasPermission('tec.config.parameters') || hasPermission('tec.config.audit')) {
+    return <Navigate to="/config" replace />;
   }
   return <Navigate to="/profile" replace />;
 }
@@ -65,19 +64,8 @@ function App() {
                 } />
 
                 <Route path="/config" element={<ConfigLayout />}>
-                  <Route index element={<Navigate to="users" replace />} />
-                  <Route path="users" element={
-                    <PermissionGuard permission="tec.config.users" asRoute>
-                      <CentralizedConfigPage />
-                    </PermissionGuard>
-                  } />
-                  <Route path="roles" element={
-                    <PermissionGuard permission="tec.config.roles" asRoute>
-                      <CentralizedConfigPage />
-                    </PermissionGuard>
-                  } />
                   <Route path="parameters" element={
-                    <PermissionGuard permission="tec.config.users" asRoute>
+                    <PermissionGuard permission="tec.config.parameters" asRoute>
                       <SystemConfigPage />
                     </PermissionGuard>
                   } />

@@ -522,6 +522,8 @@
     "footer": {
       "system": "Sistema SIATC",
       "version": "Gestión Técnica v3.5"
-    }
+    },
+    "noPermissionsTitle": "Sin permisos de configuración",
+    "noPermissionsMessage": "No tienes ningún permiso asignado para ver este módulo. Contacta al administrador del sistema si crees que esto es un error."
   }
 }

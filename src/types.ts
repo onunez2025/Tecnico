@@ -40,6 +40,7 @@ export type Permission =
   | 'tec.config.users'
   | 'tec.config.roles'
   | 'tec.config.audit'
+  | 'tec.config.parameters'
   | 'tec.tickets.view'
   | 'tec.dashboard.view'
   | 'tec.payments.view'

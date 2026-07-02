@@ -174,9 +174,9 @@ export function MainLayout() {
                         </button>
 
                         {/* Config (Gear Icon) */}
-                        {hasPermission('tec.config.users') && (
+                        {(hasPermission('tec.config.parameters') || hasPermission('tec.config.audit')) && (
                             <NavLink
-                                to="/config/users"
+                                to="/config"
                                 className={({ isActive }) => cn(
                                     "w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 group",
                                     isActive
@@ -257,9 +257,9 @@ export function MainLayout() {
                             <span className="text-[10px] font-medium">Pagos</span>
                         </NavLink>
                     )}
-                    {(hasPermission('tec.config.users') || hasPermission('tec.config.roles') || hasPermission('tec.config.audit')) && (
+                    {(hasPermission('tec.config.parameters') || hasPermission('tec.config.audit')) && (
                         <NavLink
-                            to="/config/users"
+                            to="/config"
                             className={({ isActive }) => cn(
                                 "flex-1 flex flex-col items-center justify-center gap-1 py-2.5 min-h-[56px] transition-colors",
                                 isActive ? "text-primary" : "text-muted-foreground"

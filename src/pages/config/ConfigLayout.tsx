@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Users, Shield, Sliders, Terminal, ChevronRight, Settings2 } from 'lucide-react';
+import { Sliders, Terminal, ChevronRight, Settings2, ShieldAlert } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAuth } from '../../hooks/useAuth';
 import { SIATC_THEME } from '../../utils/siatc-theme';
@@ -11,9 +11,7 @@ export function ConfigLayout() {
     const location = useLocation();
 
     const configItems = [
-        { to: '/config/users', icon: Users, label: t('config.items.users'), permission: 'tec.config.users' as const },
-        { to: '/config/roles', icon: Shield, label: t('config.items.roles'), permission: 'tec.config.roles' as const },
-        { to: '/config/parameters', icon: Sliders, label: t('config.items.parameters'), permission: 'tec.config.users' as const },
+        { to: '/config/parameters', icon: Sliders, label: t('config.items.parameters'), permission: 'tec.config.parameters' as const },
         { to: '/config/audit', icon: Terminal, label: t('config.items.audit'), permission: 'tec.config.audit' as const },
     ];
 
@@ -26,6 +24,20 @@ export function ConfigLayout() {
         if (filteredItems.length > 0) {
             return <Navigate to={filteredItems[0].to} replace />;
         }
+    }
+
+    if (filteredItems.length === 0) {
+        return (
+            <div className={cn(SIATC_THEME.LAYOUT.PAGE_WRAPPER, "justify-center items-center min-h-[50vh]")}>
+                <div className="flex flex-col items-center gap-4 text-center max-w-md">
+                    <div className="w-16 h-16 rounded-full bg-destructive/10 text-destructive flex items-center justify-center">
+                        <ShieldAlert className="w-8 h-8" />
+                    </div>
+                    <h2 className="text-lg font-bold text-cb-text-primary">{t('config.noPermissionsTitle')}</h2>
+                    <p className="text-sm text-cb-text-secondary">{t('config.noPermissionsMessage')}</p>
+                </div>
+            </div>
+        );
     }
 
     return (

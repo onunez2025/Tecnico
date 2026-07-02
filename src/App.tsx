@@ -10,6 +10,7 @@ import { ConfigLayout } from './pages/config/ConfigLayout';
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const CentralizedConfigPage = lazy(() => import('./pages/config/CentralizedConfigPage'));
+const SystemConfigPage = lazy(() => import('./pages/config/SystemConfigPage'));
 const AuditLogPage = lazy(() => import('./pages/config/AuditLogPage'));
 const TicketsCalendarPage = lazy(() => import('./pages/TicketsCalendarPage'));
 const PaymentsPage = lazy(() => import('./pages/PaymentsPage'));
@@ -73,6 +74,11 @@ function App() {
                   <Route path="roles" element={
                     <PermissionGuard permission="tec.config.roles" asRoute>
                       <CentralizedConfigPage />
+                    </PermissionGuard>
+                  } />
+                  <Route path="parameters" element={
+                    <PermissionGuard permission="tec.config.users" asRoute>
+                      <SystemConfigPage />
                     </PermissionGuard>
                   } />
                   <Route path="audit" element={

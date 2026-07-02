@@ -509,6 +509,19 @@
     "desc": "La administración de usuarios, perfiles y permisos ha sido migrada estrictamente a <1>{{console}}</1> para garantizar la integridad y sincronización de datos de todo el ecosistema SIATC.",
     "centralConsole": "Consola Central",
     "goConsole": "Ir a Consola",
-    "version": "Ecosistema Unificado SIATC v3.5"
+    "version": "Ecosistema Unificado SIATC v3.5",
+    "moduleLabel": "Módulo de",
+    "moduleTitle": "Configuración",
+    "sectionLabel": "Seguridad y Parámetros",
+    "items": {
+      "users": "Gestión de Usuarios",
+      "roles": "Perfiles y Permisos",
+      "parameters": "Parámetros del Sistema",
+      "audit": "Logs de Auditoría"
+    },
+    "footer": {
+      "system": "Sistema SIATC",
+      "version": "Gestión Técnica v3.5"
+    }
   }
 }

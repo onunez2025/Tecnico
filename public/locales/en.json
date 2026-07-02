@@ -509,6 +509,19 @@
     "desc": "User, profile and permission administration has been strictly migrated to <1>{{console}}</1> to ensure the integrity and synchronization of data across the SIATC ecosystem.",
     "centralConsole": "Central Console",
     "goConsole": "Go to Console",
-    "version": "Unified SIATC Ecosystem v3.5"
+    "version": "Unified SIATC Ecosystem v3.5",
+    "moduleLabel": "Module",
+    "moduleTitle": "Configuration",
+    "sectionLabel": "Security & Parameters",
+    "items": {
+      "users": "User Management",
+      "roles": "Profiles & Permissions",
+      "parameters": "System Parameters",
+      "audit": "Audit Logs"
+    },
+    "footer": {
+      "system": "SIATC System",
+      "version": "Technical Mgmt v3.5"
+    }
   }
 }

@@ -121,7 +121,7 @@ export const SIATC_THEME = {
 
     // 7. ESTRUCTURA DE INICIO DE SESIÓN (LOGIN_LAYOUT)
     LOGIN_LAYOUT: {
-        CONTAINER: "min-h-screen flex flex-col md:flex-row bg-[#F9FAFB] dark:bg-[#050F1A] text-cb-text-primary transition-colors duration-300",
+        CONTAINER: "min-h-dvh flex flex-col md:flex-row bg-[#F9FAFB] dark:bg-[#050F1A] text-cb-text-primary transition-colors duration-300",
         CENTERED_CONTAINER: "min-h-screen bg-[#F9FAFB] dark:bg-[#050F1A] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300 text-cb-text-primary",
         CENTERED_HEADER: "sm:mx-auto sm:w-full sm:max-w-md flex flex-col items-center text-center",
         LEFT_PANEL: "hidden md:flex flex-col justify-between w-1/2 bg-slate-900 text-white p-12 relative overflow-hidden",

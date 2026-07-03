@@ -32,8 +32,8 @@ function HomeRedirect() {
   if (hasPermission('tec.tickets.view')) {
     return <Navigate to="/tickets" replace />;
   }
-  if (hasPermission('tec.config.parameters') || hasPermission('tec.config.audit')) {
-    return <Navigate to="/config" replace />;
+  if (hasPermission('tec.config.access')) {
+    return <Navigate to="/config/parameters" replace />;
   }
   return <Navigate to="/profile" replace />;
 }
@@ -63,7 +63,12 @@ function App() {
                   </PermissionGuard>
                 } />
 
-                <Route path="/config" element={<ConfigLayout />}>
+                <Route path="/config" element={
+                  <PermissionGuard permission="tec.config.access" asRoute>
+                    <ConfigLayout />
+                  </PermissionGuard>
+                }>
+                  <Route index element={<Navigate to="parameters" replace />} />
                   <Route path="parameters" element={
                     <PermissionGuard permission="tec.config.parameters" asRoute>
                       <SystemConfigPage />

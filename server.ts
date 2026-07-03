@@ -1408,7 +1408,7 @@ app.post('/api/tec/tickets/rango-horario', verifyToken, checkPermission('tec.tic
     }
 });
 
-app.get('/api/config/rango-horario-limit', verifyToken, async (_req: Request, res: Response) => {
+app.get('/api/config/rango-horario-limit', verifyToken, checkPermission('tec.config.access'), async (_req: Request, res: Response) => {
     try {
         const cached = cacheGet('rango-horario-limit');
         if (cached) return res.json(cached);

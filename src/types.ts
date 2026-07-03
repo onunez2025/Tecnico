@@ -39,6 +39,7 @@ export interface TicketPago {
 export type Permission =
   | 'tec.config.users'
   | 'tec.config.roles'
+  | 'tec.config.access'
   | 'tec.config.audit'
   | 'tec.config.parameters'
   | 'tec.tickets.view'

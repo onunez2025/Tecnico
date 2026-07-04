@@ -119,14 +119,12 @@ export function MainLayout() {
                         (isEffectivelyExpanded || sidebarOpen) ? 'rounded-[2.5rem]' : 'rounded-2xl',
                         SIATC_THEME.TOKENS.SIDEBAR_BG
                     )}>
-                        <div className="flex items-center justify-end p-6 lg:hidden">
-                            <button
-                                onClick={() => setSidebarOpen(false)}
-                                className="p-2 hover:bg-rose-500/10 hover:text-rose-500 rounded-2xl transition-all cursor-pointer"
-                            >
-                                <X className="w-6 h-6" />
-                            </button>
-                        </div>
+                        <button
+                            onClick={() => setSidebarOpen(false)}
+                            className="absolute top-4 right-4 z-10 p-2 hover:bg-rose-500/10 hover:text-rose-500 rounded-2xl transition-all cursor-pointer lg:hidden"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
                         <Sidebar className="flex-1" onNavigate={handleMobileNavClose} isEffectivelyExpanded={isEffectivelyExpanded || sidebarOpen} />
                     </div>
                 </div>

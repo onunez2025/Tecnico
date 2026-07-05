@@ -7,6 +7,10 @@ export class StorageService {
         } else {
             sessionStorage.setItem('auth_token', token);
         }
+        // Notifica a AppConfigContext (montado una sola vez al cargar la página,
+        // antes de que exista sesión) que ya hay un token disponible para
+        // reintentar el fetch de /api/applications (branding, logo, etc.).
+        window.dispatchEvent(new Event('siatc:token-updated'));
     }
     
     static getToken(): string | null {

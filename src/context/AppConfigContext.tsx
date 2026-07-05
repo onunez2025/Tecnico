@@ -169,6 +169,13 @@ export const AppConfigProvider = ({ children }: { children: React.ReactNode }) =
 
     useEffect(() => {
         refreshApplications();
+
+        // Este provider se monta una sola vez al cargar la página, antes de que
+        // exista sesión — si el login ocurre por navegación SPA (sin recargar),
+        // el fetch inicial ya falló sin token y nunca se reintentaba. Se vuelve
+        // a pedir la configuración en cuanto haya un token nuevo disponible.
+        window.addEventListener('siatc:token-updated', refreshApplications);
+        return () => window.removeEventListener('siatc:token-updated', refreshApplications);
     }, [refreshApplications]);
 
     return (

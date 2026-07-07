@@ -29,6 +29,23 @@
     "loginButton": "Log In",
     "errors": {
       "invalid": "Invalid credentials"
+    },
+    "sso": {
+      "divider": "Or continue with",
+      "validating": "Validating your session...",
+      "loginError": "We couldn't validate your session. Please try again.",
+      "status": {
+        "pendingTitle": "Request submitted",
+        "pendingMessage": "Your access request was registered. An administrator must review and approve it before you can sign in.",
+        "rejectedTitle": "Request rejected",
+        "rejectedMessage": "Your access request was rejected.",
+        "rejectedReason": "Reason:",
+        "errorTitle": "Something went wrong",
+        "backToLogin": "Back to sign in",
+        "retriesLeft_one": "You have {{count}} retry left.",
+        "retriesLeft_other": "You have {{count}} retries left.",
+        "resubmit": "Request access again"
+      }
     }
   },
   "nav": {

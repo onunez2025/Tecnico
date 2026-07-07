@@ -8,6 +8,8 @@ import { ConfigLayout } from './pages/config/ConfigLayout';
 
 // Pages - Lazy loaded
 const LoginPage = lazy(() => import('./pages/LoginPage'));
+const SsoLoginPage = lazy(() => import('./pages/SsoLoginPage'));
+const SsoStatusPage = lazy(() => import('./pages/SsoStatusPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SystemConfigPage = lazy(() => import('./pages/config/SystemConfigPage'));
 const AuditLogPage = lazy(() => import('./pages/config/AuditLogPage'));
@@ -47,7 +49,9 @@ function App() {
             <Suspense fallback={<LoadingFallback />}>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
-              
+              <Route path="/sso-login" element={<SsoLoginPage />} />
+              <Route path="/sso-status" element={<SsoStatusPage />} />
+
               <Route element={<MainLayout />}>
                 <Route path="/profile" element={<ProfilePage />} />
                 

@@ -13,6 +13,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@azure/msal-node": "^5.3.1",
     "@azure/storage-blob": "^12.32.0",
     "@types/multer": "^2.1.0",
     "@types/uuid": "^10.0.0",
@@ -33,6 +34,7 @@
     "motion": "^12.0.0-alpha.0",
     "mssql": "^12.2.0",
     "multer": "^2.1.1",
+    "nodemailer": "^9.0.3",
     "rate-limit-redis": "^5.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -50,6 +52,7 @@
     "@types/jsonwebtoken": "^9.0.8",
     "@types/mssql": "^9.1.11",
     "@types/node": "^22.10.10",
+    "@types/nodemailer": "^8.0.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",

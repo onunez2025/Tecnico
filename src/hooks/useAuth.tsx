@@ -6,7 +6,7 @@ import { API_BASE_URL } from '../services/apiClient';
 interface AuthContextType {
     user: User | null;
     sessionConfig: SessionConfig | null;
-    login: (user: User, token?: string, remember?: boolean, sessionConfig?: SessionConfig) => void;
+    login: (user: User, token?: string, remember?: boolean, sessionConfig?: SessionConfig, skipSharedCookie?: boolean) => void;
     logout: () => void;
     isAuthenticated: boolean;
     isLoading: boolean;
@@ -127,9 +127,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     StorageService.setCurrentUser(data.user);
                     if (data.token) {
                         StorageService.setToken(data.token);
-                        const isProd = window.location.hostname.endsWith('.siatc.cloud');
-                        const cookieDomain = isProd ? '; domain=.siatc.cloud' : '';
-                        document.cookie = `token=${data.token}; path=/${cookieDomain}; max-age=${24 * 60 * 60}; SameSite=Lax; Secure=${isProd ? 'true' : 'false'}`;
+                        // No reescribir la cookie compartida si el token viene del piloto Casdoor
+                        // (ssoPilot=true, propagado por el servidor en /auth/me) — este useEffect
+                        // corre en cada carga de página, así que sin este chequeo terminaría
+                        // reescribiendo la cookie igual en cada montaje (mismo hallazgo que en
+                        // Devoluciones).
+                        const freshPayload = decodeJwt(data.token);
+                        if (!freshPayload?.ssoPilot) {
+                            const isProd = window.location.hostname.endsWith('.siatc.cloud');
+                            const cookieDomain = isProd ? '; domain=.siatc.cloud' : '';
+                            document.cookie = `token=${data.token}; path=/${cookieDomain}; max-age=${24 * 60 * 60}; SameSite=Lax; Secure=${isProd ? 'true' : 'false'}`;
+                        }
                     }
                 } else {
                     logout();
@@ -145,7 +153,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         validateSession();
     }, [logout]);
 
-    const login = useCallback((newUser: User, token?: string, remember: boolean = true, newSessionConfig?: SessionConfig) => {
+    const login = useCallback((newUser: User, token?: string, remember: boolean = true, newSessionConfig?: SessionConfig, skipSharedCookie = false) => {
         setUser(newUser);
         StorageService.setCurrentUser(newUser, remember);
         if (newSessionConfig) {
@@ -156,9 +164,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             StorageService.setToken(token, remember);
             // El server ya puso la cookie SSO mínima; esto intenta sobreescribir con el JWT completo.
             // Si el JWT completo supera 4096 bytes, falla silenciosamente y queda la cookie mínima.
-            const isProd = window.location.hostname.endsWith('.siatc.cloud');
-            const cookieDomain = isProd ? '; domain=.siatc.cloud' : '';
-            document.cookie = `token=${token}; path=/${cookieDomain}; max-age=${24 * 60 * 60}; SameSite=Lax; Secure=${isProd ? 'true' : 'false'}`;
+            // Se omite en el piloto de Casdoor (SsoLoginPage) para no interferir con sesiones
+            // reales del resto del ecosistema mientras esto corre en "Technical QA".
+            if (!skipSharedCookie) {
+                const isProd = window.location.hostname.endsWith('.siatc.cloud');
+                const cookieDomain = isProd ? '; domain=.siatc.cloud' : '';
+                document.cookie = `token=${token}; path=/${cookieDomain}; max-age=${24 * 60 * 60}; SameSite=Lax; Secure=${isProd ? 'true' : 'false'}`;
+            }
         }
     }, []);
 

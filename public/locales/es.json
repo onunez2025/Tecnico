@@ -29,6 +29,23 @@
     "loginButton": "Iniciar Sesión",
     "errors": {
       "invalid": "Credenciales inválidas"
+    },
+    "sso": {
+      "divider": "O continúa con",
+      "validating": "Validando tu sesión...",
+      "loginError": "No se pudo validar tu sesión. Intenta de nuevo.",
+      "status": {
+        "pendingTitle": "Solicitud enviada",
+        "pendingMessage": "Tu solicitud de acceso fue registrada. Un administrador debe revisarla y aprobarla antes de que puedas ingresar.",
+        "rejectedTitle": "Solicitud rechazada",
+        "rejectedMessage": "Tu solicitud de acceso fue rechazada.",
+        "rejectedReason": "Motivo:",
+        "errorTitle": "Ocurrió un error",
+        "backToLogin": "Volver al inicio de sesión",
+        "retriesLeft_one": "Te queda {{count}} reintento disponible.",
+        "retriesLeft_other": "Te quedan {{count}} reintentos disponibles.",
+        "resubmit": "Solicitar acceso de nuevo"
+      }
     }
   },
   "nav": {

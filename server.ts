@@ -420,13 +420,15 @@ async function syncAllMissingTickets() {
     }
 }
 
+const ADMIN_ROLE_ALIASES = ['administrador', 'admin', 'console.administrador'];
+const isAdminRole = (role?: string | null) => ADMIN_ROLE_ALIASES.includes((role || '').trim().toLowerCase());
+
 const checkPermission = (permission: string) => {
     return async (req: Request, res: Response, next: NextFunction) => {
         const user = (req as any).user;
         if (!user) return res.status(401).json({ error: 'No autenticado' });
-        
-        const role = (user.role || '').trim().toLowerCase();
-        if (role === 'administrador') return next();
+
+        if (isAdminRole(user.role)) return next();
         
         const userPerms = user.permissions || (user as any).perms;
         if (userPerms && userPerms.includes(permission)) {
@@ -1171,7 +1173,7 @@ app.get('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.view'),
 
         // RLS por técnico: solo ve sus propios pagos salvo que tenga tec.payments.view.all
         const userPerms: string[] = currentUser?.permissions || currentUser?.perms || [];
-        const isAdmin = (currentUser?.role || '').trim().toLowerCase() === 'administrador';
+        const isAdmin = isAdminRole(currentUser?.role);
         const hasViewAll = isAdmin || userPerms.includes('tec.payments.view.all');
         if (!hasViewAll) {
             conditions.push(`C.Tecnicos LIKE @techName`);
@@ -1290,7 +1292,7 @@ app.get('/api/tickets-pagos/:id/pdf', verifyToken, checkPermission('tec.payments
 app.get('/api/tec/tickets/calendar-summary', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
     try {
         const { username, role } = (req as any).user;
-        const isAdmin = role?.toLowerCase() === 'administrador';
+        const isAdmin = isAdminRole(role);
         const month = req.query.month as string;
         if (!month || !/^\d{4}-\d{2}$/.test(month)) {
             return res.status(400).json({ error: 'Parámetro month requerido en formato YYYY-MM' });
@@ -1319,7 +1321,7 @@ app.get('/api/tec/tickets/calendar-summary', verifyToken, checkPermission('tec.t
 app.get('/api/tec/tickets', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
     try {
         const { username, role } = (req as any).user;
-        const isAdmin = role?.toLowerCase() === 'administrador';
+        const isAdmin = isAdminRole(role);
         const dateStr = req.query.date as string;
         
         const db = await getDb();
@@ -1365,7 +1367,7 @@ app.post('/api/tec/tickets/rango-horario', verifyToken, checkPermission('tec.tic
     try {
         const { ticketId, rangoHorario, ordenAtencion, comentario, applyToAllClientTickets } = req.body;
         const { username, role } = (req as any).user;
-        const isAdmin = role?.toLowerCase() === 'administrador';
+        const isAdmin = isAdminRole(role);
 
         if (!ticketId) return res.status(400).json({ error: 'ID de ticket es requerido' });
 
@@ -1440,7 +1442,7 @@ app.get('/api/tec/tickets/:ticketId/pagos', verifyToken, checkPermission('tec.ti
         const { ticketId } = req.params;
         const { username, role } = (req as any).user;
         const db = await getDb();
-        if (role?.toLowerCase() !== 'administrador') {
+        if (!isAdminRole(role)) {
             const assignmentResult = await db.request().input('ticketId', sql.VarChar(255), ticketId).input('techCode', sql.VarChar(255), username).query(`SELECT 1 FROM [APPGAC].[ServiciosViewSQL] WHERE Ticket = @ticketId AND CodigoTecnico = @techCode`);
             if (assignmentResult.recordset.length === 0) return res.status(403).json({ error: 'No tienes permiso' });
         }
@@ -1455,7 +1457,7 @@ app.post('/api/tec/tickets/:ticketId/pago', verifyToken, checkPermission('tec.ti
     const { username, role } = (req as any).user;
     try {
         const db = await getDb();
-        if (role?.toLowerCase() !== 'administrador') {
+        if (!isAdminRole(role)) {
             const assignmentResult = await db.request().input('ticketId', sql.VarChar(255), ticketId).input('techCode', sql.VarChar(255), username).query(`SELECT 1 FROM [APPGAC].[ServiciosViewSQL] WHERE Ticket = @ticketId AND CodigoTecnico = @techCode`);
             if (assignmentResult.recordset.length === 0) { if (req.file) fs.unlinkSync(req.file.path); return res.status(403).json({ error: 'No tienes permiso' }); }
         }
@@ -1504,7 +1506,7 @@ app.get('/api/tec/today-tickets', verifyToken, checkPermission('tec.tickets.view
         const db = await getDb();
         const sqlReq = db.request();
         let query = `SELECT Ticket as id, Estado, FechaVisita, NombreCliente as Cliente, Distrito, (ISNULL(Calle, '') + ' ' + ISNULL(NumeroCalle, '')) as Direccion, BloqueHorario, Asunto, Celular1 as Contacto FROM [SIATC].[Dashboard_FSM] WHERE CONVERT(DATE, FechaVisita) = CONVERT(DATE, GETDATE())`;
-        if (role?.toLowerCase() !== 'administrador') { query += " AND (NombreTecnico + ' ' + ApellidoTecnico) = @userFullName"; sqlReq.input('userFullName', sql.NVarChar(sql.MAX), full_name); }
+        if (!isAdminRole(role)) { query += " AND (NombreTecnico + ' ' + ApellidoTecnico) = @userFullName"; sqlReq.input('userFullName', sql.NVarChar(sql.MAX), full_name); }
         const result = await sqlReq.query(query);
         res.json(result.recordset);
     } catch (err: any) { res.status(500).json({ error: safeError(err) }); }

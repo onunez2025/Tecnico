@@ -31,7 +31,7 @@ import { useTranslation } from 'react-i18next';
 export default function TicketsCalendarPage() {
     const { t } = useTranslation();
     const { user } = useAuth();
-    const isAdmin = user?.role_name?.toLowerCase() === 'administrador';
+    const isAdmin = ['administrador', 'admin', 'console.administrador'].includes(user?.role_name?.toLowerCase() || '');
 
     // Dates state
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());

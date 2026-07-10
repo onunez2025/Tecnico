@@ -164,8 +164,10 @@ check_file() {
         fi
     fi
 
-    # C7-BLACKLIST: archivo con endpoint logout que no llama a blacklistToken
-    if grep -qE "(\/auth\/logout|\/logout)" "$f" 2>/dev/null; then
+    # C7-BLACKLIST: endpoint de BACKEND que define /logout sin llamar a blacklistToken
+    # (requiere una definición real de ruta Express — evita falsos positivos en hooks
+    # de frontend que solo hacen fetch() a /auth/logout, ej. useAuth.tsx)
+    if grep -qE "(app|router)\.(post|get|delete)\(['\"\`][^'\"\`]*\/logout" "$f" 2>/dev/null; then
         if ! grep -q "blacklistToken" "$f" 2>/dev/null; then
             dynamic_check "C7-BLACKLIST: endpoint logout sin llamada a blacklistToken()" "$f" ""
         fi

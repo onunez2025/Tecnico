@@ -103,6 +103,14 @@ O instalar como hook permanente:
 cp check-security.sh .git/hooks/pre-push && chmod +x .git/hooks/pre-push
 ```
 
+### 8.1 `git push` — usar siempre un timeout largo
+
+El hook `pre-push` corre `check-security.sh` completo (`tsc`, `build` y `npm audit` sobre todo el repo) antes de dejar pasar el push. Esto puede tardar varios minutos según el tamaño del repo y la carga de la máquina — con frecuencia más de los 120 segundos que muchas herramientas de agentes usan como timeout por defecto.
+
+**Todo agente que ejecute `git push` en cualquier repo de este ecosistema DEBE usar un timeout explícito de al menos 300000 ms (5 minutos)**, no el valor por defecto de su herramienta de shell. Un timeout corto no cancela el hook — solo mata el proceso de la terminal del agente a mitad de camino, dejando el push a medio subir (un remoto puede quedar actualizado y el otro no) sin ningún error real de Git ni del hook.
+
+Si el push aun así no termina dentro de ese margen, verificar con `git ls-remote <remoto> <rama>` cuál de los remotos (GitHub/Forgejo) quedó desactualizado y reintentar el push únicamente contra ese remoto — no asumir que un timeout del lado del agente significa que el push falló del lado de Git.
+
 ## 9. Decisiones de Seguridad Descartadas Permanentemente
 
 Estas medidas fueron evaluadas y **descartadas de forma deliberada**. No son olvidos ni deuda técnica — no deben reimplementarse ni levantarse como hallazgos en auditorías futuras.

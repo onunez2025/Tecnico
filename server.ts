@@ -32,6 +32,7 @@ interface AuthenticatedRequest extends Request {
         id: string;
         username: string;
         full_name: string;
+        codigo_tecnico: string | null;
         role: string;
         permissions: string[];
     };
@@ -535,6 +536,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
                 role: user.RoleName,
                 username: user.Username,
                 full_name: user.FullName,
+                codigo_tecnico: user.CodigoTecnico || null,
                 permissions: perms,
                 apps: user.Apps || '',
                 casId: user.cas_id || null,
@@ -568,6 +570,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
                 id: user.Id,
                 username: user.Username,
                 full_name: user.FullName,
+                codigo_tecnico: user.CodigoTecnico || null,
                 role_name: user.RoleName,
                 role: user.RoleName,
                 permissions: perms,
@@ -612,6 +615,7 @@ app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
                 role: user.RoleName,
                 username: user.Username,
                 full_name: user.FullName,
+                codigo_tecnico: user.CodigoTecnico || null,
                 permissions: perms,
                 apps: user.Apps || '',
                 casId: user.cas_id || null,
@@ -653,6 +657,7 @@ app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
                 id: user.Id,
                 username: user.Username,
                 full_name: user.FullName,
+                codigo_tecnico: user.CodigoTecnico || null,
                 role_name: user.RoleName,
                 role: user.RoleName,
                 permissions: perms,
@@ -710,7 +715,8 @@ app.get('/api/auth/sso/callback', async (req: Request, res: Response) => {
             .input('app', sql.NVarChar(sql.MAX), APP_IDENTIFIER)
             .query(`
                 SELECT u.Id as id, u.Username as username, u.RoleId as role_id, r.Name as role_name,
-                       u.Apps as apps, CAST(u.IsActive AS BIT) as is_active, uc.CASId as cas_id
+                       u.Apps as apps, CAST(u.IsActive AS BIT) as is_active, uc.CASId as cas_id,
+                       u.CodigoTecnico as codigo_tecnico
                 FROM EBM.Users u
                 LEFT JOIN EBM.Roles r ON u.RoleId = r.Id
                 LEFT JOIN EBM.UserCAS uc ON u.Id = uc.UserId
@@ -725,7 +731,7 @@ app.get('/api/auth/sso/callback', async (req: Request, res: Response) => {
             const perms = permsResult.recordset.map((p: any) => p.Permission);
 
             const token = jwt.sign(
-                { id: user.id, role_id: user.role_id, role: user.role_name, username: user.username, permissions: perms, apps: user.apps, casId: user.cas_id || null, ssoPilot: true },
+                { id: user.id, role_id: user.role_id, role: user.role_name, username: user.username, codigo_tecnico: user.codigo_tecnico || null, permissions: perms, apps: user.apps, casId: user.cas_id || null, ssoPilot: true },
                 JWT_SECRET as string,
                 { expiresIn: '12h' }
             );
@@ -818,7 +824,7 @@ app.post('/api/auth/refresh', async (req: Request, res: Response) => {
         }
         const db = await getDb();
         const result = await db.request().input('id', sql.NVarChar(sql.MAX), String(decoded.id)).query(
-            `SELECT u.Id, u.Username, u.FullName, u.RoleId, u.IsActive, r.Name as RoleName FROM EBM.Users u LEFT JOIN EBM.Roles r ON u.RoleId = r.Id WHERE u.Id = @id`
+            `SELECT u.Id, u.Username, u.FullName, u.CodigoTecnico, u.RoleId, u.IsActive, r.Name as RoleName FROM EBM.Users u LEFT JOIN EBM.Roles r ON u.RoleId = r.Id WHERE u.Id = @id`
         );
         const user = result.recordset[0];
         if (!user || !user.IsActive) return res.status(401).json({ error: 'Usuario inactivo' });
@@ -826,7 +832,7 @@ app.post('/api/auth/refresh', async (req: Request, res: Response) => {
             'SELECT Permission FROM EBM.RolePermissions WHERE RoleId = @rid'
         )).recordset.map((p: any) => p.Permission);
         const newToken = jwt.sign(
-            { id: user.Id, username: user.Username, full_name: user.FullName, role: user.RoleName, permissions: perms },
+            { id: user.Id, username: user.Username, full_name: user.FullName, codigo_tecnico: user.CodigoTecnico || null, role: user.RoleName, permissions: perms },
             JWT_SECRET as string,
             { expiresIn: '12h' }
         );
@@ -1445,7 +1451,7 @@ app.get('/api/tickets-pagos/:id/pdf', verifyToken, checkPermission('tec.payments
 
 app.get('/api/tec/tickets/calendar-summary', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
     try {
-        const { username, role } = (req as any).user;
+        const { codigo_tecnico, role } = (req as any).user;
         const isAdmin = isAdminRole(role);
         const month = req.query.month as string;
         if (!month || !/^\d{4}-\d{2}$/.test(month)) {
@@ -1456,7 +1462,7 @@ app.get('/api/tec/tickets/calendar-summary', verifyToken, checkPermission('tec.t
         let query = `SELECT CONVERT(VARCHAR(10), FechaVisita, 23) as date, COUNT(*) as count FROM [APPGAC].[ServiciosViewSQL] WHERE FORMAT(FechaVisita, 'yyyy-MM') = @month`;
         if (!isAdmin) {
             query += ' AND CodigoTecnico = @techCode';
-            sqlReq.input('techCode', sql.VarChar(255), username);
+            sqlReq.input('techCode', sql.VarChar(255), codigo_tecnico);
         } else if (req.query.techCode) {
             query += ' AND CodigoTecnico = @techCode';
             sqlReq.input('techCode', sql.VarChar(255), req.query.techCode as string);
@@ -1474,7 +1480,7 @@ app.get('/api/tec/tickets/calendar-summary', verifyToken, checkPermission('tec.t
 
 app.get('/api/tec/tickets', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
     try {
-        const { username, role } = (req as any).user;
+        const { codigo_tecnico, role } = (req as any).user;
         const isAdmin = isAdminRole(role);
         const dateStr = req.query.date as string;
         
@@ -1504,7 +1510,7 @@ app.get('/api/tec/tickets', verifyToken, checkPermission('tec.tickets.view'), as
             }
         } else {
             query += " AND S.CodigoTecnico = @techCode";
-            sqlReq.input('techCode', sql.VarChar(255), username);
+            sqlReq.input('techCode', sql.VarChar(255), codigo_tecnico);
         }
 
         query += " ORDER BY S.FechaVisita ASC";
@@ -1520,7 +1526,7 @@ app.get('/api/tec/tickets', verifyToken, checkPermission('tec.tickets.view'), as
 app.post('/api/tec/tickets/rango-horario', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
     try {
         const { ticketId, rangoHorario, ordenAtencion, comentario, applyToAllClientTickets } = req.body;
-        const { username, role } = (req as any).user;
+        const { username, codigo_tecnico, role } = (req as any).user;
         const isAdmin = isAdminRole(role);
 
         if (!ticketId) return res.status(400).json({ error: 'ID de ticket es requerido' });
@@ -1532,7 +1538,7 @@ app.post('/api/tec/tickets/rango-horario', verifyToken, checkPermission('tec.tic
 
         const ticketData = ticketResult.recordset[0];
         if (!isAdmin) {
-            if (ticketData.CodigoTecnico !== username) return res.status(403).json({ error: 'No tienes permiso' });
+            if (ticketData.CodigoTecnico !== codigo_tecnico) return res.status(403).json({ error: 'No tienes permiso' });
             const limitResult = await db.request().query("SELECT Valor FROM [dbo].[GAC_APP_TB_CONFIG] WHERE Clave = 'HORA_MAXIMA_RANGO_HORARIO'");
             const limitStr = limitResult.recordset[0]?.Valor || '09:30';
             const now = new Date();
@@ -1594,10 +1600,10 @@ app.post('/api/config/rango-horario-limit', verifyToken, checkPermission('tec.co
 app.get('/api/tec/tickets/:ticketId/pagos', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
     try {
         const { ticketId } = req.params;
-        const { username, role } = (req as any).user;
+        const { codigo_tecnico, role } = (req as any).user;
         const db = await getDb();
         if (!isAdminRole(role)) {
-            const assignmentResult = await db.request().input('ticketId', sql.VarChar(255), ticketId).input('techCode', sql.VarChar(255), username).query(`SELECT 1 FROM [APPGAC].[ServiciosViewSQL] WHERE Ticket = @ticketId AND CodigoTecnico = @techCode`);
+            const assignmentResult = await db.request().input('ticketId', sql.VarChar(255), ticketId).input('techCode', sql.VarChar(255), codigo_tecnico).query(`SELECT 1 FROM [APPGAC].[ServiciosViewSQL] WHERE Ticket = @ticketId AND CodigoTecnico = @techCode`);
             if (assignmentResult.recordset.length === 0) return res.status(403).json({ error: 'No tienes permiso' });
         }
         const paymentsResult = await db.request().input('ticketId', sql.VarChar(255), ticketId).query(`SELECT ID_transaccion, Fecha_creacion, Ticket, Fecha_transaccion, Voucher, Lote, Codigo_Izipay, Importe, Estado, Canal, Observacion, CodigoAutorizacion, Folio, Adjunto FROM [dbo].[GAC_APP_TB_TICKETS_PAGOS] WHERE EXISTS (SELECT 1 FROM STRING_SPLIT(Ticket, ',') WHERE LTRIM(RTRIM(value)) = @ticketId) ORDER BY Fecha_creacion DESC`);
@@ -1608,11 +1614,11 @@ app.get('/api/tec/tickets/:ticketId/pagos', verifyToken, checkPermission('tec.ti
 app.post('/api/tec/tickets/:ticketId/pago', verifyToken, checkPermission('tec.tickets.view'), upload.single('adjunto'), async (req: Request, res: Response) => {
     const { ticketId } = req.params;
     const { fecha_transaccion, voucher, lote, codigo_izipay, importe, canal, observacion, folio, codigo_autorizacion } = req.body;
-    const { username, role } = (req as any).user;
+    const { codigo_tecnico, role } = (req as any).user;
     try {
         const db = await getDb();
         if (!isAdminRole(role)) {
-            const assignmentResult = await db.request().input('ticketId', sql.VarChar(255), ticketId).input('techCode', sql.VarChar(255), username).query(`SELECT 1 FROM [APPGAC].[ServiciosViewSQL] WHERE Ticket = @ticketId AND CodigoTecnico = @techCode`);
+            const assignmentResult = await db.request().input('ticketId', sql.VarChar(255), ticketId).input('techCode', sql.VarChar(255), codigo_tecnico).query(`SELECT 1 FROM [APPGAC].[ServiciosViewSQL] WHERE Ticket = @ticketId AND CodigoTecnico = @techCode`);
             if (assignmentResult.recordset.length === 0) { if (req.file) fs.unlinkSync(req.file.path); return res.status(403).json({ error: 'No tienes permiso' }); }
         }
         let blobUrl = '';
@@ -1656,11 +1662,11 @@ app.post('/api/tec/tickets/:ticketId/pago', verifyToken, checkPermission('tec.ti
 
 app.get('/api/tec/today-tickets', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
     try {
-        const { full_name, role } = (req as any).user;
+        const { codigo_tecnico, role } = (req as any).user;
         const db = await getDb();
         const sqlReq = db.request();
         let query = `SELECT Ticket as id, Estado, FechaVisita, NombreCliente as Cliente, Distrito, (ISNULL(Calle, '') + ' ' + ISNULL(NumeroCalle, '')) as Direccion, BloqueHorario, Asunto, Celular1 as Contacto FROM [SIATC].[Dashboard_FSM] WHERE CONVERT(DATE, FechaVisita) = CONVERT(DATE, GETDATE())`;
-        if (!isAdminRole(role)) { query += " AND (NombreTecnico + ' ' + ApellidoTecnico) = @userFullName"; sqlReq.input('userFullName', sql.NVarChar(sql.MAX), full_name); }
+        if (!isAdminRole(role)) { query += " AND CodigoTecnico = @techCode"; sqlReq.input('techCode', sql.VarChar(255), codigo_tecnico); }
         const result = await sqlReq.query(query);
         res.json(result.recordset);
     } catch (err: any) { res.status(500).json({ error: safeError(err) }); }

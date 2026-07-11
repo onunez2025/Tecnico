@@ -111,6 +111,16 @@ El hook `pre-push` corre `check-security.sh` completo (`tsc`, `build` y `npm aud
 
 Si el push aun así no termina dentro de ese margen, verificar con `git ls-remote <remoto> <rama>` cuál de los remotos (GitHub/Forgejo) quedó desactualizado y reintentar el push únicamente contra ese remoto — no asumir que un timeout del lado del agente significa que el push falló del lado de Git.
 
+### 8.2 Confirmar con el usuario antes de comitear y pushear cambios de código
+
+Cuando el usuario pida un cambio o mejora de código, el agente DEBE implementarlo y verificarlo (`tsc`/build/`check-security.sh`) primero, y **recién después preguntar explícitamente si se procede con el commit y push, aclarando a qué rama** — nunca comitear/pushear el código de la aplicación por iniciativa propia sin esa confirmación.
+
+Una vez que el usuario confirma:
+1. Comitear y pushear el cambio de código a la rama indicada (con el timeout de la regla 8.1).
+2. Abrir/enriquecer la bitácora correspondiente en SIATC Memory (regla 10.1) y sincronizarla con su propio commit y push (regla 10.4) — este paso sigue siendo obligatorio y no requiere una segunda confirmación, ya que aplica a la documentación del cambio, no al código de producción.
+
+**Por qué esto es distinto de comitear sin preguntar:** el código de una aplicación productiva (o su rama de feature) es un cambio de mayor impacto que una nota de memoria — el usuario decide cuándo y a qué rama sube su propio trabajo. La bitácora de SIATC Memory es responsabilidad exclusiva del agente y no necesita esa misma pausa.
+
 ## 9. Decisiones de Seguridad Descartadas Permanentemente
 
 Estas medidas fueron evaluadas y **descartadas de forma deliberada**. No son olvidos ni deuda técnica — no deben reimplementarse ni levantarse como hallazgos en auditorías futuras.

@@ -1,8 +1,7 @@
 name: CI — SIATC Security Check
 
 on:
-  push:
-    branches: [master]
+  push: {}
   schedule:
     - cron: '0 3 * * 1'   # Lunes 3am UTC — npm audit semanal
 
@@ -33,3 +32,8 @@ jobs:
       - name: C7 — npm audit high/critical (advertencia)
         run: npm audit --audit-level=high
         continue-on-error: true
+
+      - name: Chequeo de seguridad completo (check-security.sh)
+        run: bash check-security.sh
+        env:
+          SECURITY_MODE: BLOCK

@@ -164,8 +164,11 @@ check_file() {
         fi
     fi
 
-    # C7-BLACKLIST: archivo con endpoint logout que no llama a blacklistToken
-    if grep -qE "(\/auth\/logout|\/logout)" "$f" 2>/dev/null; then
+    # C7-BLACKLIST: endpoint de logout (definido con app./router.) que no llama a blacklistToken.
+    # Antes buscaba la cadena /logout en cualquier archivo .ts/.tsx, lo que marcaba en falso a
+    # hooks de frontend (ej. useAuth.tsx) que solo hacen fetch() al endpoint de logout del backend
+    # — blacklistToken() es exclusivamente responsabilidad del backend, nunca del frontend.
+    if grep -qE "(app|router)\.(post|get)\([\"'][^\"']*\/logout" "$f" 2>/dev/null; then
         if ! grep -q "blacklistToken" "$f" 2>/dev/null; then
             dynamic_check "C7-BLACKLIST: endpoint logout sin llamada a blacklistToken()" "$f" ""
         fi

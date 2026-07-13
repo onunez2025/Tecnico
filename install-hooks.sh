@@ -18,10 +18,17 @@ if [ ! -f "$HOOK_SRC" ]; then
     exit 1
 fi
 
-cp "$HOOK_SRC" "$HOOK_DST"
+# El hook es un wrapper que delega siempre al check-security.sh trackeado del repo,
+# no una copia física — así nunca queda desactualizado cuando se corrige una regla
+# (bug real encontrado y corregido en EBM el 2026-07-11: una copia física vieja del
+# script bloqueaba pushes con un hallazgo ya corregido en el archivo trackeado).
+cat > "$HOOK_DST" << 'HOOK_EOF'
+#!/bin/bash
+exec "$(git rev-parse --show-toplevel)/check-security.sh" "$@"
+HOOK_EOF
 chmod +x "$HOOK_DST"
 
-echo "✅ Hook pre-push instalado correctamente."
-echo "   Cada 'git push' ejecutará automáticamente check-security.sh."
+echo "✅ Hook pre-push instalado correctamente (wrapper -> check-security.sh)."
+echo "   Cada 'git push' ejecutará automáticamente la versión actual de check-security.sh."
 echo ""
 echo "Para verificar manualmente: ./check-security.sh"

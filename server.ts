@@ -25,6 +25,10 @@ const APP_IDENTIFIER = 'TEC';
 const C4C_BASE_URL = process.env.C4C_BASE_URL;
 const C4C_AUTH = Buffer.from(`${process.env.C4C_USER || ''}:${process.env.C4C_PASSWORD || ''}`).toString('base64');
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+// Fase 20: dominio de la cookie SSO compartida configurable por entorno. Sin definir, el
+// comportamiento es idéntico al de siempre (.siatc.cloud) -- producción real no cambia.
+// En QA se configura como .qa.siatc.cloud para aislar la sesión compartida de producción.
+const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || '.siatc.cloud';
 
 // --- TIPOS TIPADOS PARA REQUESTS AUTENTICADOS ---
 interface AuthenticatedRequest extends Request {
@@ -555,7 +559,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
         );
         if (IS_PRODUCTION) {
             res.cookie('token', ssoToken, {
-                domain: '.siatc.cloud',
+                domain: COOKIE_DOMAIN,
                 maxAge: (remember ? 7 * 24 * 60 * 60 : 12 * 60 * 60) * 1000,
                 httpOnly: false,
                 secure: true,
@@ -629,10 +633,10 @@ app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
             JWT_SECRET as string,
             { expiresIn: '12h' }
         );
-        // Los tokens del piloto Casdoor (ssoPilot=true) no deben reescribir la cookie compartida
-        // domain=.siatc.cloud aquí — sería el mismo problema que skipSharedCookie ya evita del lado
-        // del cliente, pero por el servidor: este endpoint se llama también desde SsoLoginPage justo
-        // después del login social, y sin este chequeo la reemitía igual como efecto secundario.
+        // Los tokens marcados ssoPilot=true no deben reescribir la cookie compartida aquí — hoy eso
+        // pasa solo cuando COOKIE_DOMAIN no está configurada (producción real, sin dominio QA propio).
+        // Cuando COOKIE_DOMAIN sí está configurada (Fase 20, entorno QA), el callback de Casdoor deja
+        // de firmar ssoPilot=true, así que esta cookie sí se escribe y el SSO cruzado real funciona.
         if (!(req as any).user?.ssoPilot) {
             const ssoToken = jwt.sign(
                 { id: user.Id, role: user.RoleName, role_name: user.RoleName, username: user.Username, apps: user.Apps || '', casId: user.cas_id || null },
@@ -641,7 +645,7 @@ app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
             );
             if (IS_PRODUCTION) {
                 res.cookie('token', ssoToken, {
-                    domain: '.siatc.cloud',
+                    domain: COOKIE_DOMAIN,
                     maxAge: 12 * 60 * 60 * 1000,
                     httpOnly: false,
                     secure: true,
@@ -731,14 +735,19 @@ app.get('/api/auth/sso/callback', async (req: Request, res: Response) => {
             const perms = permsResult.recordset.map((p: any) => p.Permission);
 
             const token = jwt.sign(
-                { id: user.id, role_id: user.role_id, role: user.role_name, username: user.username, codigo_tecnico: user.codigo_tecnico || null, permissions: perms, apps: user.apps, casId: user.cas_id || null, ssoPilot: true },
+                {
+                    id: user.id, role_id: user.role_id, role: user.role_name, username: user.username,
+                    codigo_tecnico: user.codigo_tecnico || null, permissions: perms, apps: user.apps, casId: user.cas_id || null,
+                    // Fase 20: ssoPilot solo se firma si no hay un COOKIE_DOMAIN propio configurado (ej.
+                    // producción real todavía sin dominio QA aislado). Con COOKIE_DOMAIN configurada
+                    // (entorno QA, dominio .qa.siatc.cloud), se omite para permitir la cookie compartida
+                    // real entre las 10 apps QA sin arriesgar sesiones de producción.
+                    ...(process.env.COOKIE_DOMAIN ? {} : { ssoPilot: true }),
+                },
                 JWT_SECRET as string,
                 { expiresIn: '12h' }
             );
 
-            // Nota: a propósito NO se setea la cookie compartida domain=.siatc.cloud en este piloto
-            // (mismo criterio que el piloto de SIATC Console — evita interferir con sesiones reales
-            // del resto del ecosistema mientras esto corre en "Technical QA").
             const params = new URLSearchParams({ ssoToken: token });
             return res.redirect(`${FRONTEND_URL}/sso-login?${params.toString()}`);
         }

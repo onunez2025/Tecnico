@@ -264,6 +264,24 @@ async function blacklistToken(token: string, exp: number): Promise<void> {
     } catch (err) { console.error('[Redis] Error al blacklistear token:', err); }
 }
 
+// Invalida TODOS los tokens de un usuario emitidos hasta ahora, sin importar cuántas apps del
+// ecosistema los hayan re-firmado (cada /auth/me emite un JWT nuevo con hash distinto, así que
+// blacklistToken() por sí solo no alcanza para un logout real entre apps -- ver bitácora Fase 20).
+// verifyToken rechaza cualquier token con iat <= este timestamp, sin importar su hash.
+async function invalidateAllUserSessions(userId: string): Promise<void> {
+    try {
+        const now = Math.floor(Date.now() / 1000);
+        await getRedisClient().set(`logout-after:${userId}`, String(now), 'EX', 30 * 24 * 60 * 60);
+    } catch (err) { console.error('[Redis] Error al invalidar sesiones del usuario:', err); }
+}
+async function isSessionInvalidated(userId: string, iat: number | undefined): Promise<boolean> {
+    if (!iat) return false;
+    try {
+        const logoutAfter = await getRedisClient().get(`logout-after:${userId}`);
+        return logoutAfter !== null && iat <= parseInt(logoutAfter, 10);
+    } catch { return false; }
+}
+
 // --- SECURITY HELPERS (ver CLAUDE.md) ---
 const safeError = (err: unknown): string =>
     process.env.NODE_ENV === 'production'
@@ -279,6 +297,9 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const decoded = jwt.verify(token, JWT_SECRET as string) as AuthenticatedRequest['user'];
         if (await isTokenBlacklisted(token)) {
+            return res.status(401).json({ error: 'Sesión cerrada. Inicia sesión nuevamente.' });
+        }
+        if (await isSessionInvalidated((decoded as any).id, (decoded as any).iat)) {
             return res.status(401).json({ error: 'Sesión cerrada. Inicia sesión nuevamente.' });
         }
         (req as AuthenticatedRequest).user = decoded;
@@ -593,6 +614,10 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 app.post('/api/auth/logout', verifyToken, async (req: any, res: any) => {
     const token = req.headers['authorization']!.split(' ')[1];
     await blacklistToken(token, (req.user as any).exp ?? 0);
+    // Invalida también cualquier otro token del mismo usuario (ej. re-firmado por otra app del
+    // ecosistema vía su propio /auth/me) -- un logout debe cerrar la sesión en todas las apps QA,
+    // no solo revocar el token puntual que se usó para llamar a este endpoint.
+    await invalidateAllUserSessions((req.user as any).id);
     res.json({ message: 'Sesión cerrada correctamente.' });
 });
 
@@ -827,6 +852,9 @@ app.post('/api/auth/refresh', async (req: Request, res: Response) => {
     }
     try {
         const decoded = jwt.verify(token, JWT_SECRET as string, { ignoreExpiration: true }) as any;
+        if (await isSessionInvalidated(decoded.id, decoded.iat)) {
+            return res.status(401).json({ error: 'Sesión cerrada. Inicia sesión nuevamente.' });
+        }
         const now = Math.floor(Date.now() / 1000);
         if (decoded.exp && (now - decoded.exp) > 24 * 60 * 60) {
             return res.status(401).json({ error: 'Sesión demasiado antigua. Inicia sesión nuevamente.' });

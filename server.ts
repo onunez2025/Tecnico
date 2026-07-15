@@ -282,6 +282,17 @@ async function isSessionInvalidated(userId: string, iat: number | undefined): Pr
     } catch { return false; }
 }
 
+// Borra la cookie compartida del lado del servidor (Set-Cookie en la respuesta) cuando se
+// detecta un token invalidado/blacklisteado. No depende de que el JS del cliente logre borrarla
+// antes de la siguiente navegación -- evita el bucle de recarga infinita que eso puede causar
+// (ver bitácora Fase 20: la limpieza vía document.cookie + window.location.href en el mismo
+// tick no siempre alcanza a comprometerse antes de que la página navegue).
+function clearSharedCookie(res: Response): void {
+    if (process.env.NODE_ENV === 'production') {
+        res.cookie('token', '', { domain: COOKIE_DOMAIN, maxAge: 0, httpOnly: false, secure: true, sameSite: 'lax', path: '/' });
+    }
+}
+
 // --- SECURITY HELPERS (ver CLAUDE.md) ---
 const safeError = (err: unknown): string =>
     process.env.NODE_ENV === 'production'
@@ -297,9 +308,11 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const decoded = jwt.verify(token, JWT_SECRET as string) as AuthenticatedRequest['user'];
         if (await isTokenBlacklisted(token)) {
+            clearSharedCookie(res);
             return res.status(401).json({ error: 'Sesión cerrada. Inicia sesión nuevamente.' });
         }
         if (await isSessionInvalidated((decoded as any).id, (decoded as any).iat)) {
+            clearSharedCookie(res);
             return res.status(401).json({ error: 'Sesión cerrada. Inicia sesión nuevamente.' });
         }
         (req as AuthenticatedRequest).user = decoded;
@@ -618,6 +631,10 @@ app.post('/api/auth/logout', verifyToken, async (req: any, res: any) => {
     // ecosistema vía su propio /auth/me) -- un logout debe cerrar la sesión en todas las apps QA,
     // no solo revocar el token puntual que se usó para llamar a este endpoint.
     await invalidateAllUserSessions((req.user as any).id);
+    // Borrar la cookie compartida aquí mismo (Set-Cookie de la respuesta) en vez de depender
+    // solo del document.cookie del cliente, que puede no alcanzar a comprometerse antes de que
+    // la página navegue tras el logout.
+    clearSharedCookie(res);
     res.json({ message: 'Sesión cerrada correctamente.' });
 });
 
@@ -848,11 +865,13 @@ app.post('/api/auth/refresh', async (req: Request, res: Response) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Token no encontrado' });
     if (await isTokenBlacklisted(token)) {
+        clearSharedCookie(res);
         return res.status(401).json({ error: 'Sesión cerrada. Inicia sesión nuevamente.' });
     }
     try {
         const decoded = jwt.verify(token, JWT_SECRET as string, { ignoreExpiration: true }) as any;
         if (await isSessionInvalidated(decoded.id, decoded.iat)) {
+            clearSharedCookie(res);
             return res.status(401).json({ error: 'Sesión cerrada. Inicia sesión nuevamente.' });
         }
         const now = Math.floor(Date.now() / 1000);

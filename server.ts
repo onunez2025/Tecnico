@@ -642,13 +642,16 @@ app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
     try {
         const { id } = (req as any).user;
         const db = await getDb();
-        const result = await db.request().input('id', sql.UniqueIdentifier, id).query(`
+        const result = await db.request()
+            .input('id', sql.UniqueIdentifier, id)
+            .input('app', sql.VarChar(20), APP_IDENTIFIER)
+            .query(`
             SELECT u.*, r.Name as RoleName, uc.CASId as cas_id, c.Nombre_CAS as cas_name, LTRIM(RTRIM(c.Abrev_nombre_colaboradores)) as cas_prefijo
             FROM EBM.Users u
             LEFT JOIN EBM.Roles r ON u.RoleId = r.Id
             LEFT JOIN EBM.UserCAS uc ON u.Id = uc.UserId
             LEFT JOIN dbo.GAC_APP_TB_CAS c ON uc.CASId = c.ID_CAS
-            WHERE u.Id = @id
+            WHERE u.Id = @id AND (u.Apps LIKE '%' + @app + '%' OR u.Apps LIKE '%ADMIN%')
         `);
         const user = result.recordset[0];
         if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -879,8 +882,11 @@ app.post('/api/auth/refresh', async (req: Request, res: Response) => {
             return res.status(401).json({ error: 'Sesión demasiado antigua. Inicia sesión nuevamente.' });
         }
         const db = await getDb();
-        const result = await db.request().input('id', sql.NVarChar(sql.MAX), String(decoded.id)).query(
-            `SELECT u.Id, u.Username, u.FullName, u.CodigoTecnico, u.RoleId, u.IsActive, r.Name as RoleName FROM EBM.Users u LEFT JOIN EBM.Roles r ON u.RoleId = r.Id WHERE u.Id = @id`
+        const result = await db.request()
+            .input('id', sql.NVarChar(sql.MAX), String(decoded.id))
+            .input('app', sql.VarChar(20), APP_IDENTIFIER)
+            .query(
+            `SELECT u.Id, u.Username, u.FullName, u.CodigoTecnico, u.RoleId, u.IsActive, r.Name as RoleName FROM EBM.Users u LEFT JOIN EBM.Roles r ON u.RoleId = r.Id WHERE u.Id = @id AND (u.Apps LIKE '%' + @app + '%' OR u.Apps LIKE '%ADMIN%')`
         );
         const user = result.recordset[0];
         if (!user || !user.IsActive) return res.status(401).json({ error: 'Usuario inactivo' });

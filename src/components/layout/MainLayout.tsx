@@ -33,6 +33,7 @@ export function MainLayout() {
 
     useEffect(() => {
         if (sidebarCfg && localStorage.getItem(COLLAPSED_KEY) === null && sidebarCfg.defaultState === 'collapsed') {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- aplica el estado por defecto del branding solo una vez, antes del primer render con sidebar visible
             setIsCollapsed(true);
         }
     }, [sidebarCfg]);

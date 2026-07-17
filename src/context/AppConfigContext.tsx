@@ -3,6 +3,14 @@ import { StorageService } from '../services/storageService';
 
 const APP_CODE = 'TEC';
 
+export interface SidebarConfig {
+    expandedWidth?: string;
+    collapsedWidth?: string;
+    defaultState?: 'expanded' | 'collapsed';
+    hoverExpand?: boolean;
+    allowCollapse?: boolean;
+}
+
 export interface Application {
     id: string;
     code: string;
@@ -11,6 +19,11 @@ export interface Application {
     logo_url: string | null;
     is_active: boolean;
     display_order: number;
+    sidebar_width?: string;
+    sidebar_collapsed_width?: string;
+    sidebar_default_state?: string;
+    sidebar_hover_expand?: boolean;
+    sidebar_allow_collapse?: boolean;
     theme_config?: {
         typography?: Record<string, string>;
         layout?: Record<string, string>;
@@ -26,6 +39,7 @@ interface AppConfigContextType {
     applications: Application[];
     refreshApplications: () => void;
     logoUrl?: string | null;
+    sidebarConfig?: SidebarConfig;
 }
 
 const AppConfigContext = createContext<AppConfigContextType>({ applications: [], refreshApplications: () => {} });
@@ -125,6 +139,7 @@ function applyThemeConfig(theme: NonNullable<Application['theme_config']>) {
 export const AppConfigProvider = ({ children }: { children: React.ReactNode }) => {
     const [applications, setApplications] = useState<Application[]>([]);
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
+    const [sidebarConfig, setSidebarConfig] = useState<SidebarConfig | undefined>(undefined);
 
     // Preferir cookie sobre localStorage: la cookie siempre tiene el token más reciente
     // (se actualiza tanto en SSO como en login directo), mientras que localStorage puede
@@ -148,6 +163,13 @@ export const AppConfigProvider = ({ children }: { children: React.ReactNode }) =
                 const mine = data.find((a: Application) => a.code?.toUpperCase() === APP_CODE);
                 if (mine) {
                     setLogoUrl(mine.logo_url ?? null);
+                    setSidebarConfig({
+                        expandedWidth: mine.sidebar_width || undefined,
+                        collapsedWidth: mine.sidebar_collapsed_width || undefined,
+                        defaultState: mine.sidebar_default_state === 'collapsed' ? 'collapsed' : 'expanded',
+                        hoverExpand: mine.sidebar_hover_expand !== false,
+                        allowCollapse: mine.sidebar_allow_collapse !== false,
+                    });
                     // Favicon dinámico
                     if (mine.logo_url) {
                         const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
@@ -179,7 +201,7 @@ export const AppConfigProvider = ({ children }: { children: React.ReactNode }) =
     }, [refreshApplications]);
 
     return (
-        <AppConfigContext.Provider value={{ applications, refreshApplications, logoUrl }}>
+        <AppConfigContext.Provider value={{ applications, refreshApplications, logoUrl, sidebarConfig }}>
             {children}
         </AppConfigContext.Provider>
     );

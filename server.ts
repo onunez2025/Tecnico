@@ -2087,6 +2087,10 @@ app.get('/api/applications', verifyToken, async (req: Request, res: Response) =>
                 b.FontTableData as font_table_data,
                 b.BaseFontSize as base_font_size,
                 b.SidebarWidth as sidebar_width,
+                b.SidebarCollapsedWidth as sidebar_collapsed_width,
+                b.SidebarDefaultState as sidebar_default_state,
+                CAST(ISNULL(b.SidebarHoverExpand, 1) AS BIT) as sidebar_hover_expand,
+                CAST(ISNULL(b.SidebarAllowCollapse, 1) AS BIT) as sidebar_allow_collapse,
                 b.HeaderHeight as header_height,
                 b.TableRowHeight as table_row_height,
                 b.TransitionDuration as transition_duration,
@@ -2135,6 +2139,11 @@ app.get('/api/applications', verifyToken, async (req: Request, res: Response) =>
             is_active: row.is_active,
             display_order: row.display_order,
             created_at: row.created_at,
+            sidebar_width: row.sidebar_width,
+            sidebar_collapsed_width: row.sidebar_collapsed_width,
+            sidebar_default_state: row.sidebar_default_state,
+            sidebar_hover_expand: row.sidebar_hover_expand,
+            sidebar_allow_collapse: row.sidebar_allow_collapse,
             theme_config: row.font_title ? {
                 typography: {
                     fontTitle: row.font_title,

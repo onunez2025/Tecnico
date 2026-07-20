@@ -7,6 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 import { UsersService } from '../services/usersService';
 import { cn } from '../utils/cn';
 import { useTranslation } from 'react-i18next';
+import { SIATC_THEME } from '../utils/siatc-theme';
 
 /**
  * Compresses and resizes an image file to a base64 DataURL.
@@ -144,36 +145,36 @@ export default function ProfilePage() {
         .split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
 
     return (
-        <div className="h-full overflow-y-auto pr-2 pb-20 lg:pb-8">
-            <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in zoom-in-95">
+        <div className={SIATC_THEME.PROFILE_LAYOUT.PAGE_WRAPPER}>
+            <div className={SIATC_THEME.PROFILE_LAYOUT.INNER_CONTAINER}>
                 {/* Header */}
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">{t('profile.title')}</h1>
-                    <p className="text-muted-foreground">{t('profile.subtitle')}</p>
+                    <h1 className={SIATC_THEME.TYPOGRAPHY.PAGE_TITLE}>{t('profile.title')}</h1>
+                    <p className={SIATC_THEME.TYPOGRAPHY.PAGE_SUBTITLE}>{t('profile.subtitle')}</p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className={SIATC_THEME.PROFILE_LAYOUT.GRID}>
 
                     {/* Left Column: Profile Card */}
-                    <div className="lg:col-span-1 space-y-4">
-                        <div className="bg-card border rounded-lg shadow-sm overflow-hidden transition-all hover:shadow-md">
-                            <div className="h-24 bg-gradient-to-br from-primary/80 to-primary relative overflow-hidden">
-                                <div className="absolute inset-0 bg-white/10 opacity-30 backdrop-blur-3xl" />
+                    <div className={SIATC_THEME.PROFILE_LAYOUT.LEFT_COLUMN}>
+                        <div className={cn(SIATC_THEME.COMPONENTS.CARD_CONTAINER, 'overflow-hidden transition-all hover:shadow-md')}>
+                            <div className={SIATC_THEME.PROFILE_LAYOUT.BANNER}>
+                                <div className={SIATC_THEME.PROFILE_LAYOUT.BANNER_OVERLAY} />
                             </div>
 
-                            <div className="flex flex-col items-center -mt-14 px-6 pb-6">
+                            <div className={SIATC_THEME.PROFILE_LAYOUT.AVATAR_CONTAINER}>
                                 <div className="relative group">
-                                    <div className="w-28 h-28 rounded-full border-4 border-card bg-muted flex items-center justify-center overflow-hidden shadow-xl ring-2 ring-primary/20">
+                                    <div className={SIATC_THEME.PROFILE_LAYOUT.AVATAR_RING}>
                                         {formData.avatar_url ? (
                                             <img src={formData.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                                         ) : (
-                                            <span className="text-3xl font-bold text-muted-foreground select-none">{initials}</span>
+                                            <span className="text-3xl font-bold text-cb-neutral select-none">{initials}</span>
                                         )}
                                     </div>
                                     <button
                                         type="button"
                                         onClick={() => fileInputRef.current?.click()}
-                                        className="absolute bottom-1 right-1 p-2 bg-primary text-primary-foreground rounded-full shadow-lg hover:bg-primary/90 hover:scale-110 transition-all duration-200 ring-2 ring-background"
+                                        className={SIATC_THEME.PROFILE_LAYOUT.CAMERA_BUTTON}
                                         title={t('profile.changePhoto')}
                                     >
                                         <Camera className="w-4 h-4" />
@@ -187,10 +188,10 @@ export default function ProfilePage() {
                                     />
                                 </div>
 
-                                <h2 className="mt-4 text-xl font-bold tracking-tight text-foreground">{user.full_name || user.username}</h2>
+                                <h2 className="mt-4 text-xl font-bold tracking-tight text-cb-text-primary">{user.full_name || user.username}</h2>
                                 <p className="text-sm text-primary font-medium">@{user.username}</p>
 
-                                <div className="mt-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 dark:bg-primary/30 text-primary dark:text-primary text-xs font-bold border border-blue-100 dark:border-blue-800">
+                                <div className={SIATC_THEME.PROFILE_LAYOUT.ROLE_BADGE}>
                                     <Shield className="w-3.5 h-3.5" />
                                     {user.role_name || t('profile.noRole')}
                                 </div>
@@ -198,37 +199,37 @@ export default function ProfilePage() {
                         </div>
 
                         {/* Quick Info Card */}
-                        <div className="bg-card border rounded-lg shadow-sm p-6 space-y-5 transition-all hover:shadow-md">
-                            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('profile.info')}</h3>
+                        <div className={cn(SIATC_THEME.COMPONENTS.CARD_CONTAINER, SIATC_THEME.PROFILE_LAYOUT.QUICK_INFO_CARD, 'transition-all hover:shadow-md')}>
+                            <h3 className="text-xs font-bold text-cb-neutral uppercase tracking-wider">{t('profile.info')}</h3>
 
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-4 group">
-                                    <div className="w-10 h-10 rounded-md bg-primary/10 dark:bg-primary/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:bg-primary transition-all">
-                                        <Mail className="w-5 h-5 text-primary dark:text-primary" />
+                            <div className={SIATC_THEME.PROFILE_LAYOUT.INFO_LIST}>
+                                <div className={SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM}>
+                                    <div className={cn(SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM_ICON_BASE, SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM_ICON_PRIMARY, 'group-hover:bg-primary group-hover:text-primary-foreground')}>
+                                        <Mail className="w-5 h-5" />
                                     </div>
-                                    <div className="overflow-hidden">
-                                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{t('profile.labels.email')}</p>
-                                        <p className="text-sm font-bold truncate text-foreground">{user.email}</p>
+                                    <div className={SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM_DETAILS}>
+                                        <p className={SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM_LABEL}>{t('profile.labels.email')}</p>
+                                        <p className={SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM_VALUE}>{user.email}</p>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-4 group">
-                                    <div className="w-10 h-10 rounded-md bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:bg-purple-100 transition-all">
-                                        <Building2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                                <div className={SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM}>
+                                    <div className={cn(SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM_ICON_BASE, SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM_ICON_PURPLE)}>
+                                        <Building2 className="w-5 h-5" />
                                     </div>
-                                    <div className="overflow-hidden">
-                                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{t('profile.labels.management')}</p>
-                                        <p className="text-sm font-bold truncate text-foreground">{user.management_name || user.management_id}</p>
+                                    <div className={SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM_DETAILS}>
+                                        <p className={SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM_LABEL}>{t('profile.labels.management')}</p>
+                                        <p className={SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM_VALUE}>{user.management_name || user.management_id}</p>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-4 group">
-                                    <div className="w-10 h-10 rounded-md bg-green-50 dark:bg-green-900/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:bg-green-100 transition-all">
-                                        <BadgeCheck className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                <div className={SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM}>
+                                    <div className={cn(SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM_ICON_BASE, SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM_ICON_EMERALD)}>
+                                        <BadgeCheck className="w-5 h-5" />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{t('profile.labels.status')}</p>
-                                        <p className="text-sm font-bold text-green-600 dark:text-green-400">{t('profile.statusActive')}</p>
+                                        <p className={SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM_LABEL}>{t('profile.labels.status')}</p>
+                                        <p className={SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM_VALUE_SUCCESS}>{t('profile.statusActive')}</p>
                                     </div>
                                 </div>
                             </div>
@@ -236,57 +237,57 @@ export default function ProfilePage() {
                     </div>
 
                     {/* Right Column: Edit Form */}
-                    <div className="lg:col-span-2 space-y-6">
+                    <div className={SIATC_THEME.PROFILE_LAYOUT.RIGHT_COLUMN}>
 
                         {/* Account Settings Card */}
-                        <div className="bg-card border rounded-lg shadow-sm transition-all hover:shadow-md">
-                            <div className="px-6 py-5 border-b border-border bg-muted/30">
-                                <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
+                        <div className={cn(SIATC_THEME.COMPONENTS.CARD_CONTAINER, 'transition-all hover:shadow-md')}>
+                            <div className={SIATC_THEME.PROFILE_LAYOUT.FORM_SECTION_HEADER}>
+                                <h3 className={SIATC_THEME.PROFILE_LAYOUT.FORM_SECTION_TITLE}>
                                     <User className="w-4 h-4 text-primary" />
                                     {t('profile.account.title')}
                                 </h3>
-                                <p className="text-xs text-muted-foreground mt-1">{t('profile.account.desc')}</p>
+                                <p className={SIATC_THEME.PROFILE_LAYOUT.FORM_SECTION_SUBTITLE}>{t('profile.account.desc')}</p>
                             </div>
 
                             <div className="p-6 space-y-5">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                <div className={SIATC_THEME.PROFILE_LAYOUT.FORM_GRID}>
                                     <div>
-                                        <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">
+                                        <label className={SIATC_THEME.PROFILE_LAYOUT.FIELD_LABEL}>
                                             {t('profile.labels.username')}
                                         </label>
-                                        <div className="relative">
-                                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
+                                        <div className={SIATC_THEME.PROFILE_LAYOUT.FIELD_WRAPPER}>
+                                            <div className={SIATC_THEME.PROFILE_LAYOUT.FIELD_ICON}>
                                                 <User className="w-4 h-4" />
                                             </div>
                                             <input
                                                 type="text"
                                                 value={formData.username}
                                                 disabled
-                                                className="block w-full pl-10 pr-3 py-2.5 bg-muted/60 border-transparent rounded-md text-muted-foreground text-sm font-medium cursor-not-allowed"
+                                                className={SIATC_THEME.PROFILE_LAYOUT.INPUT_DISABLED}
                                             />
                                         </div>
                                     </div>
 
                                     <div>
-                                        <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">
+                                        <label className={SIATC_THEME.PROFILE_LAYOUT.FIELD_LABEL}>
                                             {t('profile.labels.email')}
                                         </label>
-                                        <div className="relative">
-                                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
+                                        <div className={SIATC_THEME.PROFILE_LAYOUT.FIELD_WRAPPER}>
+                                            <div className={SIATC_THEME.PROFILE_LAYOUT.FIELD_ICON}>
                                                 <Mail className="w-4 h-4" />
                                             </div>
                                             <input
                                                 type="email"
                                                 value={formData.email}
                                                 disabled
-                                                className="block w-full pl-10 pr-3 py-2.5 bg-muted/60 border-transparent rounded-md text-muted-foreground text-sm font-medium cursor-not-allowed"
+                                                className={SIATC_THEME.PROFILE_LAYOUT.INPUT_DISABLED}
                                             />
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="p-3 bg-primary/5 dark:bg-primary/20 rounded-lg border border-blue-100 dark:border-blue-900/50">
-                                    <p className="text-[11px] text-primary dark:text-primary font-medium flex items-center gap-2">
+                                <div className={SIATC_THEME.PROFILE_LAYOUT.READONLY_ALERT}>
+                                    <p className={SIATC_THEME.PROFILE_LAYOUT.READONLY_ALERT_TEXT}>
                                         <AlertCircle className="w-3.5 h-3.5 inline" />
                                         {t('profile.account.readonlyNote')}
                                     </p>
@@ -296,23 +297,23 @@ export default function ProfilePage() {
 
                         {/* Security Card */}
                         <form onSubmit={handleSubmit}>
-                            <div className="bg-card border rounded-lg shadow-sm transition-all hover:shadow-md">
-                                <div className="px-6 py-5 border-b border-border bg-muted/30">
-                                    <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
+                            <div className={cn(SIATC_THEME.COMPONENTS.CARD_CONTAINER, 'transition-all hover:shadow-md')}>
+                                <div className={SIATC_THEME.PROFILE_LAYOUT.FORM_SECTION_HEADER}>
+                                    <h3 className={SIATC_THEME.PROFILE_LAYOUT.FORM_SECTION_TITLE}>
                                         <Lock className="w-4 h-4 text-primary" />
                                         {t('profile.security.title')}
                                     </h3>
-                                    <p className="text-xs text-muted-foreground mt-1">{t('profile.security.desc')}</p>
+                                    <p className={SIATC_THEME.PROFILE_LAYOUT.FORM_SECTION_SUBTITLE}>{t('profile.security.desc')}</p>
                                 </div>
 
                                 <div className="p-6 space-y-5">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                    <div className={SIATC_THEME.PROFILE_LAYOUT.FORM_GRID}>
                                         <div>
-                                            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">
+                                            <label className={SIATC_THEME.PROFILE_LAYOUT.FIELD_LABEL}>
                                                 {t('profile.labels.newPassword')}
                                             </label>
-                                            <div className="relative">
-                                                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
+                                            <div className={SIATC_THEME.PROFILE_LAYOUT.FIELD_WRAPPER}>
+                                                <div className={SIATC_THEME.PROFILE_LAYOUT.FIELD_ICON}>
                                                     <Lock className="w-4 h-4" />
                                                 </div>
                                                 <input
@@ -321,17 +322,17 @@ export default function ProfilePage() {
                                                     value={formData.password}
                                                     onChange={handleChange}
                                                     placeholder="••••••••"
-                                                    className="block w-full pl-10 pr-3 py-2.5 bg-background border rounded-md focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm font-bold"
+                                                    className={SIATC_THEME.PROFILE_LAYOUT.INPUT_ACTIVE}
                                                     minLength={4}
                                                 />
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">
+                                            <label className={SIATC_THEME.PROFILE_LAYOUT.FIELD_LABEL}>
                                                 {t('profile.labels.confirmPassword')}
                                             </label>
-                                            <div className="relative">
-                                                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
+                                            <div className={SIATC_THEME.PROFILE_LAYOUT.FIELD_WRAPPER}>
+                                                <div className={SIATC_THEME.PROFILE_LAYOUT.FIELD_ICON}>
                                                     <Shield className="w-4 h-4" />
                                                 </div>
                                                 <input
@@ -341,8 +342,8 @@ export default function ProfilePage() {
                                                     onChange={handleChange}
                                                     placeholder="••••••••"
                                                     className={cn(
-                                                        "block w-full pl-10 pr-3 py-2.5 bg-background border rounded-md focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm font-medium",
-                                                        formData.confirmPassword && formData.password !== formData.confirmPassword && "border-red-300 focus:border-red-500 focus:ring-red-200 bg-red-50 dark:bg-red-900/10"
+                                                        SIATC_THEME.PROFILE_LAYOUT.INPUT_ACTIVE,
+                                                        formData.confirmPassword && formData.password !== formData.confirmPassword && SIATC_THEME.PROFILE_LAYOUT.INPUT_ERROR
                                                     )}
                                                     minLength={4}
                                                 />
@@ -350,7 +351,7 @@ export default function ProfilePage() {
                                         </div>
                                     </div>
 
-                                    <p className="text-[11px] text-muted-foreground font-medium">
+                                    <p className={SIATC_THEME.PROFILE_LAYOUT.FORM_NOTE}>
                                         {t('profile.security.hint')}
                                     </p>
                                 </div>
@@ -359,10 +360,11 @@ export default function ProfilePage() {
                             {/* Status Message */}
                             {status !== 'idle' && (
                                 <div className={cn(
-                                    "mt-5 p-4 rounded-md flex items-center gap-3 text-sm font-bold shadow-sm animate-in fade-in zoom-in-95 duration-300",
+                                    SIATC_THEME.PROFILE_LAYOUT.STATUS_ALERT_BASE,
+                                    'mt-5',
                                     status === 'success'
-                                        ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800"
-                                        : "bg-red-50 text-destructive dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800"
+                                        ? SIATC_THEME.PROFILE_LAYOUT.STATUS_ALERT_SUCCESS
+                                        : SIATC_THEME.PROFILE_LAYOUT.STATUS_ALERT_ERROR
                                 )}>
                                     {status === 'success' ? <CheckCircle className="w-5 h-5 flex-shrink-0" /> : <AlertCircle className="w-5 h-5 flex-shrink-0" />}
                                     {message}
@@ -375,10 +377,11 @@ export default function ProfilePage() {
                                     type="submit"
                                     disabled={isSaving}
                                     className={cn(
-                                        "w-full sm:w-auto px-8 py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-md shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center gap-2",
+                                        SIATC_THEME.COMPONENTS.BUTTON_PRIMARY,
+                                        'w-full sm:w-auto px-8 h-auto py-3.5',
                                         isSaving
-                                            ? "opacity-60 cursor-not-allowed"
-                                            : "hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-500/40 active:translate-y-0"
+                                            ? 'opacity-60 cursor-not-allowed'
+                                            : 'hover:-translate-y-0.5 active:translate-y-0'
                                     )}
                                 >
                                     {isSaving ? (

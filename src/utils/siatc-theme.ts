@@ -155,7 +155,7 @@ export const SIATC_THEME = {
 
     // 9. PERFIL DE USUARIO (PROFILE_LAYOUT)
     PROFILE_LAYOUT: {
-        PAGE_WRAPPER: "h-full overflow-y-auto custom-scrollbar p-4 pb-24 lg:pb-4",
+        PAGE_WRAPPER: "h-full overflow-y-auto custom-scrollbar p-4 pb-20 lg:pb-4",
         INNER_CONTAINER: "max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500",
         GRID: "grid grid-cols-1 md:grid-cols-3 gap-4",
         LEFT_COLUMN: "lg:col-span-1 space-y-4",

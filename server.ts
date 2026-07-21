@@ -607,6 +607,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
             user: {
                 id: user.Id,
                 username: user.Username,
+                email: user.Email || '',
                 full_name: user.FullName,
                 codigo_tecnico: user.CodigoTecnico || null,
                 role_name: user.RoleName,
@@ -705,6 +706,7 @@ app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
             user: {
                 id: user.Id,
                 username: user.Username,
+                email: user.Email || '',
                 full_name: user.FullName,
                 codigo_tecnico: user.CodigoTecnico || null,
                 role_name: user.RoleName,

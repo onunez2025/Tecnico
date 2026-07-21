@@ -159,31 +159,38 @@ export default function PaymentsPage() {
     return (
         <div className={SIATC_THEME.LAYOUT.PAGE_WRAPPER}>
 
-            {/* Page Header */}
-            <div className={SIATC_THEME.LAYOUT.HEADER_WRAPPER}>
-                <div>
-                    <div className="flex items-center gap-2">
-                        {canViewAll
-                            ? <Users className="w-5 h-5 text-primary shrink-0" />
-                            : <DollarSign className="w-5 h-5 text-primary shrink-0" />
-                        }
-                        <h1 className={SIATC_THEME.TYPOGRAPHY.PAGE_TITLE}>
-                            {canViewAll ? t('payments.title.all') : t('payments.title.mine')}
-                        </h1>
+            {/* Page Header — oculto en móvil (mismo criterio que Tickets): el tab
+                inferior ya dice "Pagos", este título es chrome redundante que le
+                resta alto a la lista en la pantalla que de verdad importa.
+                Envuelto en un div aparte (no combinado en el mismo elemento que
+                ya trae "flex" de HEADER_WRAPPER) para no pelear "hidden" vs "flex"
+                en la misma clase. */}
+            <div className="hidden sm:block">
+                <div className={SIATC_THEME.LAYOUT.HEADER_WRAPPER}>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            {canViewAll
+                                ? <Users className="w-5 h-5 text-primary shrink-0" />
+                                : <DollarSign className="w-5 h-5 text-primary shrink-0" />
+                            }
+                            <h1 className={SIATC_THEME.TYPOGRAPHY.PAGE_TITLE}>
+                                {canViewAll ? t('payments.title.all') : t('payments.title.mine')}
+                            </h1>
+                        </div>
+                        <p className={SIATC_THEME.TYPOGRAPHY.PAGE_SUBTITLE}>
+                            {canViewAll ? t('payments.subtitle.all') : t('payments.subtitle.mine')}
+                        </p>
                     </div>
-                    <p className={SIATC_THEME.TYPOGRAPHY.PAGE_SUBTITLE}>
-                        {canViewAll ? t('payments.subtitle.all') : t('payments.subtitle.mine')}
-                    </p>
+                    {canRegister && (
+                        <button
+                            onClick={() => setShowCreateModal(true)}
+                            className={SIATC_THEME.COMPONENTS.BUTTON_PRIMARY}
+                        >
+                            <Plus className="w-4 h-4" />
+                            {t('payments.register')}
+                        </button>
+                    )}
                 </div>
-                {canRegister && (
-                    <button
-                        onClick={() => setShowCreateModal(true)}
-                        className={cn(SIATC_THEME.COMPONENTS.BUTTON_PRIMARY, 'hidden sm:inline-flex')}
-                    >
-                        <Plus className="w-4 h-4" />
-                        {t('payments.register')}
-                    </button>
-                )}
             </div>
 
             {/* Main Content Container */}
@@ -321,7 +328,7 @@ export default function PaymentsPage() {
             {canRegister && (
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-5 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-20 sm:hidden"
+                    className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] right-5 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-50 sm:hidden"
                     aria-label={t('payments.register')}
                 >
                     <Plus className="w-6 h-6" />

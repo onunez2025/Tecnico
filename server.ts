@@ -1378,7 +1378,7 @@ app.post('/api/tec/tickets/rango-horario', verifyToken, checkPermission('tec.tic
 
         const ticketData = ticketResult.recordset[0];
         if (!isAdmin) {
-            if (ticketData.CodigoTecnico !== username) return res.status(403).json({ error: 'No tienes permiso' });
+            if ((ticketData.CodigoTecnico || '').trim().toLowerCase() !== (username || '').trim().toLowerCase()) return res.status(403).json({ error: 'No tienes permiso' });
             const limitResult = await db.request().query("SELECT Valor FROM [dbo].[GAC_APP_TB_CONFIG] WHERE Clave = 'HORA_MAXIMA_RANGO_HORARIO'");
             const limitStr = limitResult.recordset[0]?.Valor || '09:30';
             const now = new Date();

@@ -147,8 +147,9 @@ export default function ProfilePage() {
     return (
         <div className={SIATC_THEME.PROFILE_LAYOUT.PAGE_WRAPPER}>
             <div className={SIATC_THEME.PROFILE_LAYOUT.INNER_CONTAINER}>
-                {/* Header */}
-                <div>
+                {/* Header — oculto en móvil (mismo criterio que Tickets/Pagos): el tab
+                    inferior ya dice "Perfil", es chrome redundante en esa pantalla */}
+                <div className="hidden sm:block">
                     <h1 className={SIATC_THEME.TYPOGRAPHY.PAGE_TITLE}>{t('profile.title')}</h1>
                     <p className={SIATC_THEME.TYPOGRAPHY.PAGE_SUBTITLE}>{t('profile.subtitle')}</p>
                 </div>

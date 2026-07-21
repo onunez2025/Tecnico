@@ -537,14 +537,16 @@ export default function TicketsCalendarPage() {
 
             {/* Tickets Panel (Right) */}
             <div className="flex-1 flex flex-col h-full overflow-hidden bg-background">
-                {/* Header Info */}
-                <div className="bg-card border-b border-border p-4 flex flex-col gap-3">
-                    <div className="flex justify-between items-start md:items-center flex-col md:flex-row gap-4">
+                {/* Header Info — compacto en móvil a propósito: la lista de tickets es
+                    la zona relevante de la pantalla, este header no debe competir con ella */}
+                <div className="bg-card border-b border-border p-3 md:p-4 flex flex-col gap-2 md:gap-3">
+                    {/* Título + recarga — solo escritorio/tablet, en móvil es chrome redundante
+                        (el tab inferior ya dice "Tickets") y le resta alto a la lista */}
+                    <div className="hidden md:flex justify-between items-center gap-4">
                         <div>
                             <span className="text-xs font-bold text-primary uppercase tracking-wider">{t('calendar.myTickets')}</span>
                         </div>
-
-                        <div className="hidden md:flex items-center gap-2 self-stretch md:self-auto">
+                        <div className="flex items-center gap-2">
                             <button
                                 onClick={() => setRefreshKey(k => k + 1)}
                                 className="p-2 border border-border hover:bg-muted rounded-xl transition-colors shrink-0 text-foreground"
@@ -573,8 +575,8 @@ export default function TicketsCalendarPage() {
                         </button>
                     </div>
 
-                    {/* Summary Metrics Cards */}
-                    <div className="grid grid-cols-3 gap-3">
+                    {/* Summary Metrics — tarjetas en escritorio/tablet, una sola línea compacta en móvil */}
+                    <div className="hidden md:grid grid-cols-3 gap-3">
                         <div className="bg-primary/10 border border-primary/20 rounded-2xl p-3 flex flex-col justify-between">
                             <span className="text-xs font-bold text-primary">{t('calendar.metrics.total')}</span>
                             <span className="text-2xl font-black text-foreground mt-1">{totalCount}</span>
@@ -587,6 +589,11 @@ export default function TicketsCalendarPage() {
                             <span className="text-xs font-bold text-amber-500">{t('calendar.metrics.pending')}</span>
                             <span className="text-2xl font-black text-amber-900 dark:text-amber-200 mt-1">{pendingCount}</span>
                         </div>
+                    </div>
+                    <div className="md:hidden flex items-center gap-3 px-0.5 text-xs font-bold">
+                        <span className="flex items-center gap-1.5 text-foreground"><span className="w-1.5 h-1.5 rounded-full bg-primary" />{totalCount} {t('calendar.metrics.total')}</span>
+                        <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400"><span className="w-1.5 h-1.5 rounded-full bg-green-500" />{completedCount} {t('calendar.metrics.done')}</span>
+                        <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />{pendingCount} {t('calendar.metrics.pending')}</span>
                     </div>
 
                     {/* Search and Filters */}

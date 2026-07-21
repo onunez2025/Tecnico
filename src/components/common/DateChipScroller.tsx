@@ -62,8 +62,8 @@ export function DateChipScroller({ selectedDate, onSelectDate, ticketDates, wind
                             isToday && !isSelected && 'ring-2 ring-primary/30'
                         )}
                     >
-                        <span className="text-[10px] font-bold uppercase opacity-70">{WEEKDAY_LABELS[date.getDay()]}</span>
-                        <span className="text-base font-black">{date.getDate()}</span>
+                        <span className="text-[8px] leading-none font-bold uppercase opacity-70">{WEEKDAY_LABELS[date.getDay()]}</span>
+                        <span className="text-sm leading-none font-black mt-1">{date.getDate()}</span>
                         {hasTickets && (
                             <span className={cn(SIATC_THEME.MOBILE.DATE_CHIP_DOT, isSelected ? 'bg-primary-foreground' : 'bg-primary')} />
                         )}

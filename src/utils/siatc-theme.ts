@@ -227,11 +227,11 @@ export const SIATC_THEME = {
 
         // Selector de fecha por chips horizontales — reemplaza el <input type=date>
         // plano en móvil, mostrando de un vistazo qué días tienen tickets.
-        DATE_CHIP_SCROLLER: "flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 custom-scrollbar",
-        DATE_CHIP_BASE: "flex flex-col items-center justify-center shrink-0 w-14 h-16 rounded-2xl border text-xs font-bold transition-all relative",
+        DATE_CHIP_SCROLLER: "flex gap-1.5 overflow-x-auto -mx-1 px-1 custom-scrollbar",
+        DATE_CHIP_BASE: "flex flex-col items-center justify-center shrink-0 w-11 h-12 rounded-xl border text-xs font-bold transition-all relative",
         DATE_CHIP_ACTIVE: "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20",
         DATE_CHIP_INACTIVE: "bg-card border-border text-foreground hover:border-primary/40",
-        DATE_CHIP_DOT: "w-1 h-1 rounded-full absolute bottom-1.5",
+        DATE_CHIP_DOT: "w-1 h-1 rounded-full absolute bottom-1",
     },
 };
 

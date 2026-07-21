@@ -592,10 +592,10 @@ export default function TicketsCalendarPage() {
                                 <span className="text-2xl font-black text-amber-900 dark:text-amber-200 mt-1">{pendingCount}</span>
                             </div>
                         </div>
-                        <div className="md:hidden flex items-center gap-3 px-0.5 text-xs font-bold">
-                            <span className="flex items-center gap-1.5 text-foreground"><span className="w-1.5 h-1.5 rounded-full bg-primary" />{totalCount} {t('calendar.metrics.total')}</span>
-                            <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400"><span className="w-1.5 h-1.5 rounded-full bg-green-500" />{completedCount} {t('calendar.metrics.done')}</span>
-                            <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />{pendingCount} {t('calendar.metrics.pending')}</span>
+                        <div className="md:hidden flex items-center gap-2">
+                            <span className={cn(SIATC_THEME.STATES.BADGE_BASE, SIATC_THEME.STATES.PRIMARY, "normal-case tracking-normal text-xs")}>{totalCount} {t('calendar.metrics.total')}</span>
+                            <span className={cn(SIATC_THEME.STATES.BADGE_BASE, SIATC_THEME.STATES.SUCCESS, "normal-case tracking-normal text-xs")}>{completedCount} {t('calendar.metrics.done')}</span>
+                            <span className={cn(SIATC_THEME.STATES.BADGE_BASE, SIATC_THEME.STATES.WARNING, "normal-case tracking-normal text-xs")}>{pendingCount} {t('calendar.metrics.pending')}</span>
                         </div>
 
                         {/* Búsqueda + filtro de técnico (admin, móvil) en una sola fila — antes eran

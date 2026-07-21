@@ -181,6 +181,18 @@
   scrollbar-width: thin;
 }
 
+/* SIATC — oculta el scrollbar nativo por completo. Uso: filas de chips
+   horizontales (scroll obviamente deslizable por el corte del último chip),
+   donde el track/thumb nativo se dibuja superpuesto sobre el contenido
+   en Chrome Android en vez de reservar su propio espacio. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* SIATC — responsive layout overrides */
 @media (max-width: 767px) {
   :root, .dark, html.dark {

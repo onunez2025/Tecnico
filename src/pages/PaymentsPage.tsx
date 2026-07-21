@@ -196,7 +196,10 @@ export default function PaymentsPage() {
             {/* Main Content Container */}
             <div className={SIATC_THEME.LAYOUT.CONTENT_CONTAINER}>
 
-                {/* Search Bar */}
+                {/* Search Bar — el registro de pago en móvil vive aquí (icono junto a la
+                    búsqueda), no como FAB flotante: un elemento fijo compitiendo por el
+                    mismo espacio que la barra de navegación Y el footer de paginación
+                    (ambos también pegados al fondo) es frágil por diseño. */}
                 <div className={SIATC_THEME.LAYOUT.SEARCH_BAR_WRAPPER}>
                     <div className="relative flex-1 max-w-md">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cb-neutral" />
@@ -208,6 +211,15 @@ export default function PaymentsPage() {
                             className={cn(SIATC_THEME.COMPONENTS.INPUT, SIATC_THEME.MOBILE.TOUCH_INPUT, 'pl-9')}
                         />
                     </div>
+                    {canRegister && (
+                        <button
+                            onClick={() => setShowCreateModal(true)}
+                            className={cn(SIATC_THEME.MOBILE.TOUCH_TARGET, "sm:hidden w-11 shrink-0 bg-primary text-primary-foreground rounded-cb-btn flex items-center justify-center")}
+                            aria-label={t('payments.register')}
+                        >
+                            <Plus className="w-5 h-5" />
+                        </button>
+                    )}
                     <span className="text-xs font-bold text-cb-neutral hidden sm:inline tabular-nums">
                         {t('payments.count', { count: total.toLocaleString() })}
                     </span>
@@ -323,17 +335,6 @@ export default function PaymentsPage() {
                     </div>
                 )}
             </div>
-
-            {/* Mobile FAB */}
-            {canRegister && (
-                <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] right-5 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-50 sm:hidden"
-                    aria-label={t('payments.register')}
-                >
-                    <Plus className="w-6 h-6" />
-                </button>
-            )}
 
             {/* Modal crear pago */}
             <Modal isOpen={showCreateModal} onClose={() => !isSaving && setShowCreateModal(false)} title={t('payments.modal.title')}>

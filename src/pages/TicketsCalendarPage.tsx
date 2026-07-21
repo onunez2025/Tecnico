@@ -539,10 +539,10 @@ export default function TicketsCalendarPage() {
             <div className="flex-1 flex flex-col h-full overflow-hidden bg-background">
                 {/* Header Info — compacto en móvil a propósito: la lista de tickets es
                     la zona relevante de la pantalla, este header no debe competir con ella */}
-                <div className="bg-card border-b border-border p-3 md:p-4 flex flex-col gap-2 md:gap-3">
+                <div className="bg-card border-b border-border p-3 md:p-4 flex flex-col">
                     {/* Título + recarga — solo escritorio/tablet, en móvil es chrome redundante
                         (el tab inferior ya dice "Tickets") y le resta alto a la lista */}
-                    <div className="hidden md:flex justify-between items-center gap-4">
+                    <div className="hidden md:flex justify-between items-center gap-4 mb-3">
                         <div>
                             <span className="text-xs font-bold text-primary uppercase tracking-wider">{t('calendar.myTickets')}</span>
                         </div>
@@ -557,8 +557,8 @@ export default function TicketsCalendarPage() {
                         </div>
                     </div>
 
-                    {/* Mobile: selector de fecha por chips horizontales, con recarga */}
-                    <div className="md:hidden flex items-center gap-2">
+                    {/* Mobile: selector de fecha — grupo propio, separado del grupo de filtros con mb-3 */}
+                    <div className="md:hidden flex items-center gap-2 mb-3">
                         <div className="flex-1 min-w-0">
                             <DateChipScroller
                                 selectedDate={selectedDate}
@@ -575,52 +575,55 @@ export default function TicketsCalendarPage() {
                         </button>
                     </div>
 
-                    {/* Summary Metrics — tarjetas en escritorio/tablet, una sola línea compacta en móvil */}
-                    <div className="hidden md:grid grid-cols-3 gap-3">
-                        <div className="bg-primary/10 border border-primary/20 rounded-2xl p-3 flex flex-col justify-between">
-                            <span className="text-xs font-bold text-primary">{t('calendar.metrics.total')}</span>
-                            <span className="text-2xl font-black text-foreground mt-1">{totalCount}</span>
+                    {/* Grupo de filtros: métricas + búsqueda, con ritmo interno propio (gap-2) */}
+                    <div className="flex flex-col gap-2 md:gap-3">
+                        {/* Summary Metrics — tarjetas en escritorio/tablet, una sola línea compacta en móvil */}
+                        <div className="hidden md:grid grid-cols-3 gap-3">
+                            <div className="bg-primary/10 border border-primary/20 rounded-2xl p-3 flex flex-col justify-between">
+                                <span className="text-xs font-bold text-primary">{t('calendar.metrics.total')}</span>
+                                <span className="text-2xl font-black text-foreground mt-1">{totalCount}</span>
+                            </div>
+                            <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-3 flex flex-col justify-between">
+                                <span className="text-xs font-bold text-green-500">{t('calendar.metrics.done')}</span>
+                                <span className="text-2xl font-black text-green-900 dark:text-green-200 mt-1">{completedCount}</span>
+                            </div>
+                            <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 flex flex-col justify-between">
+                                <span className="text-xs font-bold text-amber-500">{t('calendar.metrics.pending')}</span>
+                                <span className="text-2xl font-black text-amber-900 dark:text-amber-200 mt-1">{pendingCount}</span>
+                            </div>
                         </div>
-                        <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-3 flex flex-col justify-between">
-                            <span className="text-xs font-bold text-green-500">{t('calendar.metrics.done')}</span>
-                            <span className="text-2xl font-black text-green-900 dark:text-green-200 mt-1">{completedCount}</span>
+                        <div className="md:hidden flex items-center gap-3 px-0.5 text-xs font-bold">
+                            <span className="flex items-center gap-1.5 text-foreground"><span className="w-1.5 h-1.5 rounded-full bg-primary" />{totalCount} {t('calendar.metrics.total')}</span>
+                            <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400"><span className="w-1.5 h-1.5 rounded-full bg-green-500" />{completedCount} {t('calendar.metrics.done')}</span>
+                            <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />{pendingCount} {t('calendar.metrics.pending')}</span>
                         </div>
-                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 flex flex-col justify-between">
-                            <span className="text-xs font-bold text-amber-500">{t('calendar.metrics.pending')}</span>
-                            <span className="text-2xl font-black text-amber-900 dark:text-amber-200 mt-1">{pendingCount}</span>
-                        </div>
-                    </div>
-                    <div className="md:hidden flex items-center gap-3 px-0.5 text-xs font-bold">
-                        <span className="flex items-center gap-1.5 text-foreground"><span className="w-1.5 h-1.5 rounded-full bg-primary" />{totalCount} {t('calendar.metrics.total')}</span>
-                        <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400"><span className="w-1.5 h-1.5 rounded-full bg-green-500" />{completedCount} {t('calendar.metrics.done')}</span>
-                        <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />{pendingCount} {t('calendar.metrics.pending')}</span>
-                    </div>
 
-                    {/* Search and Filters */}
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
-                        <input
-                            type="text"
-                            placeholder={t('calendar.searchPlaceholder')}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 border border-border rounded-xl text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        />
-                    </div>
-
-                    {/* Mobile Admin Filter */}
-                    {isAdmin && (
-                        <div className="md:hidden flex gap-2 items-center">
-                            <label className="text-xs font-bold text-muted-foreground whitespace-nowrap">{t('calendar.mobileTechCode')}:</label>
-                            <input
-                                type="text"
-                                placeholder="Ej. 3838"
-                                value={techFilterCode}
-                                onChange={(e) => setTechFilterCode(e.target.value)}
-                                className="flex-1 px-3 py-1.5 text-xs border border-border rounded-lg bg-background text-foreground focus:outline-none"
-                            />
+                        {/* Búsqueda + filtro de técnico (admin, móvil) en una sola fila — antes eran
+                            dos barras apiladas de peso visual casi idéntico */}
+                        <div className="flex items-center gap-2">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
+                                <input
+                                    type="text"
+                                    placeholder={t('calendar.searchPlaceholder')}
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full pl-9 pr-4 py-2 border border-border rounded-xl text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                />
+                            </div>
+                            {isAdmin && (
+                                <input
+                                    type="text"
+                                    placeholder={t('calendar.adminFilter.placeholder')}
+                                    aria-label={t('calendar.adminFilter.techCode')}
+                                    title={t('calendar.adminFilter.techCode')}
+                                    value={techFilterCode}
+                                    onChange={(e) => setTechFilterCode(e.target.value)}
+                                    className="md:hidden w-24 shrink-0 px-3 py-2 text-sm border border-border rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                />
+                            )}
                         </div>
-                    )}
+                    </div>
                 </div>
 
                 {/* Tickets list */}

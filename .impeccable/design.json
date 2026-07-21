@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-20T21:47:56Z",
+  "title": "Design System: Technical (Gestión Técnica)",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Azul Acero Técnico", "canonical": "#4C5F80", "tonalRamp": ["#0D1420", "#1B2536", "#2C3A52", "#3E4E6C", "#4C5F80", "#6B7C99", "#9AA7BB", "#CBD3DE"] },
+      "neutral-bg": { "role": "neutral", "displayName": "Niebla Fría", "canonical": "#F9FAFB", "tonalRamp": ["#050F1A", "#111C2A", "#1E293B", "#4A5568", "#8A919E", "#D1D5DB", "#E9ECEF", "#F9FAFB"] },
+      "cb-text-primary": { "role": "neutral", "displayName": "Texto Primario", "canonical": "#1A1C1E", "tonalRamp": ["#000000", "#1A1C1E", "#3A3C3E", "#5A5C5E", "#7A7C7E", "#9A9C9E", "#BABCBE", "#F9FAFB"] },
+      "success": { "role": "semantic-success", "displayName": "Verde Confirmación", "canonical": "#05B169" },
+      "warning": { "role": "semantic-warning", "displayName": "Ámbar Advertencia", "canonical": "#F0AD4E" },
+      "error": { "role": "semantic-error", "displayName": "Rojo Error", "canonical": "#DF2935" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Título principal de página, uso único por pantalla." },
+      "headline": { "displayName": "Headline", "purpose": "Encabezado de sección o tarjeta destacada." },
+      "title": { "displayName": "Title", "purpose": "Subtítulo de sección, nombre de tarjeta." },
+      "body": { "displayName": "Body", "purpose": "Texto de lectura general." },
+      "label": { "displayName": "Label", "purpose": "Etiquetas de campo, captions, metadatos, uppercase." },
+      "mono-data": { "displayName": "Mono Data", "purpose": "Valores tabulares: montos, horas, IDs. Siempre tabular-nums." }
+    },
+    "shadows": [
+      { "name": "level-1", "value": "0 1px 3px rgba(5,15,26,0.06)", "purpose": "Tarjetas en reposo, solo escritorio/tablet (≥768px)." },
+      { "name": "level-2", "value": "0 4px 12px rgba(5,15,26,0.08)", "purpose": "Dropdowns, hover de tarjeta." },
+      { "name": "level-3", "value": "0 12px 24px rgba(5,15,26,0.12)", "purpose": "Modales y overlays." },
+      { "name": "mobile-flat", "value": "none", "purpose": "Toda sombra colapsa a none por debajo de 768px — La Regla del Sol de Mediodía." }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Transición estándar de estado (hover, focus, aparición)." },
+      { "name": "duration-standard", "value": "300ms", "purpose": "Duración por defecto de animate-in / transiciones de layout." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "<768px" },
+      { "name": "tablet", "value": "768px–1024px" },
+      { "name": "desktop", "value": ">1024px" }
+    ],
+    "touchTargets": [
+      { "name": "desktop-control-height", "value": "36px", "purpose": "Alto estándar de botones/inputs en escritorio." },
+      { "name": "mobile-tablet-control-height-min", "value": "44-48px", "purpose": "Alto mínimo táctil en móvil/tablet — uso con una mano o guantes, por encima del estándar de escritorio." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Acción principal de un formulario o tarjeta. En móvil/tablet, altura mínima 44px (vs. 36px en escritorio).",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M5 13l4 4L19 7\"/></svg>Guardar visita</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 20px; background: #4C5F80; color: #FFFFFF; border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 14px; transition: background 0.2s cubic-bezier(0.4,0,0.2,1), transform 0.1s; } .ds-btn-primary:hover { background: #3E4E6C; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(76,95,128,0.2); } .ds-btn-primary:active { transform: scale(0.97); }"
+    },
+    {
+      "name": "Sync Status Chip",
+      "kind": "chip",
+      "refersTo": "sync-status-chip",
+      "description": "Componente nuevo de la capa móvil/tablet: comunica si un registro de campo está pendiente, guardado o con error de sincronización. Nunca omitir bajo conectividad intermitente.",
+      "html": "<span class=\"ds-chip-pending\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3 3\"/></svg>Pendiente de sincronizar</span>",
+      "css": ".ds-chip-pending { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 4px; background: #FFF4E5; color: #F0AD4E; border: 1px solid #FFF4E5; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Campo de texto estándar. En móvil/tablet, font-size 16px mínimo (evita zoom automático de iOS) y altura 44px.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Número de ticket\" />",
+      "css": ".ds-input { height: 44px; width: 100%; padding: 0 16px; background: #FFFFFF; color: #1A1C1E; border: 1px solid #D1D5DB; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 500; transition: border-color 0.2s, box-shadow 0.2s; } .ds-input::placeholder { color: #8A919E; } .ds-input:focus { outline: none; border-color: #4C5F80; box-shadow: 0 0 0 4px rgba(76,95,128,0.1); }"
+    },
+    {
+      "name": "Card Container",
+      "kind": "card",
+      "refersTo": "card-container",
+      "description": "Contenedor de contenido agrupado (ticket, pago, registro). Plano en móvil, sombra Nivel 1 en escritorio/tablet.",
+      "html": "<div class=\"ds-card\"><span class=\"ds-card-label\">Ticket #4821</span><p class=\"ds-card-title\">Mantenimiento preventivo</p></div>",
+      "css": ".ds-card { background: #FFFFFF; border-radius: 12px; padding: 16px; border: 1px solid #D1D5DB; } .ds-card-label { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: #8A919E; } .ds-card-title { font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700; color: #1A1C1E; margin-top: 4px; } @media (max-width: 767px) { .ds-card { border: none; box-shadow: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "El Registro de Campo Confiable",
+    "overview": "Technical existe para que un técnico registre su trabajo en la calle — con una mano ocupada, bajo sol directo, con señal que puede caerse en cualquier momento — sin perder ese registro ni tener que volver a hacerlo. Todo en el sistema visual sirve a esa promesa: colores sobrios que no compiten con el contenido, tipografía legible a distancia y bajo luz dura, y componentes que confirman cada acción con claridad porque un técnico no puede darse el lujo de dudar si su registro se guardó. Es una herramienta seria y profesional (moderna, ágil, profesional), pensada para gente que ya sabe usarla y solo quiere terminar la tarea rápido y sin errores.",
+    "keyCharacteristics": [
+      "Paleta sobria de azul acero, sin colores vibrantes que compitan con datos operativos.",
+      "Jerarquía tipográfica compacta y funcional, optimizada para escaneo rápido.",
+      "Elevación mínima y deliberada: plana en móvil, sutil en escritorio/tablet.",
+      "Cada componente confirma su estado (guardado, pendiente, error) de forma visible."
+    ],
+    "rules": [
+      { "name": "La Regla del Acento Único", "body": "El azul acero es el único color con intención de marca en toda la interfaz — cualquier otro color en pantalla es semántico o neutro.", "section": "colors" },
+      { "name": "La Regla del Dato Monoespaciado", "body": "Cualquier valor tabular usa JetBrains Mono con tabular-nums — nunca DM Sans.", "section": "typography" },
+      { "name": "La Regla del Sol de Mediodía", "body": "Por debajo de 768px de viewport, toda sombra decorativa y todo borde de layout colapsan a plano.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do mantener el azul acero técnico como único acento.",
+      "Do subir el área táctil mínima a 44-48px en móvil/tablet.",
+      "Do usar JetBrains Mono con tabular-nums para valores tabulares.",
+      "Do mostrar explícitamente el estado de guardado/sincronización de cualquier registro de campo.",
+      "Do mantener la elevación plana en móvil y reservar sombras para escritorio/tablet."
+    ],
+    "donts": [
+      "Don't introducir un segundo color de acento decorativo.",
+      "Don't aplicar sombras decorativas en viewport móvil.",
+      "Don't diseñar controles móviles como una versión encogida de los de escritorio.",
+      "Don't asumir conectividad estable en ningún flujo de registro de campo.",
+      "Don't usar border-left/border-right como acento decorativo de color."
+    ]
+  }
+}

@@ -202,6 +202,37 @@ export const SIATC_THEME = {
         HOVER_EXPAND:             true,
         MOBILE_CLOSE_ON_NAVIGATE: true,
     },
+
+    // 10. MÓVIL/TABLET — piloto UI/UX de campo (ver DESIGN.md: La Regla del Sol de Mediodía)
+    MOBILE: {
+        // Área táctil mínima en móvil/tablet: 44px, vs. 36px en escritorio.
+        TOUCH_TARGET: "min-h-[44px]",
+        TOUCH_INPUT: "min-h-[44px] text-base md:text-sm",
+
+        // Chip de estado de sincronización — comunica si un registro de campo
+        // quedó guardado, pendiente, o falló, sin importar la conectividad.
+        SYNC_STATUS_BASE: "inline-flex items-center gap-1.5 px-2.5 h-7 rounded-cb-chip border text-[11px] font-bold uppercase tracking-wide shrink-0",
+        SYNC_PENDING: "bg-[#FFF4E5] text-[#F0AD4E] border-[#FFF4E5]",
+        SYNC_SAVED: "bg-[#E6F6EF] text-[#05B169] border-[#E6F6EF]",
+        SYNC_ERROR: "bg-[#FDECEE] text-[#DF2935] border-[#FDECEE]",
+
+        // Bottom sheet — reemplaza el drawer lateral de escritorio en <768px,
+        // alcanzable con el pulgar y con acciones primarias fijas abajo.
+        BOTTOM_SHEET_OVERLAY: "fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-xs",
+        BOTTOM_SHEET_CONTAINER: "fixed inset-x-0 bottom-0 z-[100] bg-card rounded-t-[1.5rem] shadow-2xl flex flex-col max-h-[92dvh] animate-in slide-in-from-bottom duration-300",
+        BOTTOM_SHEET_HANDLE: "mx-auto mt-2.5 mb-1 h-1.5 w-10 rounded-full bg-cb-border shrink-0",
+        BOTTOM_SHEET_HEADER: "px-5 pb-4 border-b border-border shrink-0",
+        BOTTOM_SHEET_BODY: "flex-1 overflow-y-auto custom-scrollbar px-5 py-4",
+        BOTTOM_SHEET_FOOTER: "px-5 py-3 border-t border-border bg-card shrink-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))]",
+
+        // Selector de fecha por chips horizontales — reemplaza el <input type=date>
+        // plano en móvil, mostrando de un vistazo qué días tienen tickets.
+        DATE_CHIP_SCROLLER: "flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 custom-scrollbar",
+        DATE_CHIP_BASE: "flex flex-col items-center justify-center shrink-0 w-14 h-16 rounded-2xl border text-xs font-bold transition-all relative",
+        DATE_CHIP_ACTIVE: "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20",
+        DATE_CHIP_INACTIVE: "bg-card border-border text-foreground hover:border-primary/40",
+        DATE_CHIP_DOT: "w-1 h-1 rounded-full absolute bottom-1.5",
+    },
 };
 
 export const CRYPTO_BLUE_THEME = SIATC_THEME;

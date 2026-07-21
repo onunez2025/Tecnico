@@ -27,6 +27,9 @@ import { cn } from '../utils/cn';
 import { useAuth } from '../hooks/useAuth';
 import { AssignedTicket, TicketPago } from '../types';
 import { useTranslation } from 'react-i18next';
+import { SIATC_THEME } from '../utils/siatc-theme';
+import { SyncStatusChip, SyncStatus } from '../components/common/SyncStatusChip';
+import { DateChipScroller } from '../components/common/DateChipScroller';
 
 export default function TicketsCalendarPage() {
     const { t } = useTranslation();
@@ -65,6 +68,7 @@ export default function TicketsCalendarPage() {
     const [applyToAllClientTickets, setApplyToAllClientTickets] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [modalError, setModalError] = useState<string | null>(null);
+    const [rangoSyncStatus, setRangoSyncStatus] = useState<SyncStatus | null>(null);
 
     // Payment details states
     const [activeTicketPayments, setActiveTicketPayments] = useState<TicketPago[]>([]);
@@ -100,6 +104,7 @@ export default function TicketsCalendarPage() {
     const [adjuntoFile, setAdjuntoFile] = useState<File | null>(null);
     const [isSavingPayment, setIsSavingPayment] = useState(false);
     const [paymentError, setPaymentError] = useState<string | null>(null);
+    const [paymentSyncStatus, setPaymentSyncStatus] = useState<SyncStatus | null>(null);
 
     // [FIX FE-M10] Added paymentsError state to surface load failures in the UI
     const [paymentsError, setPaymentsError] = useState<string | null>(null);
@@ -137,6 +142,7 @@ export default function TicketsCalendarPage() {
         setObservacionPago('');
         setAdjuntoFile(null);
         setPaymentError(null);
+        setPaymentSyncStatus(null);
         setIsPaymentModalOpen(true);
     };
 
@@ -146,6 +152,7 @@ export default function TicketsCalendarPage() {
 
         setIsSavingPayment(true);
         setPaymentError(null);
+        setPaymentSyncStatus('pending');
 
         try {
             const formData = new FormData();
@@ -173,12 +180,14 @@ export default function TicketsCalendarPage() {
                 body: formData
             });
 
+            setPaymentSyncStatus('saved');
             await fetchPaymentsForActiveTicket(activeTicket.id);
             setRefreshKey(k => k + 1);
             setIsPaymentModalOpen(false);
         } catch (err: any) {
             console.error("Error saving payment:", err);
             setPaymentError(err.message || "Ocurrió un error al registrar el pago.");
+            setPaymentSyncStatus('error');
         } finally {
             setIsSavingPayment(false);
         }
@@ -249,6 +258,7 @@ export default function TicketsCalendarPage() {
         setComentario(ticket.ComentarioHorario || '');
         setApplyToAllClientTickets(false);
         setModalError(null);
+        setRangoSyncStatus(null);
         setIsAssignModalOpen(true);
     };
 
@@ -258,6 +268,7 @@ export default function TicketsCalendarPage() {
 
         setIsSubmitting(true);
         setModalError(null);
+        setRangoSyncStatus('pending');
 
         try {
             await ApiClient.request('/tec/tickets/rango-horario', {
@@ -271,12 +282,14 @@ export default function TicketsCalendarPage() {
                 })
             });
 
+            setRangoSyncStatus('saved');
             setRefreshKey(k => k + 1);
             setIsAssignModalOpen(false);
             setAssignTicket(null);
         } catch (err: any) {
             console.error("Error saving rango horario:", err);
             setModalError(err.message || "Ocurrió un error al guardar el rango horario.");
+            setRangoSyncStatus('error');
         } finally {
             setIsSubmitting(false);
         }
@@ -531,22 +544,7 @@ export default function TicketsCalendarPage() {
                             <span className="text-xs font-bold text-primary uppercase tracking-wider">{t('calendar.myTickets')}</span>
                         </div>
 
-                        <div className="flex items-center gap-2 self-stretch md:self-auto">
-                            {/* Mobile Datepicker */}
-                            <div className="relative md:hidden flex-1">
-                                <input
-                                    type="date"
-                                    value={selectedDate.toISOString().split('T')[0]}
-                                    onChange={(e) => {
-                                        if (e.target.value) {
-                                            const parts = e.target.value.split('-');
-                                            setSelectedDate(new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])));
-                                        }
-                                    }}
-                                    className="w-full px-3 py-2 border border-border rounded-xl text-sm font-semibold bg-background text-foreground focus:ring-2 focus:ring-primary/20"
-                                />
-                            </div>
-
+                        <div className="hidden md:flex items-center gap-2 self-stretch md:self-auto">
                             <button
                                 onClick={() => setRefreshKey(k => k + 1)}
                                 className="p-2 border border-border hover:bg-muted rounded-xl transition-colors shrink-0 text-foreground"
@@ -555,6 +553,24 @@ export default function TicketsCalendarPage() {
                                 <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
                             </button>
                         </div>
+                    </div>
+
+                    {/* Mobile: selector de fecha por chips horizontales, con recarga */}
+                    <div className="md:hidden flex items-center gap-2">
+                        <div className="flex-1 min-w-0">
+                            <DateChipScroller
+                                selectedDate={selectedDate}
+                                onSelectDate={setSelectedDate}
+                                ticketDates={ticketDates}
+                            />
+                        </div>
+                        <button
+                            onClick={() => setRefreshKey(k => k + 1)}
+                            className={cn(SIATC_THEME.MOBILE.TOUCH_TARGET, "w-11 border border-border hover:bg-muted rounded-xl transition-colors shrink-0 text-foreground flex items-center justify-center")}
+                            title="Recargar lista"
+                        >
+                            <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
+                        </button>
                     </div>
 
                     {/* Summary Metrics Cards */}
@@ -742,10 +758,16 @@ export default function TicketsCalendarPage() {
                         onClick={() => setActiveTicket(null)}
                     />
 
-                    {/* Drawer content */}
-                    <div className="relative w-full max-w-lg h-full bg-card shadow-2xl flex flex-col animate-in fade-in slide-in-from-right duration-300">
+                    {/* Bottom sheet en móvil (<768px) / drawer lateral en tablet+ */}
+                    <div className={cn(
+                        "fixed inset-x-0 bottom-0 w-full max-h-[92dvh] rounded-t-[1.5rem] bg-card shadow-2xl flex flex-col animate-in fade-in slide-in-from-bottom duration-300",
+                        "md:relative md:inset-auto md:max-w-lg md:h-full md:max-h-full md:rounded-none md:slide-in-from-right md:[--tw-enter-translate-y:0]"
+                    )}>
+                        {/* Handle de arrastre — solo móvil */}
+                        <div className={cn(SIATC_THEME.MOBILE.BOTTOM_SHEET_HANDLE, "md:hidden")} />
+
                         {/* Header */}
-                        <div className="p-6 border-b border-border flex items-center justify-between bg-muted/30">
+                        <div className="p-6 border-b border-border flex items-center justify-between bg-muted/30 shrink-0">
                             <div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('calendar.ticketDetails')}</span>
@@ -755,7 +777,7 @@ export default function TicketsCalendarPage() {
                             </div>
                             <button
                                 onClick={() => setActiveTicket(null)}
-                                className="p-2 hover:bg-accent hover:text-accent-foreground rounded-xl transition-colors border border-border min-w-[44px] min-h-[44px] flex items-center justify-center"
+                                className={cn(SIATC_THEME.MOBILE.TOUCH_TARGET, "min-w-[44px] p-2 hover:bg-accent hover:text-accent-foreground rounded-xl transition-colors border border-border flex items-center justify-center")}
                                 aria-label={t('calendar.closeDetail')}
                             >
                                 <X className="w-5 h-5 text-foreground" />
@@ -1151,14 +1173,17 @@ export default function TicketsCalendarPage() {
                     <div className="relative bg-card border border-border rounded-3xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col gap-4">
                         <div className="flex justify-between items-start">
                             <div>
-                                <span className="text-xs font-bold text-primary uppercase tracking-wider">{t('calendar.assignModal.subtitle')}</span>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-xs font-bold text-primary uppercase tracking-wider">{t('calendar.assignModal.subtitle')}</span>
+                                    {rangoSyncStatus && <SyncStatusChip status={rangoSyncStatus} onRetry={() => handleSaveRangoHorario({ preventDefault: () => {} } as React.FormEvent)} />}
+                                </div>
                                 <h3 className="text-lg font-black text-foreground mt-1">Ticket #{assignTicket.id}</h3>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setIsAssignModalOpen(false)}
                                 disabled={isSubmitting}
-                                className="p-1.5 hover:bg-accent rounded-lg border border-border text-foreground hover:text-accent-foreground transition-colors shrink-0"
+                                className={cn(SIATC_THEME.MOBILE.TOUCH_TARGET, "min-w-[44px] p-1.5 hover:bg-accent rounded-lg border border-border text-foreground hover:text-accent-foreground transition-colors shrink-0 flex items-center justify-center")}
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -1183,7 +1208,7 @@ export default function TicketsCalendarPage() {
                                     value={rangoHorario}
                                     onChange={(e) => setRangoHorario(e.target.value)}
                                     required
-                                    className="w-full px-3 py-2 text-sm border border-border rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                    className={cn(SIATC_THEME.MOBILE.TOUCH_INPUT, "w-full px-3 border border-border rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20")}
                                 >
                                     <option value="">{t('calendar.assignModal.rangePlaceholder')}</option>
                                     <option value="07:00 am - 10:00 am">07:00 am - 10:00 am</option>
@@ -1205,7 +1230,7 @@ export default function TicketsCalendarPage() {
                                     <select
                                         value={ordenAtencion}
                                         onChange={(e) => setOrdenAtencion(e.target.value)}
-                                        className="w-full px-3 py-2 text-sm border border-border rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                        className={cn(SIATC_THEME.MOBILE.TOUCH_INPUT, "w-full px-3 border border-border rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20")}
                                     >
                                         <option value="">{t('calendar.assignModal.orderNone')}</option>
                                         <option value="1">1 (Primero)</option>
@@ -1250,14 +1275,14 @@ export default function TicketsCalendarPage() {
                                     type="button"
                                     onClick={() => setIsAssignModalOpen(false)}
                                     disabled={isSubmitting}
-                                    className="flex-1 py-2 border border-border hover:bg-muted text-foreground text-xs font-bold rounded-xl transition-colors"
+                                    className={cn(SIATC_THEME.MOBILE.TOUCH_TARGET, "flex-1 border border-border hover:bg-muted text-foreground text-xs font-bold rounded-xl transition-colors")}
                                 >
                                     {t('calendar.assignModal.cancel')}
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="flex-1 py-2 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-primary/10"
+                                    className={cn(SIATC_THEME.MOBILE.TOUCH_TARGET, "flex-1 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-primary/10")}
                                 >
                                     {isSubmitting ? (
                                         <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></div>
@@ -1285,14 +1310,17 @@ export default function TicketsCalendarPage() {
                     <div className="relative bg-card border border-border rounded-3xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col gap-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
                         <div className="flex justify-between items-start">
                             <div>
-                                <span className="text-xs font-bold text-primary uppercase tracking-wider">{t('calendar.paymentModal.subtitle')}</span>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-xs font-bold text-primary uppercase tracking-wider">{t('calendar.paymentModal.subtitle')}</span>
+                                    {paymentSyncStatus && <SyncStatusChip status={paymentSyncStatus} onRetry={() => handleSavePayment({ preventDefault: () => {} } as React.FormEvent)} />}
+                                </div>
                                 <h3 className="text-lg font-black text-foreground mt-1">{t('calendar.paymentModal.title', { id: activeTicket.id })}</h3>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setIsPaymentModalOpen(false)}
                                 disabled={isSavingPayment}
-                                className="p-1.5 hover:bg-accent rounded-lg border border-border text-foreground hover:text-accent-foreground transition-colors shrink-0"
+                                className={cn(SIATC_THEME.MOBILE.TOUCH_TARGET, "min-w-[44px] p-1.5 hover:bg-accent rounded-lg border border-border text-foreground hover:text-accent-foreground transition-colors shrink-0 flex items-center justify-center")}
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -1317,7 +1345,7 @@ export default function TicketsCalendarPage() {
                                     placeholder="0.00"
                                     value={importePago}
                                     onChange={(e) => setImportePago(e.target.value)}
-                                    className="w-full px-3 py-2 text-sm border border-border rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+                                    className={cn(SIATC_THEME.MOBILE.TOUCH_INPUT, "w-full px-3 border border-border rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 font-bold")}
                                 />
                             </div>
 
@@ -1328,7 +1356,7 @@ export default function TicketsCalendarPage() {
                                     value={canalPago}
                                     onChange={(e) => setCanalPago(e.target.value as any)}
                                     required
-                                    className="w-full px-3 py-2 text-sm border border-border rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                    className={cn(SIATC_THEME.MOBILE.TOUCH_INPUT, "w-full px-3 border border-border rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20")}
                                 >
                                     <option value="POS">{t('calendar.paymentModal.channels.POS')}</option>
                                     <option value="Transferencia">{t('calendar.paymentModal.channels.Transferencia')}</option>
@@ -1346,7 +1374,7 @@ export default function TicketsCalendarPage() {
                                     required
                                     value={fechaTransaccion}
                                     onChange={(e) => setFechaTransaccion(e.target.value)}
-                                    className="w-full px-3 py-2 text-sm border border-border rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 font-semibold"
+                                    className={cn(SIATC_THEME.MOBILE.TOUCH_INPUT, "w-full px-3 border border-border rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 font-semibold")}
                                 />
                             </div>
 
@@ -1459,14 +1487,14 @@ export default function TicketsCalendarPage() {
                                     type="button"
                                     onClick={() => setIsPaymentModalOpen(false)}
                                     disabled={isSavingPayment}
-                                    className="flex-1 py-2.5 border border-border hover:bg-muted text-foreground text-xs font-bold rounded-xl transition-colors"
+                                    className={cn(SIATC_THEME.MOBILE.TOUCH_TARGET, "flex-1 border border-border hover:bg-muted text-foreground text-xs font-bold rounded-xl transition-colors")}
                                 >
                                     {t('calendar.paymentModal.cancel')}
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={isSavingPayment}
-                                    className="flex-1 py-2.5 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-primary/10"
+                                    className={cn(SIATC_THEME.MOBILE.TOUCH_TARGET, "flex-1 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-primary/10")}
                                 >
                                     {isSavingPayment ? (
                                         <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></div>

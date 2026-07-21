@@ -228,6 +228,11 @@
     "myTickets": "My Assigned Tickets",
     "calendar": "Calendar",
     "goToday": "Go to Today",
+    "sync": {
+      "pending": "Syncing...",
+      "saved": "Saved",
+      "error": "Error — retry"
+    },
     "adminFilter": {
       "label": "Administrative Filter",
       "techCode": "Technician Code",

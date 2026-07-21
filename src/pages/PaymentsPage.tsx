@@ -154,7 +154,7 @@ export default function PaymentsPage() {
         } finally { setIsSaving(false); }
     };
 
-    const inputClass = "w-full px-3 py-2.5 bg-cb-bg border border-cb-border rounded-lg text-sm text-cb-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all";
+    const inputClass = cn(SIATC_THEME.MOBILE.TOUCH_INPUT, "w-full px-3 bg-cb-bg border border-cb-border rounded-lg text-cb-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all");
 
     return (
         <div className={SIATC_THEME.LAYOUT.PAGE_WRAPPER}>
@@ -198,7 +198,7 @@ export default function PaymentsPage() {
                             placeholder={t('payments.searchPlaceholder')}
                             value={search}
                             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                            className={cn(SIATC_THEME.COMPONENTS.INPUT, 'pl-9')}
+                            className={cn(SIATC_THEME.COMPONENTS.INPUT, SIATC_THEME.MOBILE.TOUCH_INPUT, 'pl-9')}
                         />
                     </div>
                     <span className="text-xs font-bold text-cb-neutral hidden sm:inline tabular-nums">
@@ -321,7 +321,7 @@ export default function PaymentsPage() {
             {canRegister && (
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="fixed bottom-20 right-5 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-20 sm:hidden"
+                    className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-5 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-20 sm:hidden"
                     aria-label={t('payments.register')}
                 >
                     <Plus className="w-6 h-6" />
@@ -377,7 +377,7 @@ export default function PaymentsPage() {
                             {newPayment.ticket.split(',').map(tkId => tkId.trim()).filter(Boolean).map(tkId => (
                                 <span key={tkId} className={cn(SIATC_THEME.STATES.BADGE_BASE, SIATC_THEME.STATES.PRIMARY, 'h-8 px-3 gap-2')}>
                                     {tkId}
-                                    <button type="button" onClick={() => handleRemoveTicket(tkId)} className="hover:text-red-500 transition-colors">
+                                    <button type="button" onClick={() => handleRemoveTicket(tkId)} className="hover:text-red-500 transition-colors p-2 -m-2 rounded-full">
                                         <X className="w-3.5 h-3.5" />
                                     </button>
                                 </span>
@@ -426,7 +426,7 @@ export default function PaymentsPage() {
                                         type="text" inputMode="numeric" required={req} placeholder={placeholder}
                                         value={(newPayment as any)[key]}
                                         onChange={(e) => setNewPayment({ ...newPayment, [key]: e.target.value })}
-                                        className="w-full px-3 py-2.5 bg-card border border-cb-border rounded-lg text-sm text-cb-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                        className={cn(SIATC_THEME.MOBILE.TOUCH_INPUT, "w-full px-3 bg-card border border-cb-border rounded-lg text-cb-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all")}
                                     />
                                 </div>
                             ))}

@@ -592,10 +592,10 @@ export default function TicketsCalendarPage() {
                                 <span className="text-2xl font-black text-amber-900 dark:text-amber-200 mt-1">{pendingCount}</span>
                             </div>
                         </div>
-                        <div className="md:hidden flex items-center gap-2">
-                            <span className={cn(SIATC_THEME.STATES.BADGE_BASE, SIATC_THEME.STATES.PRIMARY, "normal-case tracking-normal text-xs")}>{totalCount} {t('calendar.metrics.total')}</span>
-                            <span className={cn(SIATC_THEME.STATES.BADGE_BASE, SIATC_THEME.STATES.SUCCESS, "normal-case tracking-normal text-xs")}>{completedCount} {t('calendar.metrics.done')}</span>
-                            <span className={cn(SIATC_THEME.STATES.BADGE_BASE, SIATC_THEME.STATES.WARNING, "normal-case tracking-normal text-xs")}>{pendingCount} {t('calendar.metrics.pending')}</span>
+                        <div className="md:hidden grid grid-cols-3 gap-2">
+                            <span className={cn(SIATC_THEME.STATES.BADGE_BASE, SIATC_THEME.STATES.PRIMARY, "normal-case tracking-normal text-xs w-full justify-center")}>{totalCount} {t('calendar.metrics.total')}</span>
+                            <span className={cn(SIATC_THEME.STATES.BADGE_BASE, SIATC_THEME.STATES.SUCCESS, "normal-case tracking-normal text-xs w-full justify-center")}>{completedCount} {t('calendar.metrics.done')}</span>
+                            <span className={cn(SIATC_THEME.STATES.BADGE_BASE, SIATC_THEME.STATES.WARNING, "normal-case tracking-normal text-xs w-full justify-center")}>{pendingCount} {t('calendar.metrics.pending')}</span>
                         </div>
 
                         {/* Búsqueda + filtro de técnico (admin, móvil) en una sola fila — antes eran

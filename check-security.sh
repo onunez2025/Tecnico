@@ -14,6 +14,25 @@ ERRORS=0
 WARNINGS=0
 RED='\033[0;31m'; YELLOW='\033[1;33m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; NC='\033[0m'
 
+# ─── Cache: evitar re-ejecutar el chequeo completo para el mismo commit ──────
+# Cuando un remoto tiene mas de una pushurl (ej. origin -> GitHub + Forgejo),
+# git invoca este hook una vez por cada URL dentro de un solo "git push origin",
+# ejecutando tsc+build+npm audit dos veces para el mismo commit. Si ya se validó
+# este commit hace poco y paso (o solo con advertencias), se salta el chequeo
+# completo la segunda vez.
+CACHE_FILE=".git/.security-check-cache"
+CACHE_TTL=600  # segundos
+CURRENT_COMMIT=$(git rev-parse HEAD 2>/dev/null)
+if [ -f "$CACHE_FILE" ] && [ -n "$CURRENT_COMMIT" ]; then
+    CACHED_COMMIT=$(sed -n '1p' "$CACHE_FILE" 2>/dev/null)
+    CACHED_TIME=$(sed -n '2p' "$CACHE_FILE" 2>/dev/null)
+    NOW=$(date +%s)
+    if [ "$CACHED_COMMIT" = "$CURRENT_COMMIT" ] && [ -n "$CACHED_TIME" ] && [ $((NOW - CACHED_TIME)) -lt "$CACHE_TTL" ]; then
+        echo -e "\n✅ ${GREEN}Commit ${CURRENT_COMMIT:0:12} ya validado hace $((NOW - CACHED_TIME))s — saltando chequeo completo${NC}\n"
+        exit 0
+    fi
+fi
+
 echo -e "\n🔍 SIATC Security Check v2.0 (modo: ${CYAN}${SECURITY_MODE}${NC})\n───────────────────────────────────────────"
 
 # ─── Función auxiliar ────────────────────────────────────────────────────────
@@ -255,8 +274,10 @@ elif [ "$WARNINGS" -gt 0 ]; then
     else
         echo -e "${YELLOW}⚠️  Push permitido con $WARNINGS advertencia(s)${NC}\n"
     fi
+    [ -n "$CURRENT_COMMIT" ] && { echo "$CURRENT_COMMIT" > "$CACHE_FILE"; date +%s >> "$CACHE_FILE"; }
     exit 0
 else
     echo -e "${GREEN}✅ OK — Sin problemas de seguridad detectados${NC}\n"
+    [ -n "$CURRENT_COMMIT" ] && { echo "$CURRENT_COMMIT" > "$CACHE_FILE"; date +%s >> "$CACHE_FILE"; }
     exit 0
 fi

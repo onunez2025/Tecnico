@@ -61,10 +61,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const validateSession = async () => {
             try {
                 const getCookie = (name: string): string | null => {
-                    const value = `; ${document.cookie}`;
-                    const parts = value.split(`; ${name}=`);
-                    if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-                    return null;
+                    // No usar split('; name=') aqui -- si llegan a coexistir dos cookies con el
+                    // mismo nombre (ej. un token viejo con Domain=.siatc.cloud junto al correcto
+                    // con Domain=.qa.siatc.cloud), el split genera 3+ partes y la condicion
+                    // parts.length === 2 falla siempre, devolviendo null aunque la cookie exista.
+                    // El regex toma solo la PRIMERA coincidencia, sin importar cuantas haya.
+                    const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
+                    return match ? match[1] : null;
                 };
 
                 const decodeJwt = (t: string): Record<string, unknown> | null => {

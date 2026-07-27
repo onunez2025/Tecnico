@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Sliders, Terminal, ChevronRight, Settings2, ShieldAlert } from 'lucide-react';
+import { Sliders, ChevronRight, Settings2, ShieldAlert } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAuth } from '../../hooks/useAuth';
 import { SIATC_THEME } from '../../utils/siatc-theme';
@@ -12,7 +12,6 @@ export function ConfigLayout() {
 
     const configItems = [
         { to: '/config/parameters', icon: Sliders, label: t('config.items.parameters'), permission: 'tec.config.parameters' as const },
-        { to: '/config/audit', icon: Terminal, label: t('config.items.audit'), permission: 'tec.config.audit' as const },
     ];
 
     const filteredItems = configItems.filter(item =>

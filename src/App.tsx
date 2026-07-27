@@ -12,10 +12,25 @@ const SsoLoginPage = lazy(() => import('./pages/SsoLoginPage'));
 const SsoStatusPage = lazy(() => import('./pages/SsoStatusPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SystemConfigPage = lazy(() => import('./pages/config/SystemConfigPage'));
-const AuditLogPage = lazy(() => import('./pages/config/AuditLogPage'));
 const TicketsCalendarPage = lazy(() => import('./pages/TicketsCalendarPage'));
 const PaymentsPage = lazy(() => import('./pages/PaymentsPage'));
 import { PermissionGuard } from './components/auth/PermissionGuard';
+
+const consoleUrl = import.meta.env.VITE_CONSOLE_URL || (import.meta.env.PROD ? 'https://console.siatc.cloud' : 'http://localhost:3008');
+
+const ExternalRedirect = ({ url }: { url: string }) => {
+  React.useEffect(() => {
+    window.location.replace(url);
+  }, [url]);
+  return (
+    <div className="flex h-dvh items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-6">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-muted-foreground font-medium animate-pulse">Redirigiendo a la administración central...</p>
+      </div>
+    </div>
+  );
+};
 
 const LoadingFallback = () => (
     <div className="flex h-screen items-center justify-center bg-background">
@@ -80,7 +95,7 @@ function App() {
                   } />
                   <Route path="audit" element={
                     <PermissionGuard permission="tec.config.audit" asRoute>
-                      <AuditLogPage />
+                      <ExternalRedirect url={`${consoleUrl}/audit`} />
                     </PermissionGuard>
                   } />
                 </Route>

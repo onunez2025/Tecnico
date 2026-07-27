@@ -43,8 +43,30 @@ export function ConfigLayout() {
     return (
         <div className={SIATC_THEME.LAYOUT.PAGE_WRAPPER}>
             <div className="grid grid-cols-1 lg:grid-cols-[18rem_1fr] gap-4 h-full min-h-0 w-full text-left">
-                {/* Secondary Sidebar */}
-                <aside className="shrink-0 flex flex-col min-h-0 h-fit lg:h-full group">
+                {/* Móvil/tablet: barra de tabs horizontal (el sidebar vertical completo
+                    apilaba todo su chrome arriba del contenido real antes de llegar
+                    al Outlet) */}
+                <nav className="lg:hidden flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
+                    {filteredItems.map((item) => (
+                        <NavLink
+                            key={item.to}
+                            to={item.to}
+                            className={({ isActive }) => cn(
+                                SIATC_THEME.MOBILE.TOUCH_TARGET,
+                                "flex items-center gap-2 px-4 shrink-0 rounded-full border text-sm font-bold whitespace-nowrap transition-colors",
+                                isActive
+                                    ? "bg-primary text-primary-foreground border-primary"
+                                    : "bg-card text-cb-text-secondary border-cb-border hover:bg-muted"
+                            )}
+                        >
+                            <item.icon className="w-4 h-4 shrink-0" />
+                            {item.label}
+                        </NavLink>
+                    ))}
+                </nav>
+
+                {/* Secondary Sidebar — solo en lg: (escritorio) */}
+                <aside className="hidden lg:flex shrink-0 flex-col min-h-0 h-fit lg:h-full group">
                     <div className={cn(SIATC_THEME.LAYOUT.SIDEBAR_CONTAINER, "w-full lg:w-72 h-full bg-card border-cb-border")}>
                         <div className="p-6 border-b border-cb-border bg-gradient-to-br from-primary/5 to-transparent">
                             <div className="flex items-center gap-3">
@@ -79,8 +101,10 @@ export function ConfigLayout() {
                             ))}
                         </nav>
 
-                        {/* Sidebar Footer Info */}
-                        <div className="p-4 bg-cb-bg/30 border-t border-cb-border">
+                        {/* Sidebar Footer Info — oculto en móvil/tablet: es chrome decorativo,
+                            no aporta a la tarea y empuja el contenido real hacia abajo cuando
+                            el sidebar completo se apila arriba del Outlet (grid-cols-1 < lg:) */}
+                        <div className="hidden lg:block p-4 bg-cb-bg/30 border-t border-cb-border">
                             <div className="p-4 bg-cb-bg/50 rounded-cb-card border border-cb-border shadow-cb-level-1">
                                 <div className="flex items-center gap-2 mb-1.5 font-bold text-[10px] text-primary tracking-widest uppercase">
                                     <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />

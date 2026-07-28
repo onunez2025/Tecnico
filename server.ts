@@ -216,6 +216,8 @@ const importProgress: { [key: string]: { current: number; total: number } } = {}
 
 let pool: sql.ConnectionPool | null = null;
 
+// Etapa 6 -- pool admin, reservado para operaciones DDL (runMigrations) que ni siatc_reader
+// ni siatc_writer pueden ejecutar (ninguno tiene permiso de modificar esquema).
 async function getDb() {
     if (!pool || !pool.connected) {
         try {
@@ -232,6 +234,60 @@ async function getDb() {
         }
     }
     return pool;
+}
+
+// Etapa 6 -- usuarios de BD de privilegio minimo (siatc_reader/siatc_writer). Si las env
+// vars DB_USER_READ/DB_USER_WRITE todavia no estan configuradas en Dokploy, caen de vuelta
+// al usuario admin original -- permite desplegar este codigo antes de agregar esas env vars,
+// y revertir a admin-only con solo quitarlas, sin tocar codigo.
+const readDbConfig: sql.config = {
+    ...dbConfig,
+    user: process.env.DB_USER_READ || process.env.DB_USER,
+    password: process.env.DB_PASS_READ || process.env.DB_PASSWORD,
+};
+const writeDbConfig: sql.config = {
+    ...dbConfig,
+    user: process.env.DB_USER_WRITE || process.env.DB_USER,
+    password: process.env.DB_PASS_WRITE || process.env.DB_PASSWORD,
+};
+
+let readPool: sql.ConnectionPool | null = null;
+let writePool: sql.ConnectionPool | null = null;
+
+/** Endpoints GET -- solo lectura, usa siatc_reader (privilegio minimo). */
+async function getReadPool() {
+    if (!readPool || !readPool.connected) {
+        try {
+            readPool = await new sql.ConnectionPool(readDbConfig).connect();
+            readPool.on('error', (err: Error) => {
+                console.error('❌ DB Read Pool error:', err.message);
+                readPool = null;
+            });
+        } catch (err: any) {
+            console.error('❌ Error de conexión DB (read pool):', err.message);
+            readPool = null;
+            throw err;
+        }
+    }
+    return readPool;
+}
+
+/** Endpoints POST/PUT/DELETE/PATCH -- usa siatc_writer (lectura + escritura en dbo/EBM). */
+async function getWritePool() {
+    if (!writePool || !writePool.connected) {
+        try {
+            writePool = await new sql.ConnectionPool(writeDbConfig).connect();
+            writePool.on('error', (err: Error) => {
+                console.error('❌ DB Write Pool error:', err.message);
+                writePool = null;
+            });
+        } catch (err: any) {
+            console.error('❌ Error de conexión DB (write pool):', err.message);
+            writePool = null;
+            throw err;
+        }
+    }
+    return writePool;
 }
 
 // --- REDIS CLIENT ---
@@ -333,7 +389,7 @@ async function logAudit(req: Request, action: string, entity: string, entityId: 
     try {
         const user = (req as any).user;
         if (!user) return;
-        const db = await getDb();
+        const db = await getWritePool();
         await db.request()
             .input('uid', sql.NVarChar(sql.MAX), String(user.id))
             .input('un', sql.NVarChar(sql.MAX), user.username)
@@ -350,7 +406,7 @@ async function logAudit(req: Request, action: string, entity: string, entityId: 
 
 async function syncPaymentCache(id_transaccion: string) {
     try {
-        const db = await getDb();
+        const db = await getWritePool();
         await db.request().input('id', sql.VarChar(50), id_transaccion).query(`
             DELETE FROM [dbo].[GAC_PAGOS_CACHE] WHERE ID_transaccion = @id;
             
@@ -425,7 +481,7 @@ async function syncPaymentCache(id_transaccion: string) {
 async function syncAllMissingTickets() {
     try {
         console.log('🔄 Iniciando sincronización de tickets faltantes en cache...');
-        const db = await getDb();
+        const db = await getWritePool();
 
         const cleanup = await db.request().query(`
             DELETE FROM [dbo].[GAC_PAGOS_CACHE]
@@ -478,7 +534,7 @@ const checkPermission = (permission: string) => {
         }
 
         try {
-            const db = await getDb();
+            const db = await getWritePool();
             await db.request()
                 .input('uid', sql.NVarChar(sql.MAX), String(user.id))
                 .input('un', sql.NVarChar(sql.MAX), user.full_name || user.username)
@@ -527,7 +583,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     }
     const { username, password, remember } = parseResult.data;
     try {
-        const db = await getDb();
+        const db = await getWritePool();
         const result = await db.request().input('u', sql.NVarChar(sql.MAX), username).input('app', sql.NVarChar(sql.MAX), APP_IDENTIFIER).query(`
             SELECT u.*, r.Name as RoleName, uc.CASId as cas_id, c.Nombre_CAS as cas_name, LTRIM(RTRIM(c.Abrev_nombre_colaboradores)) as cas_prefijo,
                 r.InactivityTimeoutMinutes as role_timeout, r.WarningBeforeMinutes as role_warning
@@ -630,7 +686,7 @@ app.post('/api/auth/logout', verifyToken, async (req: any, res: any) => {
 app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
     try {
         const { id } = (req as any).user;
-        const db = await getDb();
+        const db = await getReadPool();
         const result = await db.request()
             .input('id', sql.UniqueIdentifier, id)
             .input('app', sql.VarChar(20), APP_IDENTIFIER)
@@ -747,7 +803,7 @@ app.get('/api/auth/sso/callback', async (req: Request, res: Response) => {
         const email = (profile.email || '').trim().toLowerCase();
         if (!email) return redirectToSsoStatus(res, 'error', 'Casdoor no devolvió un correo verificado.');
 
-        const db = await getDb();
+        const db = await getReadPool();
 
         // 1. ¿Ya existe un usuario real con este correo y con acceso a Technical?
         const userResult = await db.request()
@@ -872,7 +928,7 @@ app.post('/api/auth/refresh', async (req: Request, res: Response) => {
         if (decoded.exp && (now - decoded.exp) > 24 * 60 * 60) {
             return res.status(401).json({ error: 'Sesión demasiado antigua. Inicia sesión nuevamente.' });
         }
-        const db = await getDb();
+        const db = await getWritePool();
         const result = await db.request()
             .input('id', sql.NVarChar(sql.MAX), String(decoded.id))
             .input('app', sql.VarChar(20), APP_IDENTIFIER)
@@ -905,7 +961,7 @@ if (!APPSHEET_PDF_PATH) {
 app.get('/api/dashboard/stats', verifyToken, checkPermission('tec.dashboard.view'), async (req: Request, res: Response) => {
     try {
         const { search = '', status = '', field = 'all', auth_code = '', date_trans = '', date_visit = '', tipo_servicio = '', month = '', year = '' } = req.query as any;
-        const db = await getDb();
+        const db = await getReadPool();
         const sqlReq = db.request();
         
         let whereClause = "WHERE Fecha_transaccion >= '2025-01-01'";
@@ -1000,7 +1056,7 @@ app.get('/api/dashboard/stats', verifyToken, checkPermission('tec.dashboard.view
 
 app.get('/api/dashboard/technicians', verifyToken, checkPermission('tec.dashboard.view'), async (req: Request, res: Response) => {
     try {
-        const db = await getDb();
+        const db = await getReadPool();
         const sqlReq = db.request();
         // RLS: usuario CAS solo ve sus propios datos
         const currentUser = (req as any).user; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -1157,7 +1213,7 @@ async function runMigrations() {
 
 app.get('/api/dashboard/cas-performance', verifyToken, checkPermission('tec.dashboard.view'), async (req: Request, res: Response) => {
     try {
-        const db = await getDb();
+        const db = await getReadPool();
         const currentUser = (req as any).user;
         // RLS: usuario CAS siempre ve solo su propia empresa, ignorando query params
         const casId: string = currentUser.casId ?? (req.query.casId as string);
@@ -1204,7 +1260,7 @@ app.get('/api/dashboard/cas-performance', verifyToken, checkPermission('tec.dash
 app.get('/api/dashboard/technician/:name/metrics', verifyToken, checkPermission('tec.dashboard.view'), async (req: Request, res: Response) => {
     try {
         const { name } = req.params;
-        const db = await getDb();
+        const db = await getReadPool();
         const sqlReq = db.request().input('techName', sql.NVarChar(sql.MAX), name);
 
         const techQuery = `
@@ -1301,7 +1357,7 @@ app.get('/api/sap/tickets/search', verifyToken, checkPermission('tec.payments.vi
     try {
         const q = String(req.query.q || '').trim();
         if (q.length < 3) return res.json([]);
-        const db = await getDb();
+        const db = await getReadPool();
         const result = await db.request()
             .input('q', sql.NVarChar(sql.MAX), `%${q}%`)
             .input('qExact', sql.NVarChar(sql.MAX), q)
@@ -1337,7 +1393,7 @@ app.get('/api/tickets-pagos/:ticketId/details', verifyToken, checkPermission('te
         const { ticketId } = req.params;
         const safeTicketId = String(ticketId).replace(/[^a-zA-Z0-9_-]/g, '');
         if (!safeTicketId) return res.status(400).json({ error: 'Ticket inválido' });
-        const db = await getDb();
+        const db = await getReadPool();
         const result = await db.request()
             .input('ticket', sql.NVarChar(sql.MAX), safeTicketId)
             .query(`
@@ -1368,7 +1424,7 @@ app.get('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.view'),
         const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit || '20'))));
         const search = String(req.query.search || '').trim();
         const offset = (page - 1) * limit;
-        const db = await getDb();
+        const db = await getReadPool();
         const sqlReq = db.request()
             .input('limit',  sql.Int, limit)
             .input('offset', sql.Int, offset)
@@ -1429,7 +1485,7 @@ app.post('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.regist
         if (tickets.length === 0) return res.status(400).json({ error: 'Ticket inválido' });
         const ticketStr = tickets.join(', ');
 
-        const db = await getDb();
+        const db = await getWritePool();
         const idTransaccion = uuidv4().toUpperCase();
         await db.request()
             .input('id',       sql.VarChar(50), idTransaccion)
@@ -1465,7 +1521,7 @@ app.post('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.regist
 app.get('/api/tickets-pagos/:id/pdf', verifyToken, checkPermission('tec.payments.view'), async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const db = await getDb();
+        const db = await getReadPool();
         const payment = await db.request()
             .input('id', sql.VarChar(50), id)
             .query("SELECT Ticket FROM [dbo].[GAC_APP_TB_TICKETS_PAGOS] WHERE ID_transaccion = @id");
@@ -1510,7 +1566,7 @@ app.get('/api/tec/tickets/calendar-summary', verifyToken, checkPermission('tec.t
         if (!month || !/^\d{4}-\d{2}$/.test(month)) {
             return res.status(400).json({ error: 'Parámetro month requerido en formato YYYY-MM' });
         }
-        const db = await getDb();
+        const db = await getReadPool();
         const sqlReq = db.request().input('month', sql.VarChar(255), month);
         let query = `SELECT CONVERT(VARCHAR(10), FechaVisita, 23) as date, COUNT(*) as count FROM [APPGAC].[ServiciosViewSQL] WHERE FORMAT(FechaVisita, 'yyyy-MM') = @month`;
         if (!isAdmin) {
@@ -1537,7 +1593,7 @@ app.get('/api/tec/tickets', verifyToken, checkPermission('tec.tickets.view'), as
         const isAdmin = isAdminRole(role);
         const dateStr = req.query.date as string;
         
-        const db = await getDb();
+        const db = await getReadPool();
         const sqlReq = db.request();
         
         let query = `
@@ -1584,7 +1640,7 @@ app.post('/api/tec/tickets/rango-horario', verifyToken, checkPermission('tec.tic
 
         if (!ticketId) return res.status(400).json({ error: 'ID de ticket es requerido' });
 
-        const db = await getDb();
+        const db = await getWritePool();
         const ticketResult = await db.request().input('ticketId', sql.VarChar(255), ticketId).query(`SELECT FechaVisita, IdCliente, CodigoTecnico FROM [APPGAC].[ServiciosViewSQL] WHERE Ticket = @ticketId`);
 
         if (ticketResult.recordset.length === 0) return res.status(404).json({ error: 'Ticket no encontrado' });
@@ -1627,7 +1683,7 @@ app.get('/api/config/rango-horario-limit', verifyToken, checkPermission('tec.con
     try {
         const cached = cacheGet('rango-horario-limit');
         if (cached) return res.json(cached);
-        const db = await getDb();
+        const db = await getReadPool();
         const result = await db.request().query("SELECT Valor, Descripcion FROM [dbo].[GAC_APP_TB_CONFIG] WHERE Clave = 'HORA_MAXIMA_RANGO_HORARIO'");
         const data = { limit: result.recordset[0]?.Valor || '09:30', description: result.recordset[0]?.Descripcion || '' };
         cacheSet('rango-horario-limit', data, 5 * 60 * 1000);
@@ -1642,7 +1698,7 @@ app.post('/api/config/rango-horario-limit', verifyToken, checkPermission('tec.co
             return res.status(400).json({ error: 'Formato de hora inválido. Use HH:mm (ej: 09:30)' });
         }
         const { username } = (req as any).user;
-        const db = await getDb();
+        const db = await getWritePool();
         await db.request().input('limit', sql.VarChar(255), limit).input('user', sql.VarChar(255), username).query(`UPDATE [dbo].[GAC_APP_TB_CONFIG] SET Valor = @limit, Actualizado_el = GETDATE(), Actualizado_por = @user WHERE Clave = 'HORA_MAXIMA_RANGO_HORARIO'`);
         cacheInvalidate('rango-horario-limit');
         await logAudit(req, 'TEC:UPDATE_CONFIG_LIMIT', 'SystemConfig', 'HORA_MAXIMA_RANGO_HORARIO', { limit });
@@ -1654,7 +1710,7 @@ app.get('/api/tec/tickets/:ticketId/pagos', verifyToken, checkPermission('tec.ti
     try {
         const { ticketId } = req.params;
         const { codigo_tecnico, role } = (req as any).user;
-        const db = await getDb();
+        const db = await getReadPool();
         if (!isAdminRole(role)) {
             const assignmentResult = await db.request().input('ticketId', sql.VarChar(255), ticketId).input('techCode', sql.VarChar(255), codigo_tecnico).query(`SELECT 1 FROM [APPGAC].[ServiciosViewSQL] WHERE Ticket = @ticketId AND CodigoTecnico = @techCode`);
             if (assignmentResult.recordset.length === 0) return res.status(403).json({ error: 'No tienes permiso' });
@@ -1669,7 +1725,7 @@ app.post('/api/tec/tickets/:ticketId/pago', verifyToken, checkPermission('tec.ti
     const { fecha_transaccion, voucher, lote, codigo_izipay, importe, canal, observacion, folio, codigo_autorizacion } = req.body;
     const { codigo_tecnico, role } = (req as any).user;
     try {
-        const db = await getDb();
+        const db = await getWritePool();
         if (!isAdminRole(role)) {
             const assignmentResult = await db.request().input('ticketId', sql.VarChar(255), ticketId).input('techCode', sql.VarChar(255), codigo_tecnico).query(`SELECT 1 FROM [APPGAC].[ServiciosViewSQL] WHERE Ticket = @ticketId AND CodigoTecnico = @techCode`);
             if (assignmentResult.recordset.length === 0) { if (req.file) fs.unlinkSync(req.file.path); return res.status(403).json({ error: 'No tienes permiso' }); }
@@ -1716,7 +1772,7 @@ app.post('/api/tec/tickets/:ticketId/pago', verifyToken, checkPermission('tec.ti
 app.get('/api/tec/today-tickets', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
     try {
         const { codigo_tecnico, role } = (req as any).user;
-        const db = await getDb();
+        const db = await getReadPool();
         const sqlReq = db.request();
         let query = `SELECT Ticket as id, Estado, FechaVisita, NombreCliente as Cliente, Distrito, (ISNULL(Calle, '') + ' ' + ISNULL(NumeroCalle, '')) as Direccion, BloqueHorario, Asunto, Celular1 as Contacto FROM [SIATC].[Dashboard_FSM] WHERE CONVERT(DATE, FechaVisita) = CONVERT(DATE, GETDATE())`;
         if (!isAdminRole(role)) { query += " AND CodigoTecnico = @techCode"; sqlReq.input('techCode', sql.VarChar(255), codigo_tecnico); }
@@ -1728,7 +1784,7 @@ app.get('/api/tec/today-tickets', verifyToken, checkPermission('tec.tickets.view
 app.get('/api/tec/schedule', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
     try {
         const { full_name } = (req as any).user;
-        const db = await getDb();
+        const db = await getReadPool();
         const result = await db.request().input('user', sql.NVarChar(sql.MAX), full_name).query(`SELECT ID_empleado_calendario_labores as id, Fecha_Labor as date, Labor as title, 'Taller/Reunión' as type FROM [dbo].[GAC_APP_TB_EMPLEADOS_CALENDARIO_LABORES] WHERE Empleado = @user AND Fecha_Labor >= CONVERT(DATE, GETDATE()) ORDER BY Fecha_Labor ASC`);
         res.json(result.recordset);
     } catch (err: any) { res.status(500).json({ error: safeError(err) }); }
@@ -1738,7 +1794,7 @@ app.post('/api/tec/sales', verifyToken, checkPermission('tec.tickets.view'), asy
     try {
         const { ticket, pedido, observacion, comentarioTecnico } = req.body;
         const { full_name } = (req as any).user;
-        const db = await getDb();
+        const db = await getWritePool();
         const idVenta = uuidv4().substring(0, 8).toUpperCase();
         await db.request()
             .input('id', sql.VarChar(50), idVenta)
@@ -1758,7 +1814,7 @@ app.patch('/api/tec/time-range', verifyToken, checkPermission('tec.tickets.view'
         if (!ticket || !bloqueHorario) {
             return res.status(400).json({ error: 'Parámetros requeridos: ticket, bloqueHorario' });
         }
-        const db = await getDb();
+        const db = await getWritePool();
         await db.request()
             .input('ticket', sql.NVarChar(sql.MAX), ticket)
             .input('bloque', sql.NVarChar(sql.MAX), bloqueHorario)
@@ -1781,7 +1837,7 @@ app.put('/api/profile', verifyToken, async (req: Request, res: Response) => {
         const parsed = updateProfileSchema.safeParse(req.body);
         if (!parsed.success) return res.status(400).json({ error: 'Datos inválidos', details: parsed.error.issues });
         const { avatar_url, password_hash: rawPassword } = parsed.data;
-        const db = await getDb();
+        const db = await getWritePool();
         const sqlReq = db.request().input('id', sql.UniqueIdentifier, id);
 
         const sets: string[] = [];
@@ -1818,7 +1874,7 @@ app.get('/api/managements', verifyToken, async (_req: Request, res: Response) =>
     try {
         const cached = cacheGet('managements');
         if (cached) return res.json(cached);
-        const db = await getDb();
+        const db = await getReadPool();
         const result = await db.request()
             .query(`SELECT Id as id, Name as name, ISNULL(Code, '') as code FROM EBM.Managements ORDER BY Name`);
         const data = result.recordset.map((m: any) => ({ id: String(m.id), name: m.name, code: m.code }));
@@ -1834,7 +1890,7 @@ app.get('/api/managements', verifyToken, async (_req: Request, res: Response) =>
 app.get('/api/user/preferences', verifyToken, async (req: Request, res: Response) => {
     try {
         const { id } = (req as any).user;
-        const db = await getDb();
+        const db = await getReadPool();
         const result = await db.request().input('uid', sql.Int, id)
             .query(`SELECT Clave as clave, Valor as valor FROM [dbo].[GAC_APP_TB_USER_PREFS] WHERE UsuarioId=@uid`);
         const prefs: Record<string, any> = {};
@@ -1852,7 +1908,7 @@ app.post('/api/user/preferences', verifyToken, async (req: Request, res: Respons
         const { id } = (req as any).user;
         const { clave, valor } = req.body;
         if (!clave) return res.status(400).json({ error: 'clave es requerida' });
-        const db = await getDb();
+        const db = await getWritePool();
         const valorStr = typeof valor === 'string' ? valor : JSON.stringify(valor);
         await db.request()
             .input('uid', sql.Int, id).input('c', sql.NVarChar(sql.MAX), clave).input('v', sql.NVarChar(sql.MAX), valorStr)
@@ -1876,7 +1932,7 @@ app.post('/api/user/preferences', verifyToken, async (req: Request, res: Respons
 // --- APPLICATIONS (AppSwitcher dinámico) ---
 app.get('/api/applications', verifyToken, async (req: Request, res: Response) => {
     try {
-        const db = await getDb();
+        const db = await getReadPool();
         const activeOnly = req.query.activeOnly === 'true';
         let query = `
             SELECT 
@@ -2028,7 +2084,7 @@ interface SessionConfig { rateLimitMaxAttempts: number; rateLimitWindowMinutes: 
 
 async function fetchSessionConfig(): Promise<SessionConfig> {
     try {
-        const db = await getDb();
+        const db = await getReadPool();
         const result = await db.request().input('code', sql.VarChar(20), APP_IDENTIFIER)
             .query('SELECT RateLimitMaxAttempts, RateLimitWindowMinutes FROM EBM.AppSessionConfig WHERE UPPER(AppCode) = UPPER(@code)');
         if (result.recordset.length > 0) {

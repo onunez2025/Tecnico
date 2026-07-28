@@ -89,7 +89,7 @@ export default function ProfilePage() {
             setStatus('idle');
         } catch {
             setStatus('error');
-            setMessage(t('profile.errors.imageError'));
+            setMessage(t('profile.errors.imageProcess'));
         }
     };
 
@@ -105,7 +105,7 @@ export default function ProfilePage() {
 
         if (formData.password && formData.password.length < 4) {
             setStatus('error');
-            setMessage(t('profile.errors.passwordMin'));
+            setMessage(t('profile.errors.passwordTooShort'));
             return;
         }
 
@@ -202,7 +202,7 @@ export default function ProfilePage() {
 
                         {/* Quick Info Card */}
                         <div className={cn(SIATC_THEME.COMPONENTS.CARD_CONTAINER, layout.QUICK_INFO_CARD, 'transition-all hover:shadow-md')}>
-                            <h3 className="text-xs font-bold text-cb-neutral uppercase tracking-wider">{t('profile.info')}</h3>
+                            <h3 className="text-xs font-bold text-cb-neutral uppercase tracking-wider">{t('profile.info.title')}</h3>
 
                             <div className={layout.INFO_LIST}>
                                 <div className={layout.INFO_ITEM}>
@@ -210,7 +210,7 @@ export default function ProfilePage() {
                                         <Mail className="w-5 h-5" />
                                     </div>
                                     <div className={layout.INFO_ITEM_DETAILS}>
-                                        <p className={layout.INFO_ITEM_LABEL}>{t('profile.labels.email')}</p>
+                                        <p className={layout.INFO_ITEM_LABEL}>{t('profile.info.email')}</p>
                                         <p className={layout.INFO_ITEM_VALUE}>{user.email}</p>
                                     </div>
                                 </div>
@@ -220,8 +220,8 @@ export default function ProfilePage() {
                                         <Building2 className="w-5 h-5" />
                                     </div>
                                     <div className={layout.INFO_ITEM_DETAILS}>
-                                        <p className={layout.INFO_ITEM_LABEL}>{t('profile.labels.management')}</p>
-                                        <p className={layout.INFO_ITEM_VALUE}>{user.management_name || user.management_id || t('profile.labels.noManagement')}</p>
+                                        <p className={layout.INFO_ITEM_LABEL}>{t('profile.info.management')}</p>
+                                        <p className={layout.INFO_ITEM_VALUE}>{user.management_name || user.management_id || t('profile.info.noManagement')}</p>
                                     </div>
                                 </div>
 
@@ -230,8 +230,8 @@ export default function ProfilePage() {
                                         <BadgeCheck className="w-5 h-5" />
                                     </div>
                                     <div>
-                                        <p className={layout.INFO_ITEM_LABEL}>{t('profile.labels.status')}</p>
-                                        <p className={layout.INFO_ITEM_VALUE_SUCCESS}>{t('profile.statusActive')}</p>
+                                        <p className={layout.INFO_ITEM_LABEL}>{t('profile.info.status')}</p>
+                                        <p className={layout.INFO_ITEM_VALUE_SUCCESS}>{t('profile.info.active')}</p>
                                     </div>
                                 </div>
                             </div>
@@ -248,14 +248,14 @@ export default function ProfilePage() {
                                     <User className="w-4 h-4 text-primary" />
                                     {t('profile.account.title')}
                                 </h3>
-                                <p className={layout.FORM_SECTION_SUBTITLE}>{t('profile.account.desc')}</p>
+                                <p className={layout.FORM_SECTION_SUBTITLE}>{t('profile.account.subtitle')}</p>
                             </div>
 
                             <div className="p-6 space-y-5">
                                 <div className={layout.FORM_GRID}>
                                     <div>
                                         <label className={layout.FIELD_LABEL}>
-                                            {t('profile.labels.username')}
+                                            {t('profile.fields.username')}
                                         </label>
                                         <div className={layout.FIELD_WRAPPER}>
                                             <div className={layout.FIELD_ICON}>
@@ -272,7 +272,7 @@ export default function ProfilePage() {
 
                                     <div>
                                         <label className={layout.FIELD_LABEL}>
-                                            {t('profile.labels.email')}
+                                            {t('profile.fields.email')}
                                         </label>
                                         <div className={layout.FIELD_WRAPPER}>
                                             <div className={layout.FIELD_ICON}>
@@ -291,7 +291,7 @@ export default function ProfilePage() {
                                 <div className={layout.READONLY_ALERT}>
                                     <p className={layout.READONLY_ALERT_TEXT}>
                                         <AlertCircle className="w-3.5 h-3.5 inline" />
-                                        {t('profile.account.readonlyNote')}
+                                        {t('profile.readonlyAlert')}
                                     </p>
                                 </div>
                             </div>
@@ -305,14 +305,14 @@ export default function ProfilePage() {
                                         <Lock className="w-4 h-4 text-primary" />
                                         {t('profile.security.title')}
                                     </h3>
-                                    <p className={layout.FORM_SECTION_SUBTITLE}>{t('profile.security.desc')}</p>
+                                    <p className={layout.FORM_SECTION_SUBTITLE}>{t('profile.security.subtitle')}</p>
                                 </div>
 
                                 <div className="p-6 space-y-5">
                                     <div className={layout.FORM_GRID}>
                                         <div>
                                             <label className={layout.FIELD_LABEL}>
-                                                {t('profile.labels.newPassword')}
+                                                {t('profile.fields.newPassword')}
                                             </label>
                                             <div className={layout.FIELD_WRAPPER}>
                                                 <div className={layout.FIELD_ICON}>
@@ -331,7 +331,7 @@ export default function ProfilePage() {
                                         </div>
                                         <div>
                                             <label className={layout.FIELD_LABEL}>
-                                                {t('profile.labels.confirmPassword')}
+                                                {t('profile.fields.confirmPassword')}
                                             </label>
                                             <div className={layout.FIELD_WRAPPER}>
                                                 <div className={layout.FIELD_ICON}>
@@ -355,7 +355,7 @@ export default function ProfilePage() {
                                     </div>
 
                                     <p className={layout.FORM_NOTE}>
-                                        {t('profile.security.hint')}
+                                        {t('profile.passwordNote')}
                                     </p>
                                 </div>
                             </div>

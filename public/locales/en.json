@@ -87,35 +87,38 @@
   "profile": {
     "title": "My Profile",
     "subtitle": "Manage your personal information and credentials.",
-    "info": "Information",
-    "statusActive": "Active",
+    "changePhoto": "Change profile photo",
     "noRole": "No role",
+    "info": {
+      "title": "Information",
+      "email": "Email",
+      "management": "Management",
+      "noManagement": "No management",
+      "status": "Status",
+      "active": "Active"
+    },
     "account": {
       "title": "Account",
-      "desc": "Your username and email address.",
-      "readonlyNote": "These fields are read-only. If you need a change, contact your system administrator."
+      "subtitle": "Your username and email address."
     },
-    "security": {
-      "title": "Security",
-      "desc": "Change your access password.",
-      "hint": "Leave fields empty to keep your current password. Minimum 4 characters."
-    },
-    "labels": {
+    "fields": {
       "username": "Username",
       "email": "Email",
       "newPassword": "New Password",
-      "confirmPassword": "Confirm Password",
-      "management": "Management",
-      "noManagement": "No management",
-      "status": "Status"
+      "confirmPassword": "Confirm Password"
     },
-    "changePhoto": "Change profile photo",
+    "readonlyAlert": "These fields are read-only. If you need a change, contact your system administrator.",
+    "security": {
+      "title": "Security",
+      "subtitle": "Change your access password."
+    },
+    "passwordNote": "Leave fields empty to keep your current password. Minimum 4 characters.",
     "saving": "Saving...",
     "saveChanges": "Save Changes",
     "errors": {
+      "imageProcess": "Error processing image",
       "passwordMismatch": "Passwords do not match",
-      "passwordMin": "Password must be at least 4 characters",
-      "imageError": "Error processing image",
+      "passwordTooShort": "Password must be at least 4 characters",
       "updateFailed": "Error updating profile"
     },
     "success": {

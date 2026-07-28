@@ -87,35 +87,38 @@
   "profile": {
     "title": "Mi Perfil",
     "subtitle": "Gestiona tu información personal y credenciales.",
-    "info": "Información",
-    "statusActive": "Activo",
+    "changePhoto": "Cambiar foto de perfil",
     "noRole": "Sin rol",
+    "info": {
+      "title": "Información",
+      "email": "Email",
+      "management": "Gerencia",
+      "noManagement": "Sin gerencia",
+      "status": "Estado",
+      "active": "Activo"
+    },
     "account": {
       "title": "Cuenta",
-      "desc": "Tu nombre de usuario y correo electrónico.",
-      "readonlyNote": "Estos campos son de solo lectura. Si necesitas un cambio, contacta al administrador del sistema."
+      "subtitle": "Tu nombre de usuario y correo electrónico."
     },
-    "security": {
-      "title": "Seguridad",
-      "desc": "Cambia tu contraseña de acceso.",
-      "hint": "Deja los campos vacíos para mantener tu contraseña actual. Mínimo 4 caracteres."
-    },
-    "labels": {
+    "fields": {
       "username": "Usuario",
       "email": "Email",
       "newPassword": "Nueva Contraseña",
-      "confirmPassword": "Confirmar Contraseña",
-      "management": "Gerencia",
-      "noManagement": "Sin gerencia",
-      "status": "Estado"
+      "confirmPassword": "Confirmar Contraseña"
     },
-    "changePhoto": "Cambiar foto de perfil",
+    "readonlyAlert": "Estos campos son de solo lectura. Si necesitas un cambio, contacta al administrador del sistema.",
+    "security": {
+      "title": "Seguridad",
+      "subtitle": "Cambia tu contraseña de acceso."
+    },
+    "passwordNote": "Deja los campos vacíos para mantener tu contraseña actual. Mínimo 4 caracteres.",
     "saving": "Guardando...",
     "saveChanges": "Guardar Cambios",
     "errors": {
+      "imageProcess": "Error al procesar la imagen",
       "passwordMismatch": "Las contraseñas no coinciden",
-      "passwordMin": "La contraseña debe tener al menos 4 caracteres",
-      "imageError": "Error al procesar la imagen",
+      "passwordTooShort": "La contraseña debe tener al menos 4 caracteres",
       "updateFailed": "Error al actualizar el perfil"
     },
     "success": {

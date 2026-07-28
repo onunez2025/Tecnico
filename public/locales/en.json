@@ -106,6 +106,7 @@
       "newPassword": "New Password",
       "confirmPassword": "Confirm Password",
       "management": "Management",
+      "noManagement": "No management",
       "status": "Status"
     },
     "changePhoto": "Change profile photo",

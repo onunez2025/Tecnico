@@ -220,7 +220,7 @@ export default function ProfilePage() {
                                     </div>
                                     <div className={SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM_DETAILS}>
                                         <p className={SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM_LABEL}>{t('profile.labels.management')}</p>
-                                        <p className={SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM_VALUE}>{user.management_name || user.management_id}</p>
+                                        <p className={SIATC_THEME.PROFILE_LAYOUT.INFO_ITEM_VALUE}>{user.management_name || user.management_id || t('profile.labels.noManagement')}</p>
                                     </div>
                                 </div>
 

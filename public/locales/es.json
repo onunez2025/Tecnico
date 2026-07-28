@@ -106,6 +106,7 @@
       "newPassword": "Nueva Contraseña",
       "confirmPassword": "Confirmar Contraseña",
       "management": "Gerencia",
+      "noManagement": "Sin gerencia",
       "status": "Estado"
     },
     "changePhoto": "Cambiar foto de perfil",

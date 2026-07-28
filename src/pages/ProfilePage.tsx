@@ -175,7 +175,7 @@ export default function ProfilePage() {
                                     <button
                                         type="button"
                                         onClick={() => fileInputRef.current?.click()}
-                                        className={SIATC_THEME.PROFILE_LAYOUT.CAMERA_BUTTON}
+                                        className={cn(SIATC_THEME.PROFILE_LAYOUT.CAMERA_BUTTON, SIATC_THEME.MOBILE.TOUCH_TARGET)}
                                         title={t('profile.changePhoto')}
                                     >
                                         <Camera className="w-4 h-4" />
@@ -264,7 +264,7 @@ export default function ProfilePage() {
                                                 type="text"
                                                 value={formData.username}
                                                 disabled
-                                                className={SIATC_THEME.PROFILE_LAYOUT.INPUT_DISABLED}
+                                                className={cn(SIATC_THEME.PROFILE_LAYOUT.INPUT_DISABLED, SIATC_THEME.MOBILE.TOUCH_INPUT)}
                                             />
                                         </div>
                                     </div>
@@ -281,7 +281,7 @@ export default function ProfilePage() {
                                                 type="email"
                                                 value={formData.email}
                                                 disabled
-                                                className={SIATC_THEME.PROFILE_LAYOUT.INPUT_DISABLED}
+                                                className={cn(SIATC_THEME.PROFILE_LAYOUT.INPUT_DISABLED, SIATC_THEME.MOBILE.TOUCH_INPUT)}
                                             />
                                         </div>
                                     </div>
@@ -323,7 +323,7 @@ export default function ProfilePage() {
                                                     value={formData.password}
                                                     onChange={handleChange}
                                                     placeholder="••••••••"
-                                                    className={SIATC_THEME.PROFILE_LAYOUT.INPUT_ACTIVE}
+                                                    className={cn(SIATC_THEME.PROFILE_LAYOUT.INPUT_ACTIVE, SIATC_THEME.MOBILE.TOUCH_INPUT)}
                                                     minLength={4}
                                                 />
                                             </div>
@@ -344,6 +344,7 @@ export default function ProfilePage() {
                                                     placeholder="••••••••"
                                                     className={cn(
                                                         SIATC_THEME.PROFILE_LAYOUT.INPUT_ACTIVE,
+                                                        SIATC_THEME.MOBILE.TOUCH_INPUT,
                                                         formData.confirmPassword && formData.password !== formData.confirmPassword && SIATC_THEME.PROFILE_LAYOUT.INPUT_ERROR
                                                     )}
                                                     minLength={4}
@@ -379,6 +380,7 @@ export default function ProfilePage() {
                                     disabled={isSaving}
                                     className={cn(
                                         SIATC_THEME.COMPONENTS.BUTTON_PRIMARY,
+                                        SIATC_THEME.MOBILE.TOUCH_TARGET,
                                         'w-full sm:w-auto px-8 h-auto py-3.5',
                                         isSaving
                                             ? 'opacity-60 cursor-not-allowed'

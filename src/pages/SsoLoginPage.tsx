@@ -5,6 +5,9 @@ import { useAuth } from '../hooks/useAuth';
 import { API_BASE_URL } from '../services/apiClient';
 import { AlertTriangle } from 'lucide-react';
 
+const prefersReducedMotion = () =>
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 // Página puente: recibe el token emitido por /api/auth/sso/callback tras un login
 // social exitoso (Google/Microsoft vía Casdoor), completa la hidratación de sesión
 // llamando a /auth/me (igual que el resto del ecosistema) y entra a la app.
@@ -36,6 +39,12 @@ export const SsoLoginPage: React.FC = () => {
                 // Fase 20: skipSharedCookie solo se activa si no hay VITE_COOKIE_DOMAIN configurada
                 // (producción real, sin dominio QA propio) — en QA sí se escribe la cookie compartida.
                 login(data.user, data.token, true, undefined, !import.meta.env.VITE_COOKIE_DOMAIN);
+
+                // Mismo patron que el login clasico (LoginPage.tsx): el flag se lee ya en
+                // "/" (ver MainLayout), nunca se demora este navigate().
+                if (!prefersReducedMotion()) {
+                    sessionStorage.setItem('siatc_welcome_user', data.user.full_name || data.user.username || '');
+                }
                 navigate('/', { replace: true });
             } catch (err) {
                 console.error('SSO login error:', err);

@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
+import LottieImport, { type LottieRefCurrentProps } from 'lottie-react';
+
+// lottie-react no declara "exports" en su package.json (solo main/module/browser) -- bajo
+// Rolldown (Vite 8+) el prebundler resuelve el build UMD y envuelve todo el objeto de exports
+// como default, en vez de solo el componente (import Lottie termina siendo
+// { default: Lottie, useLottie, ... } en vez de Lottie directo), lo que crashea React con
+// "Element type is invalid: ... got: object" -- pantalla en blanco total. Bundlers basados en
+// esbuild/Rollup (Vite 6/7) no tienen este problema y ya devuelven el componente correcto, por
+// lo que este fallback no les afecta (su propio ".default" no existe y cae al operando derecho).
+const Lottie = (LottieImport as unknown as { default?: typeof LottieImport }).default ?? LottieImport;
 
 interface LottiePlayerProps {
     /** Import dinámico del JSON de la animación — evita sumarlo al bundle inicial. */

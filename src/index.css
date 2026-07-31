@@ -262,3 +262,44 @@
 .zoom-in-95 {
   animation-name: zoomIn95;
 }
+
+/* Pista A (Motion System): shake de error de login + reduced-motion global.
+   Ver plan-animaciones-lottie-microinteracciones.md en SIATC Memory. */
+@keyframes enterOpacity {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes enterScale {
+  from { transform: scale(0.95); }
+  to { transform: scale(1); }
+}
+
+/* Shake de validacion: sin fill-mode (default: none) a proposito -- termina
+   en translateX(0) tanto en el keyframe como en el valor base, sin pop
+   visible al terminar. */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.error-shake {
+  animation-name: enterOpacity, enterScale, shake;
+  animation-duration: 300ms, 300ms, 400ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1), cubic-bezier(0.4, 0, 0.2, 1), cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  animation-fill-mode: forwards, none, none;
+  animation-delay: 0ms, 0ms, 300ms;
+}
+
+/* Accesibilidad: ningun usuario que prefiera menos movimiento debe recibir
+   las animaciones de entrada/shake/hover-scale de esta iniciativa (u otras
+   ya existentes en la app). Bloque global, no por-clase. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

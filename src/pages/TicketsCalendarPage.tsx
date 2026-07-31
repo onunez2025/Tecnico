@@ -30,6 +30,7 @@ import { useTranslation } from 'react-i18next';
 import { SIATC_THEME } from '../utils/siatc-theme';
 import { SyncStatusChip, SyncStatus } from '../components/common/SyncStatusChip';
 import { DateChipScroller } from '../components/common/DateChipScroller';
+import { LottiePlayer } from '../components/common/LottiePlayer';
 
 export default function TicketsCalendarPage() {
     const { t } = useTranslation();
@@ -646,8 +647,17 @@ export default function TicketsCalendarPage() {
                         </div>
                     ) : filteredTickets.length === 0 ? (
                         <div className="text-center py-16 bg-card rounded-3xl border border-dashed border-border p-8 max-w-lg mx-auto">
-                            <div className="w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <CalendarIcon className="w-8 h-8 text-muted-foreground/60" />
+                            <div className="w-24 h-24 mx-auto mb-4">
+                                <LottiePlayer
+                                    src={() => import('../assets/lottie/empty-state.json')}
+                                    fallback={
+                                        <div className="w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mx-auto">
+                                            <CalendarIcon className="w-8 h-8 text-muted-foreground/60" />
+                                        </div>
+                                    }
+                                    className="w-24 h-24"
+                                    loop
+                                />
                             </div>
                             <h3 className="font-bold text-foreground text-lg">{t('calendar.emptyTitle')}</h3>
                             <p className="text-sm text-muted-foreground mt-1 font-medium">

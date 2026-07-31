@@ -93,12 +93,12 @@ export const SIATC_THEME = {
 
     // 5. COMPONENTES DE INTERACCIÓN
     COMPONENTS: {
-        BUTTON_PRIMARY: "min-h-[44px] md:h-[36px] px-4 inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-cb-btn hover:bg-primary/90 transition-all active:scale-95 font-bold text-sm shadow-sm",
-        BUTTON_SECONDARY: "min-h-[44px] md:h-[36px] px-4 inline-flex items-center justify-center gap-2 bg-card text-cb-text-primary border border-cb-border rounded-cb-btn hover:bg-cb-bg/50 transition-all active:scale-95 font-bold text-sm",
-        BUTTON_SUCCESS: "min-h-[44px] md:h-[36px] px-4 inline-flex items-center justify-center gap-2 bg-[#05B169] text-white rounded-cb-btn hover:bg-[#05B169]/90 transition-all active:scale-95 font-bold text-sm shadow-sm",
-        BUTTON_DANGER: "min-h-[44px] md:h-[36px] px-4 inline-flex items-center justify-center gap-2 bg-[#DF2935] text-white rounded-cb-btn hover:bg-[#DF2935]/90 transition-all active:scale-95 font-bold text-sm shadow-sm",
-        BUTTON_INFO: "min-h-[44px] md:h-[36px] px-4 inline-flex items-center justify-center gap-2 bg-cb-blue text-white rounded-cb-btn hover:bg-cb-blue/90 transition-all active:scale-95 font-bold text-sm shadow-sm",
-        BUTTON_GHOST: "min-h-[44px] md:h-[36px] px-4 inline-flex items-center justify-center gap-2 bg-transparent text-cb-text-secondary rounded-cb-btn hover:bg-cb-bg transition-all active:scale-95 font-bold text-sm",
+        BUTTON_PRIMARY: "min-h-[44px] md:h-[36px] px-4 inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-cb-btn hover:bg-primary/90 hover:scale-105 hover:shadow-md transition-all active:scale-95 font-bold text-sm shadow-sm",
+        BUTTON_SECONDARY: "min-h-[44px] md:h-[36px] px-4 inline-flex items-center justify-center gap-2 bg-card text-cb-text-primary border border-cb-border rounded-cb-btn hover:bg-cb-bg/50 hover:scale-105 hover:shadow-md transition-all active:scale-95 font-bold text-sm",
+        BUTTON_SUCCESS: "min-h-[44px] md:h-[36px] px-4 inline-flex items-center justify-center gap-2 bg-[#05B169] text-white rounded-cb-btn hover:bg-[#05B169]/90 hover:scale-105 hover:shadow-md transition-all active:scale-95 font-bold text-sm shadow-sm",
+        BUTTON_DANGER: "min-h-[44px] md:h-[36px] px-4 inline-flex items-center justify-center gap-2 bg-[#DF2935] text-white rounded-cb-btn hover:bg-[#DF2935]/90 hover:scale-105 hover:shadow-md transition-all active:scale-95 font-bold text-sm shadow-sm",
+        BUTTON_INFO: "min-h-[44px] md:h-[36px] px-4 inline-flex items-center justify-center gap-2 bg-cb-blue text-white rounded-cb-btn hover:bg-cb-blue/90 hover:scale-105 hover:shadow-md transition-all active:scale-95 font-bold text-sm shadow-sm",
+        BUTTON_GHOST: "min-h-[44px] md:h-[36px] px-4 inline-flex items-center justify-center gap-2 bg-transparent text-cb-text-secondary rounded-cb-btn hover:bg-cb-bg hover:scale-105 transition-all active:scale-95 font-bold text-sm",
         INPUT: "h-[36px] w-full px-4 bg-card text-cb-text-primary border border-cb-border rounded-cb-btn focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-sm font-medium placeholder:text-cb-neutral/40",
         MODAL_CONTENT: "bg-card text-cb-text-primary rounded-cb-modal border border-cb-border shadow-cb-level-3 p-6 overflow-hidden",
         CARD_CONTAINER: "bg-card border border-cb-border rounded-cb-card shadow-cb-level-1",

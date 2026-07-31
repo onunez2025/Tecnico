@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Hand, ShieldCheck } from 'lucide-react';
+import { LogOut, ShieldCheck } from 'lucide-react';
 import { LottiePlayer } from './LottiePlayer';
 
 interface AuthTransitionOverlayProps {
@@ -83,7 +83,7 @@ export function AuthTransitionOverlay({ variant, userName, onComplete }: AuthTra
                     <div className="w-56 aspect-video dark:invert">
                         <LottiePlayer
                             src={() => import('../../assets/lottie/goodbye.json')}
-                            fallback={<Hand className="w-16 h-16 text-primary" />}
+                            fallback={<LogOut className="w-16 h-16 text-primary" />}
                             loop={false}
                             speed={PLAYBACK_SPEED}
                             onComplete={finish}

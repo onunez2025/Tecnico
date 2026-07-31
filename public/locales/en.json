@@ -20,6 +20,10 @@
     "noResults": "No results"
   },
   "auth": {
+    "transition": {
+      "welcomeTitle": "Welcome{{name}}!",
+      "farewellTitle": "See you soon{{name}}"
+    },
     "subtitle": "Enter your credentials to access the platform.",
     "username": "Username",
     "password": "Password",

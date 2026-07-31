@@ -24,7 +24,7 @@ interface SidebarProps {
 
 export function Sidebar({ className, onNavigate, isEffectivelyExpanded = true }: SidebarProps) {
     const { t, i18n } = useTranslation();
-    const { logout, hasPermission, user } = useAuth();
+    const { requestLogout, hasPermission, user } = useAuth();
     const appConfig = useAppConfig();
 
     const toggleLanguage = () => {
@@ -166,7 +166,7 @@ export function Sidebar({ className, onNavigate, isEffectivelyExpanded = true }:
                             {i18n.language === 'es' ? 'Español' : 'English'}
                         </button>
                         <button
-                            onClick={logout}
+                            onClick={requestLogout}
                             className="w-full flex items-center gap-3 px-4 py-3 text-xs font-black text-rose-500 hover:bg-rose-50 hover:text-white rounded-2xl transition-all shadow-rose-500/10 hover:shadow-lg uppercase tracking-[0.2em] cursor-pointer"
                         >
                             <LogOut className="w-4 h-4" />
@@ -183,7 +183,7 @@ export function Sidebar({ className, onNavigate, isEffectivelyExpanded = true }:
                             <Globe className="w-4 h-4" />
                         </button>
                         <button
-                            onClick={logout}
+                            onClick={requestLogout}
                             title={t('common.logout')}
                             className="w-9 h-9 flex items-center justify-center rounded-xl text-rose-500 hover:bg-rose-500 hover:text-white transition-all cursor-pointer"
                         >

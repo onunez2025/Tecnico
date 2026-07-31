@@ -12,6 +12,8 @@ interface AuthContextType {
     sessionConfig: SessionConfig | null;
     login: (user: User, token?: string, remember?: boolean, sessionConfig?: SessionConfig, skipSharedCookie?: boolean) => void;
     logout: () => void;
+    requestLogout: () => void;
+    isLoggingOut: boolean;
     isAuthenticated: boolean;
     isLoading: boolean;
     hasPermission: (permission: Permission) => boolean;
@@ -22,6 +24,8 @@ const AuthContext = createContext<AuthContextType>({
     sessionConfig: null,
     login: () => { },
     logout: () => { },
+    requestLogout: () => { },
+    isLoggingOut: false,
     isAuthenticated: false,
     isLoading: true,
     hasPermission: () => false,
@@ -30,6 +34,7 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [sessionConfig, setSessionConfig] = useState<SessionConfig | null>(() => {
         try { const s = localStorage.getItem('session_config'); return s ? JSON.parse(s) : null; } catch { return null; }
     });
@@ -46,6 +51,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         setUser(null);
         setSessionConfig(null);
+        setIsLoggingOut(false);
         localStorage.removeItem('session_config');
         StorageService.remove('current_user');
         StorageService.remove('auth_token');
@@ -56,6 +62,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         window.location.href = '/login';
     }, []);
+
+    const requestLogout = useCallback(() => {
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (prefersReducedMotion) {
+            logout();
+            return;
+        }
+        setIsLoggingOut(true);
+    }, [logout]);
 
     useEffect(() => {
         const validateSession = async () => {
@@ -189,7 +204,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, sessionConfig, login, logout, isAuthenticated: !!user, isLoading, hasPermission }}>
+        <AuthContext.Provider value={{ user, sessionConfig, login, logout, requestLogout, isLoggingOut, isAuthenticated: !!user, isLoading, hasPermission }}>
             {children}
         </AuthContext.Provider>
     );

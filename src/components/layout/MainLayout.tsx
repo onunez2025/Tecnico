@@ -5,6 +5,7 @@ import { NavLink, Navigate, Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { AppSwitcher } from './AppSwitcher';
 import { AuthTransitionOverlay } from '../common/AuthTransitionOverlay';
+import { LottiePlayer } from '../common/LottiePlayer';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../context/ThemeContext';
 import { useAppConfig } from '../../context/AppConfigContext';
@@ -77,7 +78,14 @@ export function MainLayout() {
     if (isLoading) {
         return (
             <div className="min-h-screen bg-[#F9FAFB] dark:bg-[#050F1A] flex flex-col justify-center items-center">
-                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-40 h-40">
+                    <LottiePlayer
+                        src={() => import('../../assets/lottie/loading.json')}
+                        fallback={<div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />}
+                        className="w-40 h-40"
+                        loop
+                    />
+                </div>
                 <p className="mt-4 text-sm font-bold text-cb-text-secondary uppercase tracking-widest animate-pulse">Cargando Gestión Técnica...</p>
             </div>
         );

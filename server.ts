@@ -586,11 +586,13 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
         const db = await getWritePool();
         const result = await db.request().input('u', sql.NVarChar(sql.MAX), username).input('app', sql.NVarChar(sql.MAX), APP_IDENTIFIER).query(`
             SELECT u.*, r.Name as RoleName, uc.CASId as cas_id, c.Nombre_CAS as cas_name, LTRIM(RTRIM(c.Abrev_nombre_colaboradores)) as cas_prefijo,
-                r.InactivityTimeoutMinutes as role_timeout, r.WarningBeforeMinutes as role_warning
+                r.InactivityTimeoutMinutes as role_timeout, r.WarningBeforeMinutes as role_warning,
+                m.Name as management_name
             FROM EBM.Users u
             LEFT JOIN EBM.Roles r ON u.RoleId = r.Id
             LEFT JOIN EBM.UserCAS uc ON u.Id = uc.UserId
             LEFT JOIN dbo.GAC_APP_TB_CAS c ON uc.CASId = c.ID_CAS
+            LEFT JOIN EBM.Managements m ON u.ManagementId = m.Id
             WHERE (u.Username = @u OR u.Email = @u) AND u.IsActive = 1
               AND (u.Apps LIKE '%' + @app + '%' OR u.Apps LIKE '%ADMIN%')
         `);
@@ -659,6 +661,8 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
                 permissions: perms,
                 perms: perms,
                 apps: user.Apps || '',
+                management_id: user.ManagementId || null,
+                management_name: user.management_name || null,
                 requires_password_change: user.RequiresPasswordChange === 1
             },
             sessionConfig: { timeoutMinutes, warningMinutes }
@@ -691,11 +695,13 @@ app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
             .input('id', sql.UniqueIdentifier, id)
             .input('app', sql.VarChar(20), APP_IDENTIFIER)
             .query(`
-            SELECT u.*, r.Name as RoleName, uc.CASId as cas_id, c.Nombre_CAS as cas_name, LTRIM(RTRIM(c.Abrev_nombre_colaboradores)) as cas_prefijo
+            SELECT u.*, r.Name as RoleName, uc.CASId as cas_id, c.Nombre_CAS as cas_name, LTRIM(RTRIM(c.Abrev_nombre_colaboradores)) as cas_prefijo,
+                m.Name as management_name
             FROM EBM.Users u
             LEFT JOIN EBM.Roles r ON u.RoleId = r.Id
             LEFT JOIN EBM.UserCAS uc ON u.Id = uc.UserId
             LEFT JOIN dbo.GAC_APP_TB_CAS c ON uc.CASId = c.ID_CAS
+            LEFT JOIN EBM.Managements m ON u.ManagementId = m.Id
             WHERE u.Id = @id AND (u.Apps LIKE '%' + @app + '%' OR u.Apps LIKE '%ADMIN%')
         `);
         const user = result.recordset[0];
@@ -758,7 +764,9 @@ app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
                 role: user.RoleName,
                 permissions: perms,
                 perms: perms,
-                apps: user.Apps || ''
+                apps: user.Apps || '',
+                management_id: user.ManagementId || null,
+                management_name: user.management_name || null
             }
         });
     } catch (err: any) { res.status(500).json({ error: safeError(err) }); }

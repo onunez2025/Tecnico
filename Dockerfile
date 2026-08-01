@@ -1,16 +1,18 @@
 # ── Build frontend ───────────────────────────────────────────────────────────
-FROM node:20-slim AS builder
+FROM node:22-slim AS builder
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
+RUN corepack enable && corepack prepare pnpm@11.18.0 --activate
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY . .
-RUN npm run build
+RUN pnpm run build
 
 # ── Runtime ──────────────────────────────────────────────────────────────────
-FROM node:20-slim AS runtime
+FROM node:22-slim AS runtime
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm install -g tsx
+RUN corepack enable && corepack prepare pnpm@11.18.0 --activate
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile --prod && npm install -g tsx
 COPY server.ts ./
 COPY lib/ ./lib/
 COPY --from=builder /app/dist ./dist

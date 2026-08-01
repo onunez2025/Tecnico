@@ -1,0 +1,8 @@
+allowBuilds:
+  bcrypt: true
+  esbuild: true
+overrides:
+  "@babel/core": "^7.29.6"
+  "body-parser": "^1.20.6"
+  "path-to-regexp": "^0.1.13"
+  "qs": "^6.15.2"

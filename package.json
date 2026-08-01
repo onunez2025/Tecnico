@@ -64,10 +64,5 @@
     "typescript": "^5.7.3",
     "vite": "^6.4.3"
   },
-  "overrides": {
-    "@babel/core": "^7.29.6",
-    "body-parser": "^1.20.6",
-    "path-to-regexp": "^0.1.13",
-    "qs": "^6.15.2"
-  }
+  "packageManager": "pnpm@11.18.0"
 }

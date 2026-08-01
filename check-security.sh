@@ -249,12 +249,17 @@ else
     fi
 fi
 
-# ─── npm audit ───────────────────────────────────────────────────────────────
-echo -e "\n🔒 Verificando dependencias (npm audit)..."
-AUDIT_OUT=$(npm audit --audit-level=high 2>&1)
+# ─── audit de dependencias (npm o pnpm, segun el lockfile presente) ──────────
+if [ -f "pnpm-lock.yaml" ]; then
+    AUDIT_CMD="pnpm audit"
+else
+    AUDIT_CMD="npm audit"
+fi
+echo -e "\n🔒 Verificando dependencias ($AUDIT_CMD)..."
+AUDIT_OUT=$($AUDIT_CMD --audit-level=high 2>&1)
 AUDIT_EXIT=$?
 if [ $AUDIT_EXIT -ne 0 ]; then
-    echo -e "${YELLOW}[C7-ADVERTENCIA]${NC} npm audit detectó vulnerabilidades high/critical"
+    echo -e "${YELLOW}[C7-ADVERTENCIA]${NC} $AUDIT_CMD detectó vulnerabilidades high/critical"
     echo "$AUDIT_OUT" | tail -15 | sed 's/^/     /'
     WARNINGS=$((WARNINGS+1))
 else

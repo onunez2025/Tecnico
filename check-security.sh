@@ -124,7 +124,7 @@ check_file() {
     # C9: .input() sin tipo SQL explícito
     if [[ "$f" != *"lib/db"* ]]; then
         local sql9_hit
-        sql9_hit=$(grep -nP "\.input\(['\"][^'\"]+['\"]\s*,\s*(?!sql\.)" "$f" 2>/dev/null | grep -v "^\s*//" || true)
+        sql9_hit=$(grep -nP "\.input\(['\"][^'\"]+['\"]\s*+,\s*+(?!sql\.)" "$f" 2>/dev/null | grep -v "^\s*//" || true)
         if [ -n "$sql9_hit" ]; then
             echo -e "${YELLOW}[C9-ADVERTENCIA]${NC} .input() sin tipo SQL — usar addInput() de lib/db.ts → $f"
             echo "$sql9_hit" | sed 's/^/     /'

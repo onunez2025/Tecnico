@@ -15,7 +15,7 @@ const prefersReducedMotion = () =>
 export default function LoginPage() {
     const { t, i18n } = useTranslation();
     const { login } = useAuth();
-    const { refreshApplications } = useAppConfig();
+    const { refreshApplications, logoUrl } = useAppConfig();
     const { theme, setTheme } = useTheme();
     const navigate = useNavigate();
 
@@ -211,7 +211,7 @@ export default function LoginPage() {
                     <div className="relative z-10 flex items-center justify-between px-6 pt-8">
                         <div className="flex items-center gap-2">
                             <div className="w-9 h-9 flex items-center justify-center shrink-0 overflow-hidden rounded-lg bg-white/10">
-                                <img src="/Logo.png" alt="Gestión Técnica Logo" className="h-6 w-6 object-contain" />
+                                <img src={logoUrl || "/Logo.png"} alt="Gestión Técnica Logo" className="h-6 w-6 object-contain" />
                             </div>
                             <span className="text-white font-bold text-base tracking-tight uppercase">Técnico</span>
                         </div>
@@ -264,7 +264,7 @@ export default function LoginPage() {
                     <div className="relative z-10">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-12 h-12 flex items-center justify-center shrink-0 overflow-hidden">
-                                <img src="/Logo.png" alt="Gestión Técnica Logo" className="h-full w-full object-contain" />
+                                <img src={logoUrl || "/Logo.png"} alt="Gestión Técnica Logo" className="h-full w-full object-contain" />
                             </div>
                             <span className="text-2xl font-bold tracking-tight">Técnico</span>
                         </div>

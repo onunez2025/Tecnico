@@ -16,7 +16,7 @@ export function MainLayout() {
     const { isAuthenticated, isLoading, user, hasPermission, logout, requestLogout, isLoggingOut, sessionConfig } = useAuth();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const { theme, setTheme } = useTheme();
-    const { sidebarConfig: sidebarCfg } = useAppConfig();
+    const { sidebarConfig: sidebarCfg, logoUrl } = useAppConfig();
 
     const [welcomeUser, setWelcomeUser] = useState<string | null>(() => {
         const stored = sessionStorage.getItem('siatc_welcome_user');
@@ -182,7 +182,7 @@ export function MainLayout() {
 
                         <div className="flex items-center gap-3 lg:gap-4 group cursor-default">
                             <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-[1.25rem] bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-none flex items-center justify-center group-hover:scale-110 transition-all duration-500">
-                                <img src="/Logo.png" alt="Logo" className="w-6 h-6 lg:w-7 lg:h-7 object-contain" />
+                                <img src={logoUrl || '/Logo.png'} alt="Logo" className="w-6 h-6 lg:w-7 lg:h-7 object-contain" />
                             </div>
                             <div className="flex flex-col">
                                 <span className="font-black text-xs lg:text-sm tracking-tight text-foreground uppercase pt-1">Gestión Técnica</span>

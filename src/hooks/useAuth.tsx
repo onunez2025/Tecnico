@@ -74,6 +74,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     useEffect(() => {
         const validateSession = async () => {
+            if (window.location.pathname === '/login') {
+                // Ya estamos en /login -- no repetir logout()+reload si la sesion
+                // sigue invalida, corta el bucle de recarga infinita (2026-08-06).
+                setIsLoading(false);
+                return;
+            }
+
             try {
                 const getCookie = (name: string): string | null => {
                     // No usar split('; name=') aqui -- si llegan a coexistir dos cookies con el

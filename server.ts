@@ -901,18 +901,27 @@ app.get('/api/auth/sso/callback', async (req: Request, res: Response) => {
         // Nota: Casdoor no expone en /api/userinfo cuál proveedor externo (Google/Microsoft) usó
         // el usuario — se guarda genérico como 'sso'. Para distinguirlo habría que consultar la
         // Admin API de Casdoor con el CasdoorUserId, fuera de alcance de este piloto.
-        await db.request()
-            .input('email', sql.VarChar(255), email)
-            .input('fullName', sql.VarChar(200), profile.name || profile.preferred_username || null)
-            .input('provider', sql.VarChar(50), 'sso')
-            .input('casdoorUserId', sql.VarChar(100), profile.sub || '')
-            .input('appCode', sql.VarChar(20), SSO_APP_CODE)
-            .query(`
-                INSERT INTO EBM.PendingSSORequests (Email, FullName, Provider, CasdoorUserId, AppCode)
-                VALUES (@email, @fullName, @provider, @casdoorUserId, @appCode)
-            `);
-
-        await sendSsoPendingEmail(email, SSO_APP_LABEL);
+        try {
+            await db.request()
+                .input('email', sql.VarChar(255), email)
+                .input('fullName', sql.VarChar(200), profile.name || profile.preferred_username || null)
+                .input('provider', sql.VarChar(50), 'sso')
+                .input('casdoorUserId', sql.VarChar(100), profile.sub || '')
+                .input('appCode', sql.VarChar(20), SSO_APP_CODE)
+                .query(`
+                    INSERT INTO EBM.PendingSSORequests (Email, FullName, Provider, CasdoorUserId, AppCode)
+                    VALUES (@email, @fullName, @provider, @casdoorUserId, @appCode)
+                `);
+            await sendSsoPendingEmail(email, SSO_APP_LABEL);
+        } catch (insertErr: unknown) {
+            // Condición de carrera: dos requests casi simultáneas (doble click, doble pestaña)
+            // pueden pasar el chequeo de "no existe" de arriba antes de que cualquiera inserte.
+            // El índice único filtrado UX_PendingSSORequests_Email_Pending (Email, WHERE
+            // Status='pending') rechaza la segunda con "duplicate key" -- se trata como éxito
+            // (alguien más ya ganó la carrera y creó la fila), no como error real.
+            const msg = (insertErr as Error)?.message || '';
+            if (!msg.includes('duplicate key')) throw insertErr;
+        }
 
         return redirectToSsoStatus(res, 'pending');
     } catch (error: unknown) {

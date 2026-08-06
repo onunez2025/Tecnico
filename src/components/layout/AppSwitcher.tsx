@@ -8,6 +8,14 @@ import { useAppConfig, Application } from '../../context/AppConfigContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { ApiClient } from '../../services/apiClient';
 
+// El entorno QA se detecta igual que en useAuth.tsx (VITE_COOKIE_DOMAIN configurada = dominio de
+// cookie SSO aislado de produccion). La URL de QA es siempre la de produccion con ".qa." insertado
+// antes de ".siatc.cloud" -- patron confirmado sin excepciones para todas las apps del ecosistema.
+const isQaEnv = !!import.meta.env.VITE_COOKIE_DOMAIN;
+function resolveAppUrl(app: Application): string {
+    return isQaEnv ? app.url.replace('.siatc.cloud', '.qa.siatc.cloud') : app.url;
+}
+
 interface AppSwitcherProps {
     currentAppId?: string;
 }
@@ -96,7 +104,7 @@ export function AppSwitcher({ currentAppId = 'TEC' }: AppSwitcherProps) {
                     {filteredApps.map(app => (
                         <a
                             key={app.id}
-                            href={app.url}
+                            href={resolveAppUrl(app)}
                             className={cn(theme.ITEM_CARD, "min-h-[110px] justify-center")}
                         >
                             <div className={theme.ITEM_LOGO_WRAPPER}>

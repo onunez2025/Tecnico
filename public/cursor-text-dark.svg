@@ -1,0 +1,52 @@
+<!-- Cursor de texto (I-beam) del ecosistema SIATC — MODO OSCURO.
+     Cuerpo #C2C8CF (luminancia 200): se recorta contra el fondo oscuro (#050F1A).
+     La barra central va en #4C5F80, invertida respecto a la variante clara.
+
+     viewBox recortado a la tinta (74 16 108 224). El original declaraba un lienzo
+     de 256x256 con la tinta ocupando solo 108x224: el 58% del ancho estaba vacio,
+     asi que se habria dibujado mucho mas chico de lo declarado.
+
+     12x26 porque el navegador DESCARTA en silencio cualquier cursor mayor a 128x128.
+     El punto activo es el CENTRO (6 13), no una esquina: en un I-beam ahi es donde
+     cae el cursor de escritura.
+
+     26 de alto y no 32 como la flecha y la mano: esas se apoyan AL LADO del
+     contenido, el I-beam se apoya SOBRE el. A 32 tapaba el texto de 14px sobre
+     el que se posa. Lo que hace coherente al juego es la paleta y el trazo, no
+     que todos midan igual. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="12" height="26" viewBox="74 16 108 224">
+  <path fill="#C2C8CF" d="
+    M90 16
+    H112
+    C120.84 16 128 23.16 128 32
+    C128 23.16 135.16 16 144 16
+    H166
+    C174.84 16 182 23.16 182 32
+    C182 40.84 174.84 48 166 48
+    H150
+    V208
+    H166
+    C174.84 208 182 215.16 182 224
+    C182 232.84 174.84 240 166 240
+    H144
+    C135.16 240 128 232.84 128 224
+    C128 232.84 120.84 240 112 240
+    H90
+    C81.16 240 74 232.84 74 224
+    C74 215.16 81.16 208 90 208
+    H106
+    V48
+    H90
+    C81.16 48 74 40.84 74 32
+    C74 23.16 81.16 16 90 16
+    Z"/>
+  <path fill="#4C5F80" d="
+    M91 122
+    H165
+    C168.314 122 171 124.686 171 128
+    C171 131.314 168.314 134 165 134
+    H91
+    C87.686 134 85 131.314 85 128
+    C85 124.686 87.686 122 91 122
+    Z"/>
+</svg>

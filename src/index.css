@@ -303,3 +303,168 @@
     scroll-behavior: auto !important;
   }
 }
+
+@layer base {
+  /* ---------------------------------------------------------------------------
+     Cursor personalizado del ecosistema SIATC — 3 roles x 2 temas = 6 archivos.
+
+     ROLES
+       flecha : puntero por defecto           -> cursor-light / cursor-dark
+       mano   : enlaces y botones (clicable)  -> cursor-pointer-light / -dark
+       I-beam : campos donde se escribe       -> cursor-text-light / -dark
+
+     TEMAS
+       Ningun cursor de un solo color sirve para los dos fondos. Se usan las
+       variantes oscuras sobre el tema claro y las claras sobre el oscuro
+       (luminancia media medida: 112 y 107 las oscuras, 139 y 153 las claras).
+
+     TAMANO — el error que ya costo dos intentos en este ecosistema
+       Los navegadores DESCARTAN en silencio cualquier cursor mayor a 128x128 y
+       caen al puntero del sistema sin avisar por consola. El primer intento uso
+       un PNG de 512x512 y los SVG originales venian a 256x256: ninguno se veia.
+       La flecha y la mano estan a 25x32 y el I-beam a 12x26, todos con el
+       viewBox recortado al dibujo (los originales dejaban entre 12% y 58% de
+       lienzo vacio, lo que ademas los habria hecho verse mas chicos de lo
+       declarado).
+
+       El I-beam es mas bajo a proposito: la flecha y la mano se apoyan AL LADO
+       del contenido, el I-beam se apoya SOBRE el. A 32 de alto tapaba el texto
+       de 14px sobre el que se posa. Lo que hace coherente al juego es la paleta
+       y el trazo, no que los seis midan igual.
+
+     PUNTO ACTIVO — el segundo error clasico
+       Es donde el cursor realmente "hace clic". En la flecha coincide con la
+       punta (`1 1`). En la mano NO es la esquina: es la yema del dedo indice,
+       que cae en `9 1` una vez recortado el lienzo. En el I-beam es el CENTRO
+       (`6 13`), que es donde cae el cursor de escritura. Sin estas coordenadas
+       el clic caeria corrido de donde el usuario apunta.
+
+     RESPALDO
+       El `auto` / `pointer` del final NO se quita: si el archivo falta o el
+       navegador rechaza el formato, el puntero sigue funcionando.
+
+     SIN `!important`, A PROPOSITO
+       Los cursores semanticos (`text` en un input, `not-allowed` en un boton
+       deshabilitado, `col-resize` al redimensionar una columna) tienen que poder
+       ganar: comunican estado, no decoracion. Por lo mismo los selectores de
+       boton excluyen `:disabled`, que ya usa `cursor-not-allowed` en varios
+       componentes.
+     --------------------------------------------------------------------------- */
+  body {
+    cursor: url('/cursor-light.svg') 1 1, auto;
+  }
+
+  a,
+  summary,
+  label[for],
+  button:not(:disabled),
+  [role="button"],
+  select:not(:disabled),
+  input[type="button"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="reset"]:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="file"]:not(:disabled),
+  input[type="date"]:not(:disabled),
+  input[type="time"]:not(:disabled),
+  input[type="datetime-local"]:not(:disabled),
+  input[type="month"]:not(:disabled),
+  input[type="week"]:not(:disabled),
+  input[type="color"]:not(:disabled) {
+    cursor: url('/cursor-pointer-light.svg') 9 1, pointer;
+  }
+
+  /*
+     Campos donde se escribe. NO se incluyen `date`, `time`, `month`, `week` ni
+     `color`: esos abren un selector en vez de aceptar tecleo libre, y ya estan
+     asignados a la mano arriba. Un I-beam ahi mentiria sobre lo que hace el campo.
+
+     `search` y `tel` no se usan hoy en el ecosistema; van igual para que el
+     proximo campo de ese tipo no nazca sin cursor.
+
+     `input:not([type])` cubre los 18 `<input>` sin atributo `type`, que el
+     navegador trata como `text`.
+   */
+  textarea:not(:disabled),
+  [contenteditable]:not([contenteditable="false"]),
+  input:not([type]):not(:disabled),
+  input[type="text"]:not(:disabled),
+  input[type="search"]:not(:disabled),
+  input[type="email"]:not(:disabled),
+  input[type="password"]:not(:disabled),
+  input[type="number"]:not(:disabled),
+  input[type="tel"]:not(:disabled),
+  input[type="url"]:not(:disabled) {
+    cursor: url('/cursor-text-light.svg') 6 13, text;
+  }
+
+  .dark body {
+    cursor: url('/cursor-dark.svg') 1 1, auto;
+  }
+
+  .dark a,
+  .dark summary,
+  .dark label[for],
+  .dark button:not(:disabled),
+  .dark [role="button"],
+  .dark select:not(:disabled),
+  .dark input[type="button"]:not(:disabled),
+  .dark input[type="submit"]:not(:disabled),
+  .dark input[type="reset"]:not(:disabled),
+  .dark input[type="checkbox"]:not(:disabled),
+  .dark input[type="radio"]:not(:disabled),
+  .dark input[type="file"]:not(:disabled),
+  .dark input[type="date"]:not(:disabled),
+  .dark input[type="time"]:not(:disabled),
+  .dark input[type="datetime-local"]:not(:disabled),
+  .dark input[type="month"]:not(:disabled),
+  .dark input[type="week"]:not(:disabled),
+  .dark input[type="color"]:not(:disabled) {
+    cursor: url('/cursor-pointer-dark.svg') 9 1, pointer;
+  }
+
+  .dark textarea:not(:disabled),
+  .dark [contenteditable]:not([contenteditable="false"]),
+  .dark input:not([type]):not(:disabled),
+  .dark input[type="text"]:not(:disabled),
+  .dark input[type="search"]:not(:disabled),
+  .dark input[type="email"]:not(:disabled),
+  .dark input[type="password"]:not(:disabled),
+  .dark input[type="number"]:not(:disabled),
+  .dark input[type="tel"]:not(:disabled),
+  .dark input[type="url"]:not(:disabled) {
+    cursor: url('/cursor-text-dark.svg') 6 13, text;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Manito sobre lo que la app marca como clicable con la utilidad `cursor-pointer`.
+
+   Este bloque va FUERA de cualquier `@layer` a proposito, y esa es toda la
+   razon de que exista.
+
+   Las reglas del cursor viven en `@layer base`. Las utilidades de Tailwind viven
+   en `@layer utilities`, que es una capa POSTERIOR — y una capa posterior gana
+   sin importar la especificidad del selector. Por eso la manito aparecia en los
+   enlaces del sidebar (que son `<a>` sin clase) pero NO en los selectores de
+   fecha ni en los `select` del filtro: esos llevan `cursor-pointer`, ahi ganaba
+   el `cursor: pointer` de Tailwind y el navegador mostraba la mano del sistema.
+
+   Una regla SIN capa gana a cualquier regla CON capa. Es la unica forma limpia
+   de pisar una utilidad sin recurrir a `!important`.
+
+   Son 83 usos de `cursor-pointer` en la app, la mayoria sobre `<div>` y filas de
+   tabla que hacen de boton: enumerar elementos nunca los habria cubierto todos.
+
+   El `:not(:disabled)` conserva `cursor-not-allowed` en los controles
+   deshabilitados, que varios componentes ya declaran. Sin el, esta regla —al
+   estar sin capa— tambien lo pisaria.
+   --------------------------------------------------------------------------- */
+.cursor-pointer:not(:disabled) {
+  cursor: url('/cursor-pointer-light.svg') 9 1, pointer;
+}
+
+.dark .cursor-pointer:not(:disabled) {
+  cursor: url('/cursor-pointer-dark.svg') 9 1, pointer;
+}

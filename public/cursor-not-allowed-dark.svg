@@ -1,0 +1,31 @@
+<!-- Cursor de accion no permitida del ecosistema SIATC — MODO OSCURO.
+     Relleno #F75456 (5,83:1 sobre el fondo oscuro) con contorno #C5C9CD (11,57:1).
+     Solo cambia el contorno respecto a la variante clara: el rojo se lee en los dos.
+
+     El original declaraba width="100%" height="100%": sin dimension intrinseca el
+     navegador NO puede usarlo como cursor. Aqui va en pixeles.
+
+     viewBox recortado a la tinta. El circulo es r=40 centrado en (50,50) con trazo de
+     6.5 centrado en el path, asi que el borde exterior cae en r=43.25: la tinta ocupa
+     de 6.75 a 93.25 y el lienzo 0-100 dejaba un 6.8% vacio por lado.
+
+     26x26 porque el navegador DESCARTA en silencio cualquier cursor mayor a 128x128.
+     El punto activo es el CENTRO (13 13): a diferencia de la flecha, este dibujo no
+     tiene punta, es un circulo, y su centro es lo que el usuario apunta. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="6.75 6.75 86.5 86.5">
+  <!-- Se dibuja con la barra vertical y se rota -45 grados para la diagonal exacta. -->
+  <g transform="rotate(-45 50 50)">
+    <path d="M 50,10
+             A 40,40 0 1,1 49.99,10 Z
+             M 44,22.65
+             A 28,28 0 0,0 44,77.35
+             L 44,22.65 Z
+             M 56,22.65
+             L 56,77.35
+             A 28,28 0 0,0 56,22.65 Z"
+          fill="#F75456"
+          stroke="#C5C9CD"
+          stroke-width="6.5"
+          stroke-linejoin="round" />
+  </g>
+</svg>

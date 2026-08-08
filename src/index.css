@@ -203,11 +203,6 @@
 
 @layer base {
   body {
-    cursor: url('/cursor.png'), auto !important;
-  }
-
-  a, button, [role="button"], input[type="button"], input[type="submit"] {
-    cursor: url('/cursor.png'), pointer !important;
   }
 
   /* Custom Scrollbar - EBM Style */
@@ -306,12 +301,13 @@
 
 @layer base {
   /* ---------------------------------------------------------------------------
-     Cursor personalizado del ecosistema SIATC — 3 roles x 2 temas = 6 archivos.
+     Cursor personalizado del ecosistema SIATC — 4 roles x 2 temas = 8 archivos.
 
      ROLES
        flecha : puntero por defecto           -> cursor-light / cursor-dark
        mano   : enlaces y botones (clicable)  -> cursor-pointer-light / -dark
        I-beam : campos donde se escribe       -> cursor-text-light / -dark
+       vetado : accion no permitida           -> cursor-not-allowed-light / -dark
 
      TEMAS
        Ningun cursor de un solo color sirve para los dos fondos. Se usan las
@@ -467,4 +463,55 @@
 
 .dark .cursor-pointer:not(:disabled) {
   cursor: url('/cursor-pointer-dark.svg') 9 1, pointer;
+}
+/* ---------------------------------------------------------------------------
+   Accion no permitida, y homologacion de `cursor-default`.
+
+   Este bloque tambien va FUERA de cualquier `@layer`, por el mismo motivo que el
+   anterior: son utilidades de Tailwind, viven en `@layer utilities` y le ganan a
+   `@layer base` sin importar la especificidad. Dentro de la capa, el navegador
+   seguiria mostrando los cursores del sistema.
+
+   NOT-ALLOWED
+     Son 97 usos de `cursor-not-allowed` en el ecosistema, el cursor mas frecuente
+     despues de la mano. Se cubren ademas los controles nativos `:disabled`, que
+     hasta ahora mostraban la flecha del sistema y no comunicaban nada: si el
+     control esta deshabilitado, el cursor deberia decirlo.
+
+     El punto activo es el CENTRO (`13 13`). A diferencia de la flecha, este dibujo
+     no tiene punta: es un circulo, y su centro es lo que el usuario apunta.
+
+   DEFAULT — por que hacia falta
+     En CSS `default` es la FLECHA y `pointer` es la MANO; no son lo mismo pese a
+     que en el habla comun "puntero" sea la flecha. El problema real era otro:
+     `body` ya lleva nuestra flecha y todo la hereda, pero un elemento con la clase
+     `cursor-default` declara `cursor: default`, lo que PISA lo heredado y saca la
+     flecha del sistema operativo.
+
+     Medido antes de tocar nada: un `<div>` normal daba `cursor-light.svg` y uno con
+     `.cursor-default` daba `default`. Dos flechas distintas en la misma pantalla.
+     Esta regla las homologa: la clase pasa a declarar explicitamente la nuestra.
+   --------------------------------------------------------------------------- */
+.cursor-not-allowed,
+button:disabled,
+select:disabled,
+textarea:disabled,
+input:disabled {
+  cursor: url('/cursor-not-allowed-light.svg') 13 13, not-allowed;
+}
+
+.dark .cursor-not-allowed,
+.dark button:disabled,
+.dark select:disabled,
+.dark textarea:disabled,
+.dark input:disabled {
+  cursor: url('/cursor-not-allowed-dark.svg') 13 13, not-allowed;
+}
+
+.cursor-default {
+  cursor: url('/cursor-light.svg') 1 1, default;
+}
+
+.dark .cursor-default {
+  cursor: url('/cursor-dark.svg') 1 1, default;
 }

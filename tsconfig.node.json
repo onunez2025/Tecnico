@@ -1,9 +1,30 @@
 {
   "compilerOptions": {
     "composite": true,
+
+    /*
+     * Sin `target`/`lib` TypeScript cae a ES5, y ahí no existen `AggregateError` (ES2021) ni
+     * `ErrorOptions` (ES2022). Los .d.ts de tedious —dependencia de mssql— usan ambos, así que
+     * `tsc -b` fallaba con 3 errores dentro de node_modules sin que hubiera nada roto en `src/`.
+     * `skipLibCheck` evita además revisar tipos de dependencias que no controlamos.
+     * Alineado con Valorizaciones, que ya lo tenía correcto.
+     */
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "skipLibCheck": true,
+
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+
+    /*
+     * La salida va a node_modules/.tmp y no a la raíz. Sin esto, cada `tsc -b` dejaba
+     * `vite.config.js` y `vite.config.d.ts` sueltos en el repo, sin estar en .gitignore.
+     * No se usa `noEmit` porque este proyecto es `composite` y lo referencian desde tsconfig.json.
+     */
+    "outDir": "./node_modules/.tmp/tsconfig-node",
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo"
   },
   "include": ["vite.config.ts"]
 }

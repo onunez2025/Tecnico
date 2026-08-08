@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import LottieImport, { type LottieRefCurrentProps } from 'lottie-react';
 
 // lottie-react no declara "exports" en su package.json (solo main/module/browser) -- bajo
@@ -22,6 +22,71 @@ interface LottiePlayerProps {
     onReady?: () => void;
     /** Multiplicador de velocidad de reproducción (1 = normal, 0.6 = 40% más lento). lottie-react no lo expone como prop declarativa -- se aplica via lottieRef.setSpeed(). */
     speed?: number;
+    /**
+     * Reemplazo de colores `{ '#RRGGBB': '#RRGGBB' }` aplicado tras cargar el JSON.
+     *
+     * Los colores de una animación Lottie viven dentro del propio JSON, no en CSS, así que ninguna
+     * clase de Tailwind los adapta al tema. Sin esto, una animación dibujada para fondo claro
+     * desaparece en modo oscuro: la del reloj de arena usa `#021331`, que contra el fondo oscuro
+     * `#050F1A` da 1,05:1 de contraste — invisible.
+     *
+     * Se recolorea en memoria en vez de mantener dos archivos por animación: un JSON duplicado se
+     * desincroniza en cuanto alguien cambia el diseño de uno solo.
+     */
+    colores?: Record<string, string>;
+}
+
+/** `#RRGGBB` a la terna 0-1 que usa Lottie. Devuelve `null` si el texto no es un hex válido. */
+function hexATerna(hex: string): [number, number, number] | null {
+    const limpio = hex.trim().replace('#', '');
+    if (!/^[0-9a-fA-F]{6}$/.test(limpio)) return null;
+    return [
+        parseInt(limpio.slice(0, 2), 16) / 255,
+        parseInt(limpio.slice(2, 4), 16) / 255,
+        parseInt(limpio.slice(4, 6), 16) / 255,
+    ];
+}
+
+/**
+ * Devuelve una copia de la animación con los colores reemplazados.
+ *
+ * Recorre el árbol buscando rellenos (`fl`) y trazos (`st`) con color fijo. Los colores animados
+ * —los que traen fotogramas clave— se dejan intactos: reemplazarlos exigiría reescribir cada
+ * fotograma y ninguna animación del ecosistema los usa.
+ *
+ * La comparación es con tolerancia porque el hex de ida y vuelta no siempre da el mismo decimal
+ * que guardó After Effects.
+ */
+function recolorar(datos: object, mapa: Record<string, string>): object {
+    const equivalencias = Object.entries(mapa)
+        .map(([desde, hacia]) => ({ desde: hexATerna(desde), hacia: hexATerna(hacia) }))
+        .filter((e): e is { desde: [number, number, number]; hacia: [number, number, number] } =>
+            e.desde !== null && e.hacia !== null);
+    if (equivalencias.length === 0) return datos;
+
+    const copia = JSON.parse(JSON.stringify(datos));
+
+    const recorrer = (nodo: unknown): void => {
+        if (Array.isArray(nodo)) {
+            nodo.forEach(recorrer);
+            return;
+        }
+        if (nodo === null || typeof nodo !== 'object') return;
+
+        const objeto = nodo as Record<string, unknown>;
+        const color = objeto.c as { a?: number; k?: unknown } | undefined;
+        if ((objeto.ty === 'fl' || objeto.ty === 'st') && color?.a === 0 && Array.isArray(color.k)) {
+            const actual = color.k as number[];
+            const coincide = equivalencias.find((e) =>
+                e.desde.every((canal, i) => Math.abs(canal - (actual[i] ?? -1)) < 0.01));
+            if (coincide) color.k = [...coincide.hacia, actual[3] ?? 1];
+        }
+
+        Object.values(objeto).forEach(recorrer);
+    };
+
+    recorrer(copia);
+    return copia;
 }
 
 /**
@@ -30,7 +95,7 @@ interface LottiePlayerProps {
  * Respeta prefers-reduced-motion y degrada a un ícono estático si el JSON
  * no carga, en vez de dejar un espacio vacío.
  */
-export function LottiePlayer({ src, fallback, loop = true, className, onComplete, onReady, speed = 1 }: LottiePlayerProps) {
+export function LottiePlayer({ src, fallback, loop = true, className, onComplete, onReady, speed = 1, colores }: LottiePlayerProps) {
     const [animationData, setAnimationData] = useState<object | null>(null);
     const [failed, setFailed] = useState(false);
     const [reducedMotion] = useState(
@@ -52,14 +117,25 @@ export function LottiePlayer({ src, fallback, loop = true, className, onComplete
         if (animationData) lottieRef.current?.setSpeed(speed);
     }, [animationData, speed]);
 
-    if (reducedMotion || failed || !animationData) {
+    /*
+     * El recoloreado se recalcula al cambiar el tema, no solo al cargar: si se conmuta claro/oscuro
+     * con la animación en pantalla, tiene que seguirlo. La clave del memo es el mapa serializado
+     * porque quien llama suele pasar un objeto literal, y su identidad cambia en cada render.
+     */
+    const claveColores = colores ? JSON.stringify(colores) : '';
+    const datosPintados = useMemo(
+        () => (animationData && claveColores ? recolorar(animationData, JSON.parse(claveColores)) : animationData),
+        [animationData, claveColores],
+    );
+
+    if (reducedMotion || failed || !datosPintados) {
         return <>{fallback}</>;
     }
 
     return (
         <Lottie
             lottieRef={lottieRef}
-            animationData={animationData}
+            animationData={datosPintados}
             loop={loop}
             onComplete={onComplete}
             className={className}

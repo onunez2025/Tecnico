@@ -8,12 +8,32 @@ import { useAppConfig, Application } from '../../context/AppConfigContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { ApiClient } from '../../services/apiClient';
 
-// El entorno QA se detecta igual que en useAuth.tsx (VITE_COOKIE_DOMAIN configurada = dominio de
-// cookie SSO aislado de produccion). La URL de QA es siempre la de produccion con ".qa." insertado
-// antes de ".siatc.cloud" -- patron confirmado sin excepciones para todas las apps del ecosistema.
-const isQaEnv = !!import.meta.env.VITE_COOKIE_DOMAIN;
+/**
+ * Devuelve la URL de la app destino, ajustada al entorno desde el que se abre el selector.
+ *
+ * El registro de aplicaciones guarda SIEMPRE la URL de produccion. Si esta pagina se esta
+ * sirviendo desde QA, hay que apuntar a la QA de la otra app: el patron del ecosistema es
+ * insertar ".qa." antes de ".siatc.cloud", sin excepciones.
+ *
+ * La deteccion es por `window.location.hostname`, EN TIEMPO DE EJECUCION.
+ *
+ * La version anterior usaba `!!import.meta.env.VITE_COOKIE_DOMAIN`, y fallaba en silencio: las
+ * variables `VITE_*` se incrustan al COMPILAR, no se leen al ejecutar. Como esa variable no
+ * estaba definida en el build de QA, la expresion se resolvia a `false`, el bundler plegaba el
+ * ternario y **borraba la sustitucion como codigo muerto**. Verificado sobre el bundle
+ * desplegado: no contenia ni una sola aparicion de ".qa.siatc.cloud", y `COOKIE_DOMAIN` habia
+ * quedado con su valor de respaldo. El selector llevaba a produccion desde QA.
+ *
+ * El hostname no se puede optimizar fuera ni depende de que alguien recuerde configurar una
+ * variable en cada despliegue: el navegador siempre sabe donde esta.
+ *
+ * La guarda de `.qa.` evita duplicarlo si algun dia el registro ya guardara una URL de QA.
+ */
 function resolveAppUrl(app: Application): string {
-    return isQaEnv ? app.url.replace('.siatc.cloud', '.qa.siatc.cloud') : app.url;
+    if (typeof window === 'undefined') return app.url;
+    const enQa = window.location.hostname.endsWith('.qa.siatc.cloud');
+    if (!enQa || app.url.includes('.qa.siatc.cloud')) return app.url;
+    return app.url.replace('.siatc.cloud', '.qa.siatc.cloud');
 }
 
 interface AppSwitcherProps {

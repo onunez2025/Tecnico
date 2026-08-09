@@ -6,3 +6,7 @@ dist
 npm-debug.log
 .mcp.json
 .claude/
+
+# Cache de Python (scripts/verificar-orden-rutas.py)
+__pycache__/
+*.pyc

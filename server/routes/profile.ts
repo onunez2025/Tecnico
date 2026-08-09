@@ -11,6 +11,11 @@ import { verifyToken } from '../middleware/auth';
 // definian en index.ts. Express resuelve por orden de registro, asi que esa posicion es parte del
 // comportamiento, no un detalle estetico.
 
+// Autoservicio de perfil — deliberadamente separado de updateUserSchema/PUT /api/users/:id
+// (endpoint administrativo gateado por tec.config.users). Cualquier usuario autenticado
+// puede editar SU PROPIO avatar/contraseña; nunca full_name/email/role_id/apps/is_active
+// de otro usuario, y nunca de sí mismo tampoco vía esta ruta (eso sigue siendo de solo
+// lectura en ProfilePage, gestionado por un administrador si hace falta cambiarlo).
 const updateProfileSchema = z.object({
     avatar_url: z.string().max(500000).optional(),
     password_hash: z.string().min(6, 'Mínimo 6 caracteres').max(255).optional(),

@@ -6,9 +6,9 @@
   "scripts": {
     "prepare": "bash install-hooks.sh || true",
     "dev": "vite",
-    "server": "tsx --watch server.ts",
+    "server": "tsx --watch server/index.ts",
     "build": "tsc && vite build",
-    "start": "tsx server.ts",
+    "start": "tsx server/index.ts",
     "preview": "vite preview",
     "lint": "tsc --noEmit"
   },

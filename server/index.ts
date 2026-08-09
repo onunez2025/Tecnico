@@ -1,7 +1,7 @@
+import './lib/env';   // PRIMERO: carga el .env antes de que ningun modulo lea process.env
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import sql from 'mssql';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
@@ -37,7 +37,6 @@ import dashboardRouter from './routes/dashboard';
 import ticketsRouter from './routes/tickets';
 import { syncPaymentCache } from './lib/pagosSync';
 import { logAudit } from './lib/audit';
-dotenv.config();
 import { APP_IDENTIFIER, APPSHEET_PDF_PATH } from './lib/config';
 
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';

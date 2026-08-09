@@ -12,9 +12,10 @@ import { blacklistToken, invalidateAllUserSessions, isSessionInvalidated, isToke
 import { safeError } from '../lib/security';
 import { clearSharedCookie, verifyToken } from '../middleware/auth';
 
-// IS_PRODUCTION se recalcula con la misma expresion que en index.ts; es una lectura de env var.
-// JWT_SECRET: su comprobacion fatal se queda en index.ts, aqui solo se lee el valor.
-const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+// NODE_ENV se lee EN CADA PETICION, no en una constante de modulo: asi lo hacen Flow, Console,
+// EBM y Devoluciones, y es lo que las hace inmunes al orden de carga del .env. Una constante de
+// modulo se evalua antes que dotenv.config() y valia false, con lo que la cookie compartida del
+// SSO no se escribia nunca. Ver server/lib/env.ts.
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // Este router se monta en `/` conservando las rutas completas y en la misma posicion en que se
@@ -89,7 +90,7 @@ router.post('/api/auth/login', async (req: Request, res: Response) => {
             JWT_SECRET as string,
             { expiresIn }
         );
-        if (IS_PRODUCTION) {
+        if (process.env.NODE_ENV === 'production') {
             res.cookie('token', ssoToken, {
                 domain: dominioCookie(req),
                 maxAge: (remember ? 7 * 24 * 60 * 60 : 12 * 60 * 60) * 1000,
@@ -192,7 +193,7 @@ router.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
                 JWT_SECRET as string,
                 { expiresIn: '12h' }
             );
-            if (IS_PRODUCTION) {
+            if (process.env.NODE_ENV === 'production') {
                 res.cookie('token', ssoToken, {
                     domain: dominioCookie(req),
                     maxAge: 12 * 60 * 60 * 1000,

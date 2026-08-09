@@ -28,7 +28,29 @@ const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 // Fase 20: dominio de la cookie SSO compartida configurable por entorno. Sin definir, el
 // comportamiento es idéntico al de siempre (.siatc.cloud) -- producción real no cambia.
 // En QA se configura como .qa.siatc.cloud para aislar la sesión compartida de producción.
-const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || '.siatc.cloud';
+/**
+ * Dominio con el que se escribe la cookie de sesion SSO, derivado del HOST DE LA PETICION.
+ *
+ * Va aqui y no en un modulo compartido porque en esta app el servidor es un unico archivo; las
+ * apps con `server/routes/` usan `server/lib/dominioCookie.ts`, con esta misma logica.
+ *
+ * `process.env.COOKIE_DOMAIN` sigue mandando si esta definida: se conserva como anulacion manual.
+ * Pero depender SOLO de ella significa que basta olvidarla en un despliegue para que QA vuelva a
+ * escribir la cookie en el dominio de produccion, en silencio y sin error. Eso es lo que pasaba.
+ *
+ * EL ORDEN IMPORTA: "flow.qa.siatc.cloud" tambien termina en ".siatc.cloud", asi que preguntar
+ * primero por produccion da verdadero en QA y no separa nada. QA se comprueba PRIMERO.
+ */
+function dominioCookie(req: { headers: Record<string, unknown> }): string | undefined {
+    if (process.env.COOKIE_DOMAIN) return process.env.COOKIE_DOMAIN;
+    const reenviado = req.headers['x-forwarded-host'];
+    const original = req.headers.host;
+    const host = String((typeof reenviado === 'string' ? reenviado : original) ?? '');
+    const nombre = host.split(':')[0].toLowerCase();
+    if (nombre.endsWith('.qa.siatc.cloud')) return '.qa.siatc.cloud';
+    if (nombre.endsWith('.siatc.cloud')) return '.siatc.cloud';
+    return undefined;
+}
 
 // --- TIPOS TIPADOS PARA REQUESTS AUTENTICADOS ---
 interface AuthenticatedRequest extends Request {
@@ -343,9 +365,9 @@ async function isSessionInvalidated(userId: string, iat: number | undefined): Pr
 // antes de la siguiente navegación -- evita el bucle de recarga infinita que eso puede causar
 // (ver bitácora Fase 20: la limpieza vía document.cookie + window.location.href en el mismo
 // tick no siempre alcanza a comprometerse antes de que la página navegue).
-function clearSharedCookie(res: Response): void {
+function clearSharedCookie(res: Response, req?: Request): void {
     if (process.env.NODE_ENV === 'production') {
-        res.cookie('token', '', { domain: COOKIE_DOMAIN, maxAge: 0, httpOnly: false, secure: true, sameSite: 'lax', path: '/' });
+        res.cookie('token', '', { domain: req ? dominioCookie(req) : process.env.COOKIE_DOMAIN, maxAge: 0, httpOnly: false, secure: true, sameSite: 'lax', path: '/' });
     }
 }
 
@@ -364,11 +386,11 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const decoded = jwt.verify(token, JWT_SECRET as string) as AuthenticatedRequest['user'];
         if (await isTokenBlacklisted(token)) {
-            clearSharedCookie(res);
+            clearSharedCookie(res, req);
             return res.status(401).json({ error: 'Sesión cerrada. Inicia sesión nuevamente.' });
         }
         if (await isSessionInvalidated((decoded as any).id, (decoded as any).iat)) {
-            clearSharedCookie(res);
+            clearSharedCookie(res, req);
             return res.status(401).json({ error: 'Sesión cerrada. Inicia sesión nuevamente.' });
         }
         (req as AuthenticatedRequest).user = decoded;
@@ -640,7 +662,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
         );
         if (IS_PRODUCTION) {
             res.cookie('token', ssoToken, {
-                domain: COOKIE_DOMAIN,
+                domain: dominioCookie(req),
                 maxAge: (remember ? 7 * 24 * 60 * 60 : 12 * 60 * 60) * 1000,
                 httpOnly: false,
                 secure: true,
@@ -685,7 +707,7 @@ app.post('/api/auth/logout', verifyToken, async (req: any, res: any) => {
     // Borrar la cookie compartida aquí mismo (Set-Cookie de la respuesta) en vez de depender
     // solo del document.cookie del cliente, que puede no alcanzar a comprometerse antes de que
     // la página navegue tras el logout.
-    clearSharedCookie(res);
+    clearSharedCookie(res, req);
     res.json({ message: 'Sesión cerrada correctamente.' });
 });
 
@@ -743,7 +765,7 @@ app.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
             );
             if (IS_PRODUCTION) {
                 res.cookie('token', ssoToken, {
-                    domain: COOKIE_DOMAIN,
+                    domain: dominioCookie(req),
                     maxAge: 12 * 60 * 60 * 1000,
                     httpOnly: false,
                     secure: true,
@@ -840,11 +862,12 @@ app.get('/api/auth/sso/callback', async (req: Request, res: Response) => {
                 {
                     id: user.id, role_id: user.role_id, role: user.role_name, username: user.username,
                     codigo_tecnico: user.codigo_tecnico || null, permissions: perms, apps: user.apps, casId: user.cas_id || null,
-                    // Fase 20: ssoPilot solo se firma si no hay un COOKIE_DOMAIN propio configurado (ej.
-                    // producción real todavía sin dominio QA aislado). Con COOKIE_DOMAIN configurada
-                    // (entorno QA, dominio .qa.siatc.cloud), se omite para permitir la cookie compartida
-                    // real entre las 10 apps QA sin arriesgar sesiones de producción.
-                    ...(process.env.COOKIE_DOMAIN ? {} : { ssoPilot: true }),
+                    // El flag `ssoPilot` marca que la sesion sale del piloto de Casdoor y NO debe
+                    // compartirse. Se omite en QA, donde el dominio de cookie esta aislado y el SSO
+                    // cruzado entre las apps de QA es justamente lo que se quiere probar.
+                    // El chequeo era `process.env.COOKIE_DOMAIN`: bastaba olvidar esa variable en un
+                    // despliegue para que QA se comportara como produccion, en silencio.
+                    ...(dominioCookie(req) === '.qa.siatc.cloud' ? {} : { ssoPilot: true }),
                 },
                 JWT_SECRET as string,
                 { expiresIn: '12h' }
@@ -934,13 +957,13 @@ app.post('/api/auth/refresh', async (req: Request, res: Response) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Token no encontrado' });
     if (await isTokenBlacklisted(token)) {
-        clearSharedCookie(res);
+        clearSharedCookie(res, req);
         return res.status(401).json({ error: 'Sesión cerrada. Inicia sesión nuevamente.' });
     }
     try {
         const decoded = jwt.verify(token, JWT_SECRET as string, { ignoreExpiration: true }) as any;
         if (await isSessionInvalidated(decoded.id, decoded.iat)) {
-            clearSharedCookie(res);
+            clearSharedCookie(res, req);
             return res.status(401).json({ error: 'Sesión cerrada. Inicia sesión nuevamente.' });
         }
         const now = Math.floor(Date.now() / 1000);

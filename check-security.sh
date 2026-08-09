@@ -193,15 +193,6 @@ check_file() {
         fi
     fi
 
-    # C10-RLS: server.ts con endpoints pero sin casFilter (verificar RLS)
-    if [[ "$f" == *"server.ts" ]]; then
-        if grep -qE "app\.(get|post|put|delete|patch)\(" "$f" 2>/dev/null; then
-            if ! grep -qE "from ['\"].*casFilter|casId|casRUC" "$f" 2>/dev/null; then
-                echo -e "${YELLOW}[C10-RLS-ADVERTENCIA]${NC} server.ts con endpoints pero sin referencia a casId/casRUC — verificar RLS → $f"
-                WARNINGS=$((WARNINGS+1))
-            fi
-        fi
-    fi
 }
 
 # ─── Recorrer todos los archivos TS/TSX ──────────────────────────────────────
@@ -210,6 +201,33 @@ while IFS= read -r -d '' f; do
 done < <(find . \( -name "*.ts" -o -name "*.tsx" \) \
     ! -path "*/node_modules/*" ! -path "*/dist/*" ! -path "*/.git/*" \
     -print0 2>/dev/null)
+
+# ─── C10-RLS: la app sirve endpoints pero no filtra por empresa CAS ──────────────────────
+#
+# Se comprueba sobre TODO el codigo de servidor a la vez, no archivo por archivo.
+#
+# Antes esta regla vivia dentro de check_file() con la condicion `[[ "$f" == *"server.ts" ]]`,
+# y tenia DOS fallos que la dejaban muda:
+#
+#   1. En las apps ya modularizadas no existe ningun archivo llamado server.ts -el backend
+#      vive en server/index.ts + server/routes/*.ts- asi que la condicion no coincidia con
+#      nada y la comprobacion NUNCA se ejecutaba. Llevaba asi desde que se modularizaron.
+#   2. Solo buscaba rutas declaradas con `app.`, y en los routers modulares se declaran con
+#      `router.` -50 de 53 en Flow-, de modo que aun coincidiendo el archivo no habria visto
+#      las rutas.
+#
+# Ademas, comprobar archivo por archivo daria un aviso por cada router sin CAS (auth, perfil,
+# catalogos...), que es ruido: la pregunta real es si la aplicacion ENTERA tiene RLS o no.
+RLS_FILES=$(find . \( -name "server.ts" -o -path "./server/*" \) -name "*.ts" \
+    ! -path "*/node_modules/*" ! -path "*/dist/*" ! -path "*/.git/*" 2>/dev/null)
+if [ -n "$RLS_FILES" ]; then
+    if echo "$RLS_FILES" | tr '\n' '\0' | xargs -0 grep -lE "(app|router)\.(get|post|put|delete|patch)\(" 2>/dev/null | grep -q .; then
+        if ! echo "$RLS_FILES" | tr '\n' '\0' | xargs -0 grep -lE "casFilter|casId|casRUC" 2>/dev/null | grep -q .; then
+            echo -e "${YELLOW}[C10-RLS-ADVERTENCIA]${NC} El servidor declara endpoints pero no hay ninguna referencia a casId/casRUC/casFilter — verificar RLS"
+            WARNINGS=$((WARNINGS+1))
+        fi
+    fi
+fi
 
 # ─── Build TypeScript ─────────────────────────────────────────────────────────
 echo -e "\n📐 Verificando TypeScript..."

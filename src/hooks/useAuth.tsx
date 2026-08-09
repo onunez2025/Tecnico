@@ -158,16 +158,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     StorageService.setCurrentUser(data.user);
                     if (data.token) {
                         StorageService.setToken(data.token);
-                        // No reescribir la cookie compartida si el token viene del piloto Casdoor
-                        // (ssoPilot=true, propagado por el servidor en /auth/me) — este useEffect
-                        // corre en cada carga de página, así que sin este chequeo terminaría
-                        // reescribiendo la cookie igual en cada montaje (mismo hallazgo que en
-                        // Devoluciones).
-                        const freshPayload = decodeJwt(data.token);
-                        if (!freshPayload?.ssoPilot) {
-                            const enDespliegue = esDespliegueReal();
-                            document.cookie = `token=${data.token}; path=/${fragmentoDominio()}; max-age=${24 * 60 * 60}; SameSite=Lax; Secure=${enDespliegue ? 'true' : 'false'}`;
-                        }
+                        // NO se reescribe aqui la cookie compartida. Este efecto corre en CADA
+                        // carga de pagina, y el backend ya la escribe via Set-Cookie en /auth/me:
+                        // escribirla tambien desde el frontend deja DOS cookies `token` si el
+                        // dominio o el path difieren aunque sea en un espacio, y la siguiente app
+                        // lee la equivocada y pide login. Flow, Console, EBM y Devoluciones no lo
+                        // hacen; Technical era la unica del ecosistema que si.
                     }
                 } else {
                     logout();

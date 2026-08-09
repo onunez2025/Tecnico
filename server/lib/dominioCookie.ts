@@ -9,7 +9,11 @@
  * primero por produccion da verdadero en QA y no separa nada. QA se comprueba PRIMERO.
  */
 export function dominioCookie(req: { headers: Record<string, unknown> }): string | undefined {
-    if (process.env.COOKIE_DOMAIN) return process.env.COOKIE_DOMAIN;
+    // .trim(): un espacio al final en Dokploy produce el dominio ".qa.siatc.cloud " y el navegador
+    // acaba con DOS cookies `token` (una por dominio), de las que se lee la equivocada. Falla en
+    // silencio y no se ve en ningun log.
+    const manual = process.env.COOKIE_DOMAIN?.trim();
+    if (manual) return manual;
     const reenviado = req.headers['x-forwarded-host'];
     const original = req.headers.host;
     const host = String((typeof reenviado === 'string' ? reenviado : original) ?? '');

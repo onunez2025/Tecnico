@@ -26,6 +26,11 @@ import { getRedisClient, isTokenBlacklisted, blacklistToken, invalidateAllUserSe
 import type { AuthenticatedRequest } from './middleware/auth';
 import { clearSharedCookie, verifyToken, isAdminRole, checkPermission } from './middleware/auth';
 import sapRouter from './routes/sap';
+import configRouter from './routes/config';
+import profileRouter from './routes/profile';
+import managementsRouter from './routes/managements';
+import preferencesRouter from './routes/preferences';
+import { logAudit } from './lib/audit';
 dotenv.config();
 const APP_IDENTIFIER = 'TEC';
 
@@ -81,19 +86,6 @@ let authLimiter = rateLimit({
     message: { error: 'Demasiados intentos de inicio de sesión. Intenta más tarde.' },
     store: new RedisStore({ sendCommand: (...args: string[]) => (getRedisClient() as any).call(...args) as any, prefix: 'rl:tec:auth:' }),
 });
-
-// --- CACHÉ EN MEMORIA (TTL simple para endpoints estáticos) ---
-const _cache = new Map<string, { data: unknown; expiresAt: number }>();
-function cacheGet(key: string): unknown | null {
-    const entry = _cache.get(key);
-    if (entry && entry.expiresAt > Date.now()) return entry.data;
-    _cache.delete(key);
-    return null;
-}
-function cacheSet(key: string, data: unknown, ttlMs: number) {
-    _cache.set(key, { data, expiresAt: Date.now() + ttlMs });
-}
-function cacheInvalidate(key: string) { _cache.delete(key); }
 
 // --- CONFIGURACIÓN DE AZURE STORAGE BLOB ---
 // [SECURITY] Nunca usar fallback literal con claves reales. Siempre cargar desde variables de entorno.
@@ -205,27 +197,6 @@ if (process.env.IMAGE_STORAGE_PATH) {
     app.use('/api/images', verifyToken, express.static(process.env.IMAGE_STORAGE_PATH));
 }
 
-// Helper for Auditing
-async function logAudit(req: Request, action: string, entity: string, entityId: string, details: any) {
-    try {
-        const user = (req as any).user;
-        if (!user) return;
-        const db = await getWritePool();
-        await db.request()
-            .input('uid', sql.NVarChar(sql.MAX), String(user.id))
-            .input('un', sql.NVarChar(sql.MAX), user.username)
-            .input('acc', sql.NVarChar(sql.MAX), action)
-            .input('ent', sql.NVarChar(sql.MAX), entity)
-            .input('eid', sql.NVarChar(sql.MAX), entityId)
-            .input('det', sql.NVarChar(sql.MAX), JSON.stringify(details))
-            .input('app', sql.VarChar(20), 'TEC')
-            .input('ip', sql.VarChar(50), req.ip || null)
-            .query(`INSERT INTO [dbo].[GAC_APP_TB_AUDIT_LOG] (UsuarioID, UsuarioNombre, Accion, Entidad, EntidadID, Detalle, ApplicationCode, IPAddress, Fecha)
-                    VALUES (@uid, @un, @acc, @ent, @eid, @det, @app, @ip, GETDATE())`);
-    } catch (err) {
-        console.error('❌ Falla en Log de Auditoría:', err);
-    }
-}
 
 async function syncPaymentCache(id_transaccion: string) {
     try {
@@ -353,11 +324,6 @@ const loginSchema = z.object({
 // puede editar SU PROPIO avatar/contraseña; nunca full_name/email/role_id/apps/is_active
 // de otro usuario, y nunca de sí mismo tampoco vía esta ruta (eso sigue siendo de solo
 // lectura en ProfilePage, gestionado por un administrador si hace falta cambiarlo).
-const updateProfileSchema = z.object({
-    avatar_url: z.string().max(500000).optional(),
-    password_hash: z.string().min(6, 'Mínimo 6 caracteres').max(255).optional(),
-});
-
 app.post('/api/auth/login', async (req: Request, res: Response) => {
     const parseResult = loginSchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -1446,32 +1412,7 @@ app.post('/api/tec/tickets/rango-horario', verifyToken, checkPermission('tec.tic
     }
 });
 
-app.get('/api/config/rango-horario-limit', verifyToken, checkPermission('tec.config.access'), async (_req: Request, res: Response) => {
-    try {
-        const cached = cacheGet('rango-horario-limit');
-        if (cached) return res.json(cached);
-        const db = await getReadPool();
-        const result = await db.request().query("SELECT Valor, Descripcion FROM [dbo].[GAC_APP_TB_CONFIG] WHERE Clave = 'HORA_MAXIMA_RANGO_HORARIO'");
-        const data = { limit: result.recordset[0]?.Valor || '09:30', description: result.recordset[0]?.Descripcion || '' };
-        cacheSet('rango-horario-limit', data, 5 * 60 * 1000);
-        res.json(data);
-    } catch (err: any) { res.status(500).json({ error: safeError(err) }); }
-});
-
-app.post('/api/config/rango-horario-limit', verifyToken, checkPermission('tec.config.parameters'), async (req: Request, res: Response) => {
-    try {
-        const { limit } = req.body;
-        if (!limit || !/^\d{2}:\d{2}$/.test(limit)) {
-            return res.status(400).json({ error: 'Formato de hora inválido. Use HH:mm (ej: 09:30)' });
-        }
-        const { username } = (req as any).user;
-        const db = await getWritePool();
-        await db.request().input('limit', sql.VarChar(255), limit).input('user', sql.VarChar(255), username).query(`UPDATE [dbo].[GAC_APP_TB_CONFIG] SET Valor = @limit, Actualizado_el = GETDATE(), Actualizado_por = @user WHERE Clave = 'HORA_MAXIMA_RANGO_HORARIO'`);
-        cacheInvalidate('rango-horario-limit');
-        await logAudit(req, 'TEC:UPDATE_CONFIG_LIMIT', 'SystemConfig', 'HORA_MAXIMA_RANGO_HORARIO', { limit });
-        res.json({ message: 'Configuración actualizada' });
-    } catch (err: any) { res.status(500).json({ error: safeError(err) }); }
-});
+app.use(configRouter);        // /api/config/rango-horario-limit
 
 app.get('/api/tec/tickets/:ticketId/pagos', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
     try {
@@ -1593,104 +1534,11 @@ app.patch('/api/tec/time-range', verifyToken, checkPermission('tec.tickets.view'
     }
 });
 
-// ─── PERFIL PROPIO (autoservicio) ───────────────────────────────────────────────
-// Solo verifyToken — cualquier usuario autenticado puede guardar SU PROPIO avatar
-// y/o contraseña. A diferencia de PUT /api/users/:id (abajo), no acepta id por
-// parámetro: siempre opera sobre (req as any).user.id, y no permite tocar
-// full_name/email/role_id/apps/is_active de nadie.
-app.put('/api/profile', verifyToken, async (req: Request, res: Response) => {
-    try {
-        const { id } = (req as any).user;
-        const parsed = updateProfileSchema.safeParse(req.body);
-        if (!parsed.success) return res.status(400).json({ error: 'Datos inválidos', details: parsed.error.issues });
-        const { avatar_url, password_hash: rawPassword } = parsed.data;
-        const db = await getWritePool();
-        const sqlReq = db.request().input('id', sql.UniqueIdentifier, id);
+app.use(profileRouter);       // PUT /api/profile
 
-        const sets: string[] = [];
-        if (avatar_url !== undefined) {
-            sqlReq.input('avatarUrl', sql.NVarChar(sql.MAX), avatar_url);
-            sets.push('AvatarUrl=@avatarUrl');
-        }
-        if (rawPassword) {
-            const hash = await bcrypt.hash(rawPassword, 12);
-            sqlReq.input('h', sql.NVarChar(sql.MAX), hash);
-            sets.push('PasswordHash=@h', 'RequiresPasswordChange=0');
-        }
-        if (sets.length > 0) {
-            await sqlReq.query(`UPDATE EBM.Users SET ${sets.join(', ')} WHERE Id=@id`);
-        }
+app.use(managementsRouter);   // /api/managements
 
-        const result = await db.request().input('id', sql.UniqueIdentifier, id)
-            .query('SELECT FullName, AvatarUrl, RequiresPasswordChange FROM EBM.Users WHERE Id=@id');
-        const updated = result.recordset[0];
-        res.json({
-            full_name: updated?.FullName || '',
-            avatar_url: updated?.AvatarUrl || '',
-            requires_password_change: updated?.RequiresPasswordChange === true || updated?.RequiresPasswordChange === 1
-        });
-    } catch (err: any) {
-        console.error('[PUT /api/profile]', err);
-        res.status(500).json({ error: safeError(err) });
-    }
-});
-
-// ─── MANAGEMENTS ──────────────────────────────────────────────────────────────
-
-app.get('/api/managements', verifyToken, async (_req: Request, res: Response) => {
-    try {
-        const cached = cacheGet('managements');
-        if (cached) return res.json(cached);
-        const db = await getReadPool();
-        const result = await db.request()
-            .query(`SELECT Id as id, Name as name, ISNULL(Code, '') as code FROM EBM.Managements ORDER BY Name`);
-        const data = result.recordset.map((m: any) => ({ id: String(m.id), name: m.name, code: m.code }));
-        cacheSet('managements', data, 10 * 60 * 1000);
-        res.json(data);
-    } catch {
-        res.json([]);
-    }
-});
-
-// ─── PREFERENCIAS DE USUARIO ──────────────────────────────────────────────────
-
-app.get('/api/user/preferences', verifyToken, async (req: Request, res: Response) => {
-    try {
-        const { id } = (req as any).user;
-        const db = await getReadPool();
-        const result = await db.request().input('uid', sql.Int, id)
-            .query(`SELECT Clave as clave, Valor as valor FROM [dbo].[GAC_APP_TB_USER_PREFS] WHERE UsuarioId=@uid`);
-        const prefs: Record<string, any> = {};
-        for (const row of result.recordset) {
-            try { prefs[row.clave] = JSON.parse(row.valor); } catch { prefs[row.clave] = row.valor; }
-        }
-        res.json(prefs);
-    } catch {
-        res.json({});
-    }
-});
-
-app.post('/api/user/preferences', verifyToken, async (req: Request, res: Response) => {
-    try {
-        const { id } = (req as any).user;
-        const { clave, valor } = req.body;
-        if (!clave) return res.status(400).json({ error: 'clave es requerida' });
-        const db = await getWritePool();
-        const valorStr = typeof valor === 'string' ? valor : JSON.stringify(valor);
-        await db.request()
-            .input('uid', sql.Int, id).input('c', sql.NVarChar(sql.MAX), clave).input('v', sql.NVarChar(sql.MAX), valorStr)
-            .query(`
-                IF EXISTS (SELECT 1 FROM [dbo].[GAC_APP_TB_USER_PREFS] WHERE UsuarioId=@uid AND Clave=@c)
-                    UPDATE [dbo].[GAC_APP_TB_USER_PREFS] SET Valor=@v, UpdatedAt=GETDATE() WHERE UsuarioId=@uid AND Clave=@c
-                ELSE
-                    INSERT INTO [dbo].[GAC_APP_TB_USER_PREFS] (UsuarioId, Clave, Valor, CreatedAt, UpdatedAt) VALUES (@uid, @c, @v, GETDATE(), GETDATE())
-            `);
-        res.json({ ok: true });
-    } catch (err: any) {
-        console.error('[POST /api/user/preferences]', err);
-        res.status(500).json({ error: safeError(err) });
-    }
-});
+app.use(preferencesRouter);   // /api/user/preferences
 
 // ─── AUDIT LOGS ───────────────────────────────────────────────────────────────
 // El GET quedo huerfano al eliminarse AuditLogPage.tsx local (ya centralizado en SIATC

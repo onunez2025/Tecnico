@@ -19,50 +19,19 @@ import axios from 'axios';
 import { z } from 'zod';
 import { exchangeCodeForToken, getCasdoorUserInfo, getCasdoorAuthorizeUrl } from './lib/casdoorClient';
 import { sendSsoPendingEmail, sendSsoFirstRetryEmail, sendSsoFinalRetryEmail } from './lib/mailer';
+import { dominioCookie } from './lib/dominioCookie';
+import { safeError, sanitizeLog } from './lib/security';
+import { getDb, getReadPool, getWritePool } from './db';
+import { getRedisClient, isTokenBlacklisted, blacklistToken, invalidateAllUserSessions, isSessionInvalidated } from './lib/redis';
+import type { AuthenticatedRequest } from './middleware/auth';
+import { clearSharedCookie, verifyToken, isAdminRole, checkPermission } from './middleware/auth';
+import sapRouter from './routes/sap';
 dotenv.config();
 const APP_IDENTIFIER = 'TEC';
 
 const C4C_BASE_URL = process.env.C4C_BASE_URL;
 const C4C_AUTH = Buffer.from(`${process.env.C4C_USER || ''}:${process.env.C4C_PASSWORD || ''}`).toString('base64');
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
-// Fase 20: dominio de la cookie SSO compartida configurable por entorno. Sin definir, el
-// comportamiento es idéntico al de siempre (.siatc.cloud) -- producción real no cambia.
-// En QA se configura como .qa.siatc.cloud para aislar la sesión compartida de producción.
-/**
- * Dominio con el que se escribe la cookie de sesion SSO, derivado del HOST DE LA PETICION.
- *
- * Va aqui y no en un modulo compartido porque en esta app el servidor es un unico archivo; las
- * apps con `server/routes/` usan `server/lib/dominioCookie.ts`, con esta misma logica.
- *
- * `process.env.COOKIE_DOMAIN` sigue mandando si esta definida: se conserva como anulacion manual.
- * Pero depender SOLO de ella significa que basta olvidarla en un despliegue para que QA vuelva a
- * escribir la cookie en el dominio de produccion, en silencio y sin error. Eso es lo que pasaba.
- *
- * EL ORDEN IMPORTA: "flow.qa.siatc.cloud" tambien termina en ".siatc.cloud", asi que preguntar
- * primero por produccion da verdadero en QA y no separa nada. QA se comprueba PRIMERO.
- */
-function dominioCookie(req: { headers: Record<string, unknown> }): string | undefined {
-    if (process.env.COOKIE_DOMAIN) return process.env.COOKIE_DOMAIN;
-    const reenviado = req.headers['x-forwarded-host'];
-    const original = req.headers.host;
-    const host = String((typeof reenviado === 'string' ? reenviado : original) ?? '');
-    const nombre = host.split(':')[0].toLowerCase();
-    if (nombre.endsWith('.qa.siatc.cloud')) return '.qa.siatc.cloud';
-    if (nombre.endsWith('.siatc.cloud')) return '.siatc.cloud';
-    return undefined;
-}
-
-// --- TIPOS TIPADOS PARA REQUESTS AUTENTICADOS ---
-interface AuthenticatedRequest extends Request {
-    user: {
-        id: string;
-        username: string;
-        full_name: string;
-        codigo_tecnico: string | null;
-        role: string;
-        permissions: string[];
-    };
-}
 
 // --- VALIDACIÓN POR MAGIC BYTES (previene spoofing de MIME) ---
 const MAGIC_BYTES: Record<string, number[][]> = {
@@ -72,7 +41,6 @@ const MAGIC_BYTES: Record<string, number[][]> = {
     'image/gif':       [[0x47, 0x49, 0x46, 0x38]],
     'application/pdf': [[0x25, 0x50, 0x44, 0x46]],
 };
-
 async function validateFileMagicBytes(filePath: string, declaredMime: string): Promise<boolean> {
     try {
         const fd = await fs.promises.open(filePath, 'r');
@@ -197,15 +165,6 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(express.static(distPath));
 
-const dbConfig: sql.config = {
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
-    server: process.env.DB_SERVER || '',
-    port: 1433,
-    pool: { max: 30, min: 0, idleTimeoutMillis: 30000 },
-    options: { encrypt: true, trustServerCertificate: !IS_PRODUCTION, requestTimeout: 60000 }
-};
 
 // --- CONFIGURACIÓN DE MULTER (CARGA DE ARCHIVOS) ---
 // [SECURITY] Restringir tipo de archivo y tamaño máximo para evitar uploads maliciosos.
@@ -236,170 +195,10 @@ const upload = multer({ storage, fileFilter: multerFileFilter, limits: { fileSiz
 // --- ESTADO DE IMPORTACIÓN ---
 const importProgress: { [key: string]: { current: number; total: number } } = {};
 
-let pool: sql.ConnectionPool | null = null;
 
-// Etapa 6 -- pool admin, reservado para operaciones DDL (runMigrations) que ni siatc_reader
-// ni siatc_writer pueden ejecutar (ninguno tiene permiso de modificar esquema).
-async function getDb() {
-    if (!pool || !pool.connected) {
-        try {
-            pool = await new sql.ConnectionPool(dbConfig).connect();
-            pool.on('error', (err: Error) => {
-                console.error('❌ DB Pool error:', err.message);
-                pool = null;
-            });
-            console.log('✅ Conectado a Azure SQL: ' + dbConfig.database);
-        } catch (err: any) {
-            console.error('❌ Error de conexión DB:', err.message);
-            pool = null;
-            throw err;
-        }
-    }
-    return pool;
-}
 
-// Etapa 6 -- usuarios de BD de privilegio minimo (siatc_reader/siatc_writer). Si las env
-// vars DB_USER_READ/DB_USER_WRITE todavia no estan configuradas en Dokploy, caen de vuelta
-// al usuario admin original -- permite desplegar este codigo antes de agregar esas env vars,
-// y revertir a admin-only con solo quitarlas, sin tocar codigo.
-const readDbConfig: sql.config = {
-    ...dbConfig,
-    user: process.env.DB_USER_READ || process.env.DB_USER,
-    password: process.env.DB_PASS_READ || process.env.DB_PASSWORD,
-};
-const writeDbConfig: sql.config = {
-    ...dbConfig,
-    user: process.env.DB_USER_WRITE || process.env.DB_USER,
-    password: process.env.DB_PASS_WRITE || process.env.DB_PASSWORD,
-};
 
-let readPool: sql.ConnectionPool | null = null;
-let writePool: sql.ConnectionPool | null = null;
 
-/** Endpoints GET -- solo lectura, usa siatc_reader (privilegio minimo). */
-async function getReadPool() {
-    if (!readPool || !readPool.connected) {
-        try {
-            readPool = await new sql.ConnectionPool(readDbConfig).connect();
-            readPool.on('error', (err: Error) => {
-                console.error('❌ DB Read Pool error:', err.message);
-                readPool = null;
-            });
-        } catch (err: any) {
-            console.error('❌ Error de conexión DB (read pool):', err.message);
-            readPool = null;
-            throw err;
-        }
-    }
-    return readPool;
-}
-
-/** Endpoints POST/PUT/DELETE/PATCH -- usa siatc_writer (lectura + escritura en dbo/EBM). */
-async function getWritePool() {
-    if (!writePool || !writePool.connected) {
-        try {
-            writePool = await new sql.ConnectionPool(writeDbConfig).connect();
-            writePool.on('error', (err: Error) => {
-                console.error('❌ DB Write Pool error:', err.message);
-                writePool = null;
-            });
-        } catch (err: any) {
-            console.error('❌ Error de conexión DB (write pool):', err.message);
-            writePool = null;
-            throw err;
-        }
-    }
-    return writePool;
-}
-
-// --- REDIS CLIENT ---
-let _redis: Redis | null = null;
-function getRedisClient(): Redis {
-    if (!_redis) {
-        _redis = new Redis({
-            host: process.env.REDIS_HOST || 'localhost',
-            port: parseInt(process.env.REDIS_PORT || '6379'),
-            password: process.env.REDIS_PASSWORD,
-            db: parseInt(process.env.REDIS_DB || '0'),
-            lazyConnect: true,
-            retryStrategy: (times) => Math.min(times * 100, 3000),
-        });
-        _redis.on('error', (err) => console.error('[Redis] Error:', err.message));
-    }
-    return _redis;
-}
-async function isTokenBlacklisted(token: string): Promise<boolean> {
-    try {
-        const hash = createHash('sha256').update(token).digest('hex');
-        return (await getRedisClient().exists(`bl:${hash}`)) === 1;
-    } catch { return false; }
-}
-async function blacklistToken(token: string, exp: number): Promise<void> {
-    try {
-        const hash = createHash('sha256').update(token).digest('hex');
-        const ttl = Math.max(exp - Math.floor(Date.now() / 1000), 0);
-        if (ttl > 0) await getRedisClient().set(`bl:${hash}`, '1', 'EX', ttl);
-    } catch (err) { console.error('[Redis] Error al blacklistear token:', err); }
-}
-
-// Invalida TODOS los tokens de un usuario emitidos hasta ahora, sin importar cuántas apps del
-// ecosistema los hayan re-firmado (cada /auth/me emite un JWT nuevo con hash distinto, así que
-// blacklistToken() por sí solo no alcanza para un logout real entre apps -- ver bitácora Fase 20).
-// verifyToken rechaza cualquier token con iat <= este timestamp, sin importar su hash.
-async function invalidateAllUserSessions(userId: string): Promise<void> {
-    try {
-        const now = Math.floor(Date.now() / 1000);
-        await getRedisClient().set(`logout-after:${userId}`, String(now), 'EX', 30 * 24 * 60 * 60);
-    } catch (err) { console.error('[Redis] Error al invalidar sesiones del usuario:', err); }
-}
-async function isSessionInvalidated(userId: string, iat: number | undefined): Promise<boolean> {
-    if (!iat) return false;
-    try {
-        const logoutAfter = await getRedisClient().get(`logout-after:${userId}`);
-        return logoutAfter !== null && iat <= parseInt(logoutAfter, 10);
-    } catch { return false; }
-}
-
-// Borra la cookie compartida del lado del servidor (Set-Cookie en la respuesta) cuando se
-// detecta un token invalidado/blacklisteado. No depende de que el JS del cliente logre borrarla
-// antes de la siguiente navegación -- evita el bucle de recarga infinita que eso puede causar
-// (ver bitácora Fase 20: la limpieza vía document.cookie + window.location.href en el mismo
-// tick no siempre alcanza a comprometerse antes de que la página navegue).
-function clearSharedCookie(res: Response, req?: Request): void {
-    if (process.env.NODE_ENV === 'production') {
-        res.cookie('token', '', { domain: req ? dominioCookie(req) : process.env.COOKIE_DOMAIN, maxAge: 0, httpOnly: false, secure: true, sameSite: 'lax', path: '/' });
-    }
-}
-
-// --- SECURITY HELPERS (ver CLAUDE.md) ---
-const safeError = (err: unknown): string =>
-    process.env.NODE_ENV === 'production'
-        ? 'Error interno del servidor'
-        : err instanceof Error ? err.message : String(err);
-
-const sanitizeLog = (val: unknown, maxLen = 200): string =>
-    String(val ?? '').replace(/[\r\n\t\x00-\x1F\x7F]/g, ' ').slice(0, maxLen);
-
-const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ error: 'Token no encontrado' });
-    try {
-        const decoded = jwt.verify(token, JWT_SECRET as string) as AuthenticatedRequest['user'];
-        if (await isTokenBlacklisted(token)) {
-            clearSharedCookie(res, req);
-            return res.status(401).json({ error: 'Sesión cerrada. Inicia sesión nuevamente.' });
-        }
-        if (await isSessionInvalidated((decoded as any).id, (decoded as any).iat)) {
-            clearSharedCookie(res, req);
-            return res.status(401).json({ error: 'Sesión cerrada. Inicia sesión nuevamente.' });
-        }
-        (req as AuthenticatedRequest).user = decoded;
-        next();
-    } catch (err: any) {
-        if (err.name === 'TokenExpiredError') return res.status(401).json({ error: 'Token expirado', code: 'TOKEN_EXPIRED' });
-        res.status(403).json({ error: 'Token inválido' });
-    }
-};
 
 // [SECURITY] Imágenes estáticas protegidas con autenticación (se registra aquí, después de verifyToken)
 if (process.env.IMAGE_STORAGE_PATH) {
@@ -542,47 +341,6 @@ async function syncAllMissingTickets() {
     }
 }
 
-const ADMIN_ROLE_ALIASES = ['administrador', 'admin', 'console.administrador'];
-const isAdminRole = (role?: string | null) => ADMIN_ROLE_ALIASES.includes((role || '').trim().toLowerCase());
-
-const checkPermission = (permission: string) => {
-    return async (req: Request, res: Response, next: NextFunction) => {
-        const user = (req as any).user;
-        if (!user) return res.status(401).json({ error: 'No autenticado' });
-
-        if (isAdminRole(user.role)) return next();
-        
-        const userPerms = user.permissions || (user as any).perms;
-        if (userPerms && userPerms.includes(permission)) {
-            return next();
-        }
-
-        try {
-            const db = await getWritePool();
-            await db.request()
-                .input('uid', sql.NVarChar(sql.MAX), String(user.id))
-                .input('un', sql.NVarChar(sql.MAX), user.full_name || user.username)
-                .input('acc', sql.NVarChar(sql.MAX), 'ACCESO_DENEGADO')
-                .input('ent', sql.NVarChar(sql.MAX), `Endpoint: ${req.method} ${req.baseUrl}${req.path}`)
-                .input('eid', sql.NVarChar(sql.MAX), permission)
-                .input('det', sql.NVarChar(sql.MAX), JSON.stringify({
-                    ip: req.ip,
-                    userAgent: req.get('user-agent'),
-                    params: req.params,
-                    query: req.query
-                }))
-                .query(`
-                    INSERT INTO [dbo].[GAC_APP_TB_AUDIT_LOG]
-                    (UsuarioID, UsuarioNombre, Accion, Entidad, EntidadID, Detalle)
-                    VALUES (@uid, @un, @acc, @ent, @eid, @det)
-                `);
-        } catch (logErr) {
-            console.error('CRITICAL: Failed to log audit event:', logErr);
-        }
-
-        res.status(403).json({ error: `Sin permiso para esta acción (${permission})` });
-    };
-};
 
 // --- AUTH ---
 const loginSchema = z.object({
@@ -1394,40 +1152,7 @@ app.get('/api/tec/tickets/:ticketId/informe', verifyToken, checkPermission('tec.
 
 // --- PAGOS MULTI-TICKET ---
 
-// Buscar tickets en SAP/FSM por número o nombre de cliente
-app.get('/api/sap/tickets/search', verifyToken, checkPermission('tec.payments.view'), async (req: Request, res: Response) => {
-    try {
-        const q = String(req.query.q || '').trim();
-        if (q.length < 3) return res.json([]);
-        const db = await getReadPool();
-        const result = await db.request()
-            .input('q', sql.NVarChar(sql.MAX), `%${q}%`)
-            .input('qExact', sql.NVarChar(sql.MAX), q)
-            .query(`
-                SELECT TOP 20
-                    F.Ticket as id,
-                    ISNULL(F.NombreCliente, 'Sin cliente') as cliente,
-                    F.Distrito as distrito,
-                    ISNULL(F.Asunto, '') as servicio,
-                    TRY_CAST(
-                        SUM((ISNULL(V.DE_neto,0) + ISNULL(V.DE_igv,0)) *
-                            CASE WHEN V.VC_documento_pago_clase IN ('S2','ZNCV','ZNCD') THEN -1
-                                 WHEN V.VC_documento_pago_clase LIKE 'ZTG%' OR V.VC_anulacion_status = 'X' THEN 0
-                                 ELSE 1 END)
-                    AS DECIMAL(18,2)) as total
-                FROM [SIATC].[Dashboard_FSM] F
-                LEFT JOIN [SAP].[SD_VENTAS] V
-                    ON LTRIM(RTRIM(V.VC_oden_compra_numero)) = F.Ticket
-                WHERE F.Ticket LIKE @q OR F.NombreCliente LIKE @q
-                GROUP BY F.Ticket, F.NombreCliente, F.Distrito, F.Asunto
-                ORDER BY CASE WHEN F.Ticket = @qExact THEN 0 ELSE 1 END, F.Ticket DESC
-            `);
-        res.json(result.recordset);
-    } catch (err: any) {
-        console.error('Error en /api/sap/tickets/search:', err);
-        res.status(500).json({ error: safeError(err) });
-    }
-});
+app.use(sapRouter);   // /api/sap/tickets/search -- montado en el mismo punto en que se definia
 
 // Detalle de ticket para auto-completar importe y folio
 app.get('/api/tickets-pagos/:ticketId/details', verifyToken, checkPermission('tec.payments.view'), async (req: Request, res: Response) => {

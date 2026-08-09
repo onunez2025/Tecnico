@@ -28,8 +28,12 @@ interface AuthenticatedRequest extends Request {
 // (ver bitácora Fase 20: la limpieza vía document.cookie + window.location.href en el mismo
 // tick no siempre alcanza a comprometerse antes de que la página navegue).
 function clearSharedCookie(res: Response, req?: Request): void {
-    if (process.env.NODE_ENV === 'production') {
-        res.cookie('token', '', { domain: req ? dominioCookie(req) : process.env.COOKIE_DOMAIN, maxAge: 0, httpOnly: false, secure: true, sameSite: 'lax', path: '/' });
+    // Mismo criterio que al escribirla: se borra si la peticion llega bajo un dominio del
+    // ecosistema, no segun NODE_ENV. Si se borrara con un criterio distinto del que la escribe,
+    // quedaria una cookie que nadie puede limpiar.
+    const dominioCompartido = req ? dominioCookie(req) : process.env.COOKIE_DOMAIN?.trim();
+    if (dominioCompartido) {
+        res.cookie('token', '', { domain: dominioCompartido, maxAge: 0, httpOnly: false, secure: true, sameSite: 'lax', path: '/' });
     }
 }
 

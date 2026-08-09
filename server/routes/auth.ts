@@ -12,10 +12,9 @@ import { blacklistToken, invalidateAllUserSessions, isSessionInvalidated, isToke
 import { safeError } from '../lib/security';
 import { clearSharedCookie, verifyToken } from '../middleware/auth';
 
-// NODE_ENV se lee EN CADA PETICION, no en una constante de modulo: asi lo hacen Flow, Console,
-// EBM y Devoluciones, y es lo que las hace inmunes al orden de carga del .env. Una constante de
-// modulo se evalua antes que dotenv.config() y valia false, con lo que la cookie compartida del
-// SSO no se escribia nunca. Ver server/lib/env.ts.
+// La escritura de la cookie compartida NO depende de NODE_ENV: se decide por el dominio derivado
+// del Host de cada peticion (ver dominioCookie). Antes dependia de una constante de modulo
+// IS_PRODUCTION, que ademas se evaluaba antes que dotenv.config(). Ver server/lib/env.ts.
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // Este router se monta en `/` conservando las rutas completas y en la misma posicion en que se
@@ -90,9 +89,15 @@ router.post('/api/auth/login', async (req: Request, res: Response) => {
             JWT_SECRET as string,
             { expiresIn }
         );
-        if (process.env.NODE_ENV === 'production') {
+        // La cookie compartida se escribe cuando la peticion llega bajo un dominio del ecosistema
+        // (lo dice dominioCookie), NO cuando NODE_ENV valga 'production'. NODE_ENV es una variable
+        // que puede faltar en Dokploy sin que nada avise, y si falta esta cookie no se escribe
+        // nunca: se entra a la app pero el salto a cualquier otra pide login. El dominio, en
+        // cambio, se deriva del Host de cada peticion y no depende de configuracion.
+        const dominioCompartido = dominioCookie(req);
+        if (dominioCompartido) {
             res.cookie('token', ssoToken, {
-                domain: dominioCookie(req),
+                domain: dominioCompartido,
                 maxAge: (remember ? 7 * 24 * 60 * 60 : 12 * 60 * 60) * 1000,
                 httpOnly: false,
                 secure: true,
@@ -193,9 +198,10 @@ router.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
                 JWT_SECRET as string,
                 { expiresIn: '12h' }
             );
-            if (process.env.NODE_ENV === 'production') {
+            const dominioCompartido = dominioCookie(req);
+            if (dominioCompartido) {
                 res.cookie('token', ssoToken, {
-                    domain: dominioCookie(req),
+                    domain: dominioCompartido,
                     maxAge: 12 * 60 * 60 * 1000,
                     httpOnly: false,
                     secure: true,

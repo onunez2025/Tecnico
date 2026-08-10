@@ -1,3 +1,4 @@
+import type { AuthenticatedRequest } from '../middleware/auth.js';
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import sql from 'mssql';
@@ -15,11 +16,11 @@ const router = Router();
 
 router.get('/api/user/preferences', verifyToken, async (req: Request, res: Response) => {
     try {
-        const { id } = (req as any).user;
+        const { id } = (req as AuthenticatedRequest).user;
         const db = await getReadPool();
         const result = await db.request().input('uid', sql.Int, id)
             .query(`SELECT Clave as clave, Valor as valor FROM [dbo].[GAC_APP_TB_USER_PREFS] WHERE UsuarioId=@uid`);
-        const prefs: Record<string, any> = {};
+        const prefs: Record<string, unknown> = {};
         for (const row of result.recordset) {
             try { prefs[row.clave] = JSON.parse(row.valor); } catch { prefs[row.clave] = row.valor; }
         }
@@ -31,7 +32,7 @@ router.get('/api/user/preferences', verifyToken, async (req: Request, res: Respo
 
 router.post('/api/user/preferences', verifyToken, async (req: Request, res: Response) => {
     try {
-        const { id } = (req as any).user;
+        const { id } = (req as AuthenticatedRequest).user;
         const { clave, valor } = req.body;
         if (!clave) return res.status(400).json({ error: 'clave es requerida' });
         const db = await getWritePool();

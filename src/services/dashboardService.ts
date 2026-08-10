@@ -1,3 +1,11 @@
+/** Fila que devuelve /dashboard/cas-performance. */
+export interface FilaCasRendimiento {
+    name: string;
+    id_cas?: string | null;
+    value: number;
+    count?: number;
+}
+
 import { ApiClient } from './apiClient';
 
 export interface DashboardStats {
@@ -32,7 +40,7 @@ export class DashboardService {
         return ApiClient.request('/dashboard/technicians');
     }
 
-    static async getCasPerformance(zone?: string, casId?: string): Promise<any[]> {
+    static async getCasPerformance(zone?: string, casId?: string): Promise<FilaCasRendimiento[]> {
         const params = new URLSearchParams();
         if (zone) params.append('zone', zone);
         if (casId) params.append('casId', casId);
@@ -40,7 +48,7 @@ export class DashboardService {
         return ApiClient.request(`/dashboard/cas-performance${query ? `?${query}` : ''}`);
     }
 
-    static async getTechnicianMetrics(name: string): Promise<any> {
+    static async getTechnicianMetrics(name: string): Promise<Record<string, unknown>> {
         return ApiClient.request(`/dashboard/technician/${encodeURIComponent(name)}/metrics`);
     }
 }

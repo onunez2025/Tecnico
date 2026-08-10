@@ -4,6 +4,13 @@ import { X, TrendingUp, BarChart3, Package, Layers } from 'lucide-react';
 import { DashboardService } from '../../services/dashboardService';
 import { cn } from '../../utils/cn';
 
+/** Respuesta de /dashboard/technician/:name/metrics. */
+interface MetricasTecnico {
+    monthly_trend?: { month: number; total: number; count?: number; label?: string }[];
+    services?: { label: string; total: number; count?: number }[];
+    materials?: { label: string; total: number; count?: number }[];
+}
+
 interface TechnicianDetailModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -11,7 +18,7 @@ interface TechnicianDetailModalProps {
 }
 
 export const TechnicianDetailModal: React.FC<TechnicianDetailModalProps> = ({ isOpen, onClose, techName }) => {
-    const [metrics, setMetrics] = useState<any>(null);
+    const [metrics, setMetrics] = useState<MetricasTecnico | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
 
@@ -90,14 +97,14 @@ export const TechnicianDetailModal: React.FC<TechnicianDetailModalProps> = ({ is
                                             <TrendingUp className="w-4 h-4 text-emerald-500" />
                                             <h3 className="text-xs font-bold opacity-70">Recaudación Mensual (S/)</h3>
                                         </div>
-                                        <div className="text-[10px] font-bold text-primary px-2 py-0.5 bg-primary/10 rounded">Total: S/ {metrics?.monthly_trend?.reduce((a:any,c:any)=>a+c.total,0).toLocaleString()}</div>
+                                        <div className="text-[10px] font-bold text-primary px-2 py-0.5 bg-primary/10 rounded">Total: S/ {metrics?.monthly_trend?.reduce((a: number, c) => a + (c.total ?? 0), 0).toLocaleString()}</div>
                                     </div>
                                     <div className="h-[180px] flex items-end justify-between gap-1 px-4 border-b border-divider/40 pb-2">
                                         {Array.from({length: 12}, (_, i) => {
                                             const month = i + 1;
-                                            const data = metrics?.monthly_trend?.find((m: any) => m.month === month);
+                                            const data = metrics?.monthly_trend?.find(m => m.month === month);
                                             const val = data ? data.total : 0;
-                                            const maxV = Math.max(...metrics.monthly_trend.map((d: any) => d.total)) || 100;
+                                            const maxV = Math.max(...(metrics?.monthly_trend ?? []).map(d => d.total), 1) || 100;
                                             const height = (val / maxV) * 100;
                                             
                                             return (
@@ -124,7 +131,7 @@ export const TechnicianDetailModal: React.FC<TechnicianDetailModalProps> = ({ is
                                             <h3 className="text-xs font-bold opacity-70">Tipos De Servicio (Servicios/S/)</h3>
                                         </div>
                                         <div className="space-y-5">
-                                            {metrics?.services?.map((s: any, i: number) => (
+                                            {metrics?.services?.map((s, i: number) => (
                                                 <div key={i} className="flex flex-col gap-1.5">
                                                     <div className="flex justify-between items-end">
                                                         <span className="text-[10px] font-bold truncate max-w-[150px]">{s.label}</span>
@@ -136,7 +143,7 @@ export const TechnicianDetailModal: React.FC<TechnicianDetailModalProps> = ({ is
                                                     <div className="w-full h-1.5 bg-muted rounded-full">
                                                         <motion.div 
                                                             initial={{ width: 0 }}
-                                                            animate={{ width: `${(s.total / Math.max(...metrics.services.map((d: any) => d.total))) * 100}%` }}
+                                                            animate={{ width: `${(s.total / Math.max(...(metrics?.services ?? []).map(d => d.total), 1)) * 100}%` }}
                                                             className="h-full bg-primary rounded-full"
                                                         />
                                                     </div>
@@ -153,7 +160,7 @@ export const TechnicianDetailModal: React.FC<TechnicianDetailModalProps> = ({ is
                                             <h3 className="text-xs font-bold opacity-70">Materiales Y Repuestos (S/)</h3>
                                         </div>
                                         <div className="space-y-5">
-                                            {metrics?.materials?.map((m: any, i: number) => (
+                                            {metrics?.materials?.map((m, i: number) => (
                                                 <div key={i} className="flex flex-col gap-1.5">
                                                     <div className="flex justify-between items-end">
                                                         <span className="text-[10px] font-bold truncate max-w-[150px]">{m.label}</span>
@@ -165,7 +172,7 @@ export const TechnicianDetailModal: React.FC<TechnicianDetailModalProps> = ({ is
                                                     <div className="w-full h-1.5 bg-muted rounded-full">
                                                         <motion.div 
                                                             initial={{ width: 0 }}
-                                                            animate={{ width: `${(m.total / (Math.max(...metrics.materials.map((d: any) => d.total)) || 1)) * 100}%` }}
+                                                            animate={{ width: `${(m.total / (Math.max(...(metrics?.materials ?? []).map(d => d.total), 1) || 1)) * 100}%` }}
                                                             className="h-full bg-amber-500 rounded-full"
                                                         />
                                                     </div>

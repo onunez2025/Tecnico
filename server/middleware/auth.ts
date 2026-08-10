@@ -12,6 +12,15 @@ import { isTokenBlacklisted, isSessionInvalidated } from '../lib/redis';
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // --- TIPOS TIPADOS PARA REQUESTS AUTENTICADOS ---
+/** Campos del JWT que esta app lee, ademas de los estandar de jsonwebtoken. */
+export interface JwtPayloadTecnico {
+    id: string;
+    exp?: number;
+    iat?: number;
+    perms?: string[];
+    ssoPilot?: boolean;
+}
+
 interface AuthenticatedRequest extends Request {
     user: {
         id: string;
@@ -20,6 +29,11 @@ interface AuthenticatedRequest extends Request {
         codigo_tecnico: string | null;
         role: string;
         permissions: string[];
+        // Estos tres se usaban a traves de `(req as any).user` y por eso faltaban aqui. Al tipar
+        // el request el compilador los reclamo: el tipo llevaba tiempo incompleto.
+        casId?: string | null;
+        perms?: string[];
+        ssoPilot?: boolean;
     };
 }
 
@@ -47,7 +61,7 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
             clearSharedCookie(res, req);
             return res.status(401).json({ error: 'Sesión cerrada. Inicia sesión nuevamente.' });
         }
-        if (await isSessionInvalidated((decoded as any).id, (decoded as any).iat)) {
+        if (await isSessionInvalidated((decoded as JwtPayloadTecnico).id, (decoded as JwtPayloadTecnico).iat)) {
             clearSharedCookie(res, req);
             return res.status(401).json({ error: 'Sesión cerrada. Inicia sesión nuevamente.' });
         }
@@ -64,12 +78,12 @@ const isAdminRole = (role?: string | null) => ADMIN_ROLE_ALIASES.includes((role 
 
 const checkPermission = (permission: string) => {
     return async (req: Request, res: Response, next: NextFunction) => {
-        const user = (req as any).user;
+        const user = (req as AuthenticatedRequest).user;
         if (!user) return res.status(401).json({ error: 'No autenticado' });
 
         if (isAdminRole(user.role)) return next();
         
-        const userPerms = user.permissions || (user as any).perms;
+        const userPerms = user.permissions || (user as { perms?: string[] }).perms;
         if (userPerms && userPerms.includes(permission)) {
             return next();
         }

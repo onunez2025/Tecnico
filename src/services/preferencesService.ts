@@ -1,7 +1,7 @@
 import { ApiClient } from './apiClient';
 
 export const PreferencesService = {
-  async getPreferences(): Promise<Record<string, any>> {
+  async getPreferences(): Promise<Record<string, unknown>> {
     try {
       return await ApiClient.request(`/user/preferences`);
     } catch (err) {
@@ -10,7 +10,7 @@ export const PreferencesService = {
     }
   },
 
-  async savePreference(clave: string, valor: any): Promise<boolean> {
+  async savePreference(clave: string, valor: unknown): Promise<boolean> {
     try {
       await ApiClient.request(`/user/preferences`, {
         method: 'POST',

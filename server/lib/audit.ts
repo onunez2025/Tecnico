@@ -1,11 +1,12 @@
+import type { AuthenticatedRequest } from '../middleware/auth.js';
 import type { Request } from 'express';
 import sql from 'mssql';
 import { getWritePool } from '../db';
 
 // Helper for Auditing
-export async function logAudit(req: Request, action: string, entity: string, entityId: string, details: any) {
+export async function logAudit(req: Request, action: string, entity: string, entityId: string, details: Record<string, unknown>) {
     try {
-        const user = (req as any).user;
+        const user = (req as AuthenticatedRequest).user;
         if (!user) return;
         const db = await getWritePool();
         await db.request()

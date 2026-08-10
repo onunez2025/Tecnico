@@ -10,7 +10,7 @@
     "build": "tsc && vite build",
     "start": "tsx server/index.ts",
     "preview": "vite preview",
-    "lint": "tsc --noEmit"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@azure/msal-node": "^5.3.1",

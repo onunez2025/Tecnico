@@ -1,15 +1,17 @@
+import type { FilaCasRendimiento } from '../../services/dashboardService';
 import React, { useState, useEffect } from 'react';
 import { ThreeDBar } from './ThreeDBar';
 import { DashboardService } from '../../services/dashboardService';
 import { Maximize2, Minimize2, ArrowLeft } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
+
 interface CASPerformanceChartProps {
     className?: string;
 }
 
 export const CASPerformanceChart: React.FC<CASPerformanceChartProps> = ({ className: _className }) => {
-    const [data, setData] = useState<any[]>([]);
+    const [data, setData] = useState<FilaCasRendimiento[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [viewLevel, setViewLevel] = useState<'zones' | 'companies' | 'monthly'>('zones');
     const [selectedZone, setSelectedZone] = useState<string | null>(null);
@@ -41,12 +43,12 @@ export const CASPerformanceChart: React.FC<CASPerformanceChartProps> = ({ classN
         fetchData();
     }, [viewLevel, selectedZone, selectedCasId]);
 
-    const handleBarClick = (item: any) => {
+    const handleBarClick = (item: FilaCasRendimiento) => {
         if (viewLevel === 'zones') {
             setSelectedZone(item.name);
             setViewLevel('companies');
         } else if (viewLevel === 'companies') {
-            setSelectedCasId(item.id_cas);
+            setSelectedCasId(item.id_cas ?? null);
             setSelectedCasName(item.name);
             setViewLevel('monthly');
         }
@@ -77,7 +79,7 @@ export const CASPerformanceChart: React.FC<CASPerformanceChartProps> = ({ classN
     const barWidth = 60;
     const items = Array.isArray(data) ? data : [];
     const spacing = (chartWidth - (barWidth * items.length)) / (items.length + 1);
-    const maxValue = items.length > 0 ? Math.max(...items.map((d: any) => Number(d.value || 0))) : 100;
+    const maxValue = items.length > 0 ? Math.max(...items.map((d: FilaCasRendimiento) => Number(d.value || 0))) : 100;
     const totalValue = items.reduce((acc, d) => acc + Number(d.value || 0), 0);
 
     return (

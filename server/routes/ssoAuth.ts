@@ -79,7 +79,7 @@ router.get('/api/auth/sso/callback', async (req: Request, res: Response) => {
             const permsResult = await db.request()
                 .input('roleId', sql.UniqueIdentifier, user.role_id)
                 .query('SELECT Permission FROM EBM.RolePermissions WHERE RoleId = @roleId');
-            const perms = permsResult.recordset.map((p: any) => p.Permission);
+            const perms = permsResult.recordset.map((p: { Permission: string }) => p.Permission);
 
             const token = jwt.sign(
                 {

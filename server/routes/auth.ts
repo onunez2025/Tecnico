@@ -1,3 +1,4 @@
+import type { AuthenticatedRequest, JwtPayloadTecnico } from '../middleware/auth.js';
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import sql from 'mssql';
@@ -53,7 +54,7 @@ router.post('/api/auth/login', async (req: Request, res: Response) => {
             return res.status(401).json({ error: 'Credenciales inválidas' });
         }
 
-        const perms = (await db.request().input('rid', sql.UniqueIdentifier, user.RoleId).query("SELECT Permission FROM EBM.RolePermissions WHERE RoleId = @rid")).recordset.map((p: any) => p.Permission);
+        const perms = (await db.request().input('rid', sql.UniqueIdentifier, user.RoleId).query("SELECT Permission FROM EBM.RolePermissions WHERE RoleId = @rid")).recordset.map((p: { Permission: string }) => p.Permission);
 
         const appCfgResult = await db.request().input('appCode', sql.VarChar(20), APP_IDENTIFIER)
             .query('SELECT DefaultInactivityTimeoutMinutes, DefaultWarningBeforeMinutes FROM EBM.AppSessionConfig WHERE UPPER(AppCode) = UPPER(@appCode)');
@@ -131,13 +132,13 @@ router.post('/api/auth/login', async (req: Request, res: Response) => {
     }
 });
 
-router.post('/api/auth/logout', verifyToken, async (req: any, res: any) => {
+router.post('/api/auth/logout', verifyToken, async (req: Request, res: Response) => {
     const token = req.headers['authorization']!.split(' ')[1];
-    await blacklistToken(token, (req.user as any).exp ?? 0);
+    await blacklistToken(token, ((req as AuthenticatedRequest).user as unknown as JwtPayloadTecnico).exp ?? 0);
     // Invalida también cualquier otro token del mismo usuario (ej. re-firmado por otra app del
     // ecosistema vía su propio /auth/me) -- un logout debe cerrar la sesión en todas las apps QA,
     // no solo revocar el token puntual que se usó para llamar a este endpoint.
-    await invalidateAllUserSessions((req.user as any).id);
+    await invalidateAllUserSessions(((req as AuthenticatedRequest).user as unknown as JwtPayloadTecnico).id);
     // Borrar la cookie compartida aquí mismo (Set-Cookie de la respuesta) en vez de depender
     // solo del document.cookie del cliente, que puede no alcanzar a comprometerse antes de que
     // la página navegue tras el logout.
@@ -147,7 +148,7 @@ router.post('/api/auth/logout', verifyToken, async (req: any, res: any) => {
 
 router.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
     try {
-        const { id } = (req as any).user;
+        const { id } = (req as AuthenticatedRequest).user;
         const db = await getReadPool();
         const result = await db.request()
             .input('id', sql.UniqueIdentifier, id)
@@ -165,7 +166,7 @@ router.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
         const user = result.recordset[0];
         if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-        const perms = (await db.request().input('rid', sql.UniqueIdentifier, user.RoleId).query("SELECT Permission FROM EBM.RolePermissions WHERE RoleId = @rid")).recordset.map((p: any) => p.Permission);
+        const perms = (await db.request().input('rid', sql.UniqueIdentifier, user.RoleId).query("SELECT Permission FROM EBM.RolePermissions WHERE RoleId = @rid")).recordset.map((p: { Permission: string }) => p.Permission);
         const freshToken = jwt.sign(
             {
                 id: user.Id,
@@ -182,7 +183,7 @@ router.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
                 // Propaga el claim del piloto Casdoor al token regenerado — si el frontend
                 // también reescribe la cookie compartida por su cuenta (como en Devoluciones),
                 // necesita poder detectar ssoPilot decodificando este freshToken.
-                ...((req as any).user?.ssoPilot ? { ssoPilot: true } : {})
+                ...((req as AuthenticatedRequest).user?.ssoPilot ? { ssoPilot: true } : {})
             },
             JWT_SECRET as string,
             { expiresIn: '12h' }
@@ -191,7 +192,7 @@ router.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
         // pasa solo cuando COOKIE_DOMAIN no está configurada (producción real, sin dominio QA propio).
         // Cuando COOKIE_DOMAIN sí está configurada (Fase 20, entorno QA), el callback de Casdoor deja
         // de firmar ssoPilot=true, así que esta cookie sí se escribe y el SSO cruzado real funciona.
-        if (!(req as any).user?.ssoPilot) {
+        if (!(req as AuthenticatedRequest).user?.ssoPilot) {
             const ssoToken = jwt.sign(
                 { id: user.Id, role: user.RoleName, role_name: user.RoleName, username: user.Username, apps: user.Apps || '', casId: user.cas_id || null },
                 JWT_SECRET as string,
@@ -239,7 +240,7 @@ router.post('/api/auth/refresh', async (req: Request, res: Response) => {
         return res.status(401).json({ error: 'Sesión cerrada. Inicia sesión nuevamente.' });
     }
     try {
-        const decoded = jwt.verify(token, JWT_SECRET as string, { ignoreExpiration: true }) as any;
+        const decoded = jwt.verify(token, JWT_SECRET as string, { ignoreExpiration: true }) as JwtPayloadTecnico;
         if (await isSessionInvalidated(decoded.id, decoded.iat)) {
             clearSharedCookie(res, req);
             return res.status(401).json({ error: 'Sesión cerrada. Inicia sesión nuevamente.' });
@@ -259,7 +260,7 @@ router.post('/api/auth/refresh', async (req: Request, res: Response) => {
         if (!user || !user.IsActive) return res.status(401).json({ error: 'Usuario inactivo' });
         const perms = (await db.request().input('rid', sql.NVarChar(sql.MAX), String(user.RoleId)).query(
             'SELECT Permission FROM EBM.RolePermissions WHERE RoleId = @rid'
-        )).recordset.map((p: any) => p.Permission);
+        )).recordset.map((p: { Permission: string }) => p.Permission);
         const newToken = jwt.sign(
             { id: user.Id, username: user.Username, full_name: user.FullName, codigo_tecnico: user.CodigoTecnico || null, role: user.RoleName, permissions: perms },
             JWT_SECRET as string,

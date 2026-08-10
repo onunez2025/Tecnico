@@ -19,7 +19,7 @@ router.get('/api/managements', verifyToken, async (_req: Request, res: Response)
         const db = await getReadPool();
         const result = await db.request()
             .query(`SELECT Id as id, Name as name, ISNULL(Code, '') as code FROM EBM.Managements ORDER BY Name`);
-        const data = result.recordset.map((m: any) => ({ id: String(m.id), name: m.name, code: m.code }));
+        const data = result.recordset.map((m: Record<string, unknown>) => ({ id: String(m.id), name: m.name, code: m.code }));
         cacheSet('managements', data, 10 * 60 * 1000);
         res.json(data);
     } catch {

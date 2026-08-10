@@ -1,3 +1,4 @@
+import type { AuthenticatedRequest } from '../middleware/auth.js';
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import sql from 'mssql';
@@ -26,11 +27,11 @@ const router = Router();
 // ─── PERFIL PROPIO (autoservicio) ───────────────────────────────────────────────
 // Solo verifyToken — cualquier usuario autenticado puede guardar SU PROPIO avatar
 // y/o contraseña. A diferencia de PUT /api/users/:id (abajo), no acepta id por
-// parámetro: siempre opera sobre (req as any).user.id, y no permite tocar
+// parámetro: siempre opera sobre (req as AuthenticatedRequest).user.id, y no permite tocar
 // full_name/email/role_id/apps/is_active de nadie.
 router.put('/api/profile', verifyToken, async (req: Request, res: Response) => {
     try {
-        const { id } = (req as any).user;
+        const { id } = (req as AuthenticatedRequest).user;
         const parsed = updateProfileSchema.safeParse(req.body);
         if (!parsed.success) return res.status(400).json({ error: 'Datos inválidos', details: parsed.error.issues });
         const { avatar_url, password_hash: rawPassword } = parsed.data;

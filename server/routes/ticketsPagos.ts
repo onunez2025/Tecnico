@@ -1,3 +1,4 @@
+import type { AuthenticatedRequest } from '../middleware/auth.js';
 import { Router } from 'express';
 import { APPSHEET_PDF_PATH } from '../lib/config';
 import type { Request, Response } from 'express';
@@ -60,7 +61,7 @@ router.get('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.view
             .input('offset', sql.Int, offset)
             .input('search', sql.NVarChar(sql.MAX), `%${search}%`);
 
-        const currentUser = (req as any).user; // eslint-disable-line @typescript-eslint/no-explicit-any
+        const currentUser = (req as AuthenticatedRequest).user; // eslint-disable-line @typescript-eslint/no-explicit-any
         const conditions: string[] = [];
         if (search) conditions.push(`(C.Ticket_Original LIKE @search OR C.Clientes LIKE @search OR C.CodigoAutorizacion LIKE @search OR C.Voucher LIKE @search)`);
 
@@ -96,7 +97,7 @@ router.get('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.view
             SELECT COUNT(*) as total FROM [dbo].[GAC_PAGOS_CACHE] C ${whereClause};
         `);
 
-        const recordsets = data.recordsets as any;
+        const recordsets = data.recordsets as sql.IRecordSet<Record<string, unknown>>[];
         res.json({ data: recordsets[0], total: recordsets[1][0]?.total ?? 0 });
     } catch (err: unknown) {
         console.error('Error en GET /api/tickets-pagos:', err);

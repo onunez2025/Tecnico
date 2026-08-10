@@ -1376,7 +1376,7 @@ export default function TicketsCalendarPage() {
                                 <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{t('calendar.paymentModal.channelLabel')}</label>
                                 <select
                                     value={canalPago}
-                                    onChange={(e) => setCanalPago(e.target.value as any)}
+                                    onChange={(e) => setCanalPago(e.target.value as 'POS' | 'Link' | 'Transferencia' | 'Efectivo' | 'DEPÓSITO')}
                                     required
                                     className={cn(SIATC_THEME.MOBILE.TOUCH_INPUT, "w-full px-3 border border-border rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20")}
                                 >

@@ -35,7 +35,7 @@ const limiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Demasiadas solicitudes. Intenta más tarde.' },
-    store: new RedisStore({ sendCommand: (...args: string[]) => (getRedisClient() as any).call(...args) as any, prefix: 'rl:tec:' }),
+    store: new RedisStore({ sendCommand: (...args: string[]) => (getRedisClient() as unknown as { call: (...a: string[]) => Promise<unknown> }).call(...args) as Promise<number>, prefix: 'rl:tec:' }),
 });
 
 // Auth rate limiter — starts with safe defaults, overwritten from EBM.AppSessionConfig at startup
@@ -52,7 +52,7 @@ let authLimiter = rateLimit({
     skipSuccessfulRequests: true,
     keyGenerator: authKeyGenerator,
     message: { error: 'Demasiados intentos de inicio de sesión. Intenta más tarde.' },
-    store: new RedisStore({ sendCommand: (...args: string[]) => (getRedisClient() as any).call(...args) as any, prefix: 'rl:tec:auth:' }),
+    store: new RedisStore({ sendCommand: (...args: string[]) => (getRedisClient() as unknown as { call: (...a: string[]) => Promise<unknown> }).call(...args) as Promise<number>, prefix: 'rl:tec:auth:' }),
 });
 
 // --- CONFIGURACIÓN DE AZURE STORAGE BLOB ---
@@ -525,7 +525,7 @@ app.listen(port, () => {
             skipSuccessfulRequests: true,
             keyGenerator: authKeyGenerator,
             message: { error: `Demasiados intentos de inicio de sesión. Espera ${cfg.rateLimitWindowMinutes} minutos.` },
-            store: new RedisStore({ sendCommand: (...args: string[]) => (getRedisClient() as any).call(...args) as any, prefix: 'rl:tec:auth:' }),
+            store: new RedisStore({ sendCommand: (...args: string[]) => (getRedisClient() as unknown as { call: (...a: string[]) => Promise<unknown> }).call(...args) as Promise<number>, prefix: 'rl:tec:auth:' }),
         });
         console.log(`[SessionConfig] Auth limiter: ${cfg.rateLimitMaxAttempts} intentos / ${cfg.rateLimitWindowMinutes} min`);
     }).catch(err => console.error('[SessionConfig] Failed to load rate limit config:', err));

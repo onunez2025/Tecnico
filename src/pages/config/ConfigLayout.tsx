@@ -1,3 +1,4 @@
+import type { Permission } from '../../types';
 import { NavLink, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Sliders, ChevronRight, Settings2, ShieldAlert } from 'lucide-react';
@@ -15,7 +16,7 @@ export function ConfigLayout() {
     ];
 
     const filteredItems = configItems.filter(item =>
-        !item.permission || hasPermission(item.permission as any)
+        !item.permission || hasPermission(item.permission as Permission)
     );
 
     // If we are at the root /config, redirect to the first authorized item

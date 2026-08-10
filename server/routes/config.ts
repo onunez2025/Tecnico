@@ -1,3 +1,4 @@
+import type { AuthenticatedRequest } from '../middleware/auth.js';
 import { Router } from 'express';
 import { cacheGet, cacheSet, cacheInvalidate } from '../lib/cache';
 import type { Request, Response } from 'express';
@@ -31,7 +32,7 @@ router.post('/api/config/rango-horario-limit', verifyToken, checkPermission('tec
         if (!limit || !/^\d{2}:\d{2}$/.test(limit)) {
             return res.status(400).json({ error: 'Formato de hora inválido. Use HH:mm (ej: 09:30)' });
         }
-        const { username } = (req as any).user;
+        const { username } = (req as AuthenticatedRequest).user;
         const db = await getWritePool();
         await db.request().input('limit', sql.VarChar(255), limit).input('user', sql.VarChar(255), username).query(`UPDATE [dbo].[GAC_APP_TB_CONFIG] SET Valor = @limit, Actualizado_el = GETDATE(), Actualizado_por = @user WHERE Clave = 'HORA_MAXIMA_RANGO_HORARIO'`);
         cacheInvalidate('rango-horario-limit');

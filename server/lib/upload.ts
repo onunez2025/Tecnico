@@ -1,3 +1,4 @@
+import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
@@ -41,7 +42,7 @@ const storage = multer.diskStorage({
         cb(null, `${Date.now()}-${safeName}`);
     }
 });
-const multerFileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const multerFileFilter = (_req: express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
     if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
         cb(null, true);
     } else {

@@ -3,6 +3,7 @@ interface ErrorConRespuesta {
     response?: { status?: number; data?: { error?: { message?: { value?: string } } } };
 }
 
+import type { AuthenticatedRequest } from '../middleware/auth.js';
 import { mensajeError } from '../lib/security.js';
 import { Router } from 'express';
 import type { Request, Response } from 'express';
@@ -102,7 +103,7 @@ router.get('/api/tec/tickets/:ticketId/informe', verifyToken, checkPermission('t
 
 router.get('/api/tec/tickets/calendar-summary', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
     try {
-        const { codigo_tecnico, role } = (req as any).user;
+        const { codigo_tecnico, role } = (req as AuthenticatedRequest).user;
         const isAdmin = isAdminRole(role);
         const month = req.query.month as string;
         if (!month || !/^\d{4}-\d{2}$/.test(month)) {
@@ -131,7 +132,7 @@ router.get('/api/tec/tickets/calendar-summary', verifyToken, checkPermission('te
 
 router.get('/api/tec/tickets', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
     try {
-        const { codigo_tecnico, role } = (req as any).user;
+        const { codigo_tecnico, role } = (req as AuthenticatedRequest).user;
         const isAdmin = isAdminRole(role);
         const dateStr = req.query.date as string;
         
@@ -177,7 +178,7 @@ router.get('/api/tec/tickets', verifyToken, checkPermission('tec.tickets.view'),
 router.post('/api/tec/tickets/rango-horario', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
     try {
         const { ticketId, rangoHorario, ordenAtencion, comentario, applyToAllClientTickets } = req.body;
-        const { username, codigo_tecnico, role } = (req as any).user;
+        const { username, codigo_tecnico, role } = (req as AuthenticatedRequest).user;
         const isAdmin = isAdminRole(role);
 
         if (!ticketId) return res.status(400).json({ error: 'ID de ticket es requerido' });
@@ -207,7 +208,7 @@ router.post('/api/tec/tickets/rango-horario', verifyToken, checkPermission('tec.
         let ticketsToUpdate = [ticketId];
         if (applyToAllClientTickets && ticketData.IdCliente) {
             const bulkResult = await db.request().input('idCliente', sql.VarChar(255), ticketData.IdCliente).input('fechaVisita', sql.DateTime, ticketData.FechaVisita).input('codeTec', sql.VarChar(255), ticketData.CodigoTecnico).query(`SELECT Ticket FROM [APPGAC].[ServiciosViewSQL] WHERE IdCliente = @idCliente AND CONVERT(DATE, FechaVisita) = CONVERT(DATE, @fechaVisita) AND CodigoTecnico = @codeTec`);
-            ticketsToUpdate = [...new Set([ticketId, ...bulkResult.recordset.map((r: any) => r.Ticket)])];
+            ticketsToUpdate = [...new Set([ticketId, ...bulkResult.recordset.map((r: { Ticket: string }) => r.Ticket)])];
         }
 
         for (const tId of ticketsToUpdate) {
@@ -224,7 +225,7 @@ router.post('/api/tec/tickets/rango-horario', verifyToken, checkPermission('tec.
 router.get('/api/tec/tickets/:ticketId/pagos', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
     try {
         const { ticketId } = req.params;
-        const { codigo_tecnico, role } = (req as any).user;
+        const { codigo_tecnico, role } = (req as AuthenticatedRequest).user;
         const db = await getReadPool();
         if (!isAdminRole(role)) {
             const assignmentResult = await db.request().input('ticketId', sql.VarChar(255), ticketId).input('techCode', sql.VarChar(255), codigo_tecnico).query(`SELECT 1 FROM [APPGAC].[ServiciosViewSQL] WHERE Ticket = @ticketId AND CodigoTecnico = @techCode`);
@@ -238,7 +239,7 @@ router.get('/api/tec/tickets/:ticketId/pagos', verifyToken, checkPermission('tec
 router.post('/api/tec/tickets/:ticketId/pago', verifyToken, checkPermission('tec.tickets.view'), upload.single('adjunto'), async (req: Request, res: Response) => {
     const { ticketId } = req.params;
     const { fecha_transaccion, voucher, lote, codigo_izipay, importe, canal, observacion, folio, codigo_autorizacion } = req.body;
-    const { codigo_tecnico, role } = (req as any).user;
+    const { codigo_tecnico, role } = (req as AuthenticatedRequest).user;
     try {
         const db = await getWritePool();
         if (!isAdminRole(role)) {
@@ -286,7 +287,7 @@ router.post('/api/tec/tickets/:ticketId/pago', verifyToken, checkPermission('tec
 
 router.get('/api/tec/today-tickets', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
     try {
-        const { codigo_tecnico, role } = (req as any).user;
+        const { codigo_tecnico, role } = (req as AuthenticatedRequest).user;
         const db = await getReadPool();
         const sqlReq = db.request();
         let query = `SELECT Ticket as id, Estado, FechaVisita, NombreCliente as Cliente, Distrito, (ISNULL(Calle, '') + ' ' + ISNULL(NumeroCalle, '')) as Direccion, BloqueHorario, Asunto, Celular1 as Contacto FROM [SIATC].[Dashboard_FSM] WHERE CONVERT(DATE, FechaVisita) = CONVERT(DATE, GETDATE())`;
@@ -298,7 +299,7 @@ router.get('/api/tec/today-tickets', verifyToken, checkPermission('tec.tickets.v
 
 router.get('/api/tec/schedule', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
     try {
-        const { full_name } = (req as any).user;
+        const { full_name } = (req as AuthenticatedRequest).user;
         const db = await getReadPool();
         const result = await db.request().input('user', sql.NVarChar(sql.MAX), full_name).query(`SELECT ID_empleado_calendario_labores as id, Fecha_Labor as date, Labor as title, 'Taller/Reunión' as type FROM [dbo].[GAC_APP_TB_EMPLEADOS_CALENDARIO_LABORES] WHERE Empleado = @user AND Fecha_Labor >= CONVERT(DATE, GETDATE()) ORDER BY Fecha_Labor ASC`);
         res.json(result.recordset);
@@ -308,7 +309,7 @@ router.get('/api/tec/schedule', verifyToken, checkPermission('tec.tickets.view')
 router.post('/api/tec/sales', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
     try {
         const { ticket, pedido, observacion, comentarioTecnico } = req.body;
-        const { full_name } = (req as any).user;
+        const { full_name } = (req as AuthenticatedRequest).user;
         const db = await getWritePool();
         const idVenta = uuidv4().substring(0, 8).toUpperCase();
         await db.request()

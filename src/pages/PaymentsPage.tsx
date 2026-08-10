@@ -20,11 +20,20 @@ import { cn } from '../utils/cn';
 import { SIATC_THEME } from '../utils/siatc-theme';
 import { useTranslation } from 'react-i18next';
 
+/** Sugerencia del buscador de tickets SAP (/sap/tickets/search). */
+interface SugerenciaTicket {
+    id: string;
+    cliente?: string;
+    distrito?: string;
+    servicio?: string;
+    total?: number;
+}
+
 interface EnrichedTicketPago extends TicketPago {
     Tecnico?: string;
 }
 
-const formatDate = (date: any) => {
+const formatDate = (date: string | Date | null | undefined) => {
     if (!date) return '—';
     const d = new Date(date);
     if (isNaN(d.getTime())) return '—';
@@ -72,7 +81,7 @@ export default function PaymentsPage() {
     });
 
     const [ticketSearch, setTicketSearch] = useState('');
-    const [ticketSuggestions, setTicketSuggestions] = useState<any[]>([]);
+    const [ticketSuggestions, setTicketSuggestions] = useState<SugerenciaTicket[]>([]);
     const [isSearchingTicket, setIsSearchingTicket] = useState(false);
     const [showTicketDropdown, setShowTicketDropdown] = useState(false);
     const [isFetchingTicket, setIsFetchingTicket] = useState(false);
@@ -82,7 +91,7 @@ export default function PaymentsPage() {
             if (ticketSearch.trim().length >= 3) {
                 setIsSearchingTicket(true);
                 try {
-                    const res = await ApiClient.request<any[]>(`/sap/tickets/search?q=${encodeURIComponent(ticketSearch)}`);
+                    const res = await ApiClient.request<SugerenciaTicket[]>(`/sap/tickets/search?q=${encodeURIComponent(ticketSearch)}`);
                     setTicketSuggestions(res);
                     setShowTicketDropdown(true);
                 } catch { /* silent */ } finally { setIsSearchingTicket(false); }
@@ -97,7 +106,7 @@ export default function PaymentsPage() {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const res = await ApiClient.request<{ data: any[]; total: number }>(
+            const res = await ApiClient.request<{ data: EnrichedTicketPago[]; total: number }>(
                 `/tickets-pagos?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&status=all`
             );
             setPayments(res.data);
@@ -433,7 +442,7 @@ export default function PaymentsPage() {
                                     <label className="block text-[10px] font-bold uppercase tracking-wider text-cb-neutral mb-1">{lbl}</label>
                                     <input
                                         type="text" inputMode="numeric" required={req} placeholder={placeholder}
-                                        value={(newPayment as any)[key]}
+                                        value={String((newPayment as Record<string, unknown>)[key] ?? '')}
                                         onChange={(e) => setNewPayment({ ...newPayment, [key]: e.target.value })}
                                         className={cn(SIATC_THEME.MOBILE.TOUCH_INPUT, "w-full px-3 bg-card border border-cb-border rounded-lg text-cb-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all")}
                                     />

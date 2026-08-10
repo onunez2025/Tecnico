@@ -1,3 +1,4 @@
+import type { AuthenticatedRequest } from '../middleware/auth.js';
 import { mensajeError } from '../lib/security.js';
 import { Router } from 'express';
 import type { Request, Response } from 'express';
@@ -14,7 +15,7 @@ const router = Router();
 // --- DASHBOARD ---
 router.get('/api/dashboard/stats', verifyToken, checkPermission('tec.dashboard.view'), async (req: Request, res: Response) => {
     try {
-        const { search = '', status = '', field = 'all', auth_code = '', date_trans = '', date_visit = '', tipo_servicio = '', month = '', year = '' } = req.query as any;
+        const { search = '', status = '', field = 'all', auth_code = '', date_trans = '', date_visit = '', tipo_servicio = '', month = '', year = '' } = req.query as Record<string, string>;
         const db = await getReadPool();
         const sqlReq = db.request();
         
@@ -77,7 +78,7 @@ router.get('/api/dashboard/stats', verifyToken, checkPermission('tec.dashboard.v
         }
 
         // RLS: usuario CAS solo ve sus propios datos
-        const currentUser = (req as any).user;
+        const currentUser = (req as AuthenticatedRequest).user;
         if (currentUser.casId) {
             whereClause += ' AND ID_cas = @casId';
             sqlReq.input('casId', sql.VarChar(50), currentUser.casId);
@@ -113,7 +114,7 @@ router.get('/api/dashboard/technicians', verifyToken, checkPermission('tec.dashb
         const db = await getReadPool();
         const sqlReq = db.request();
         // RLS: usuario CAS solo ve sus propios datos
-        const currentUser = (req as any).user; // eslint-disable-line @typescript-eslint/no-explicit-any
+        const currentUser = (req as AuthenticatedRequest).user; // eslint-disable-line @typescript-eslint/no-explicit-any
         let techWhere = `WHERE Fecha_transaccion >= '2025-01-01'`;
         if (currentUser?.casId) {
             techWhere += ' AND ID_cas = @casId';
@@ -142,7 +143,7 @@ router.get('/api/dashboard/technicians', verifyToken, checkPermission('tec.dashb
 router.get('/api/dashboard/cas-performance', verifyToken, checkPermission('tec.dashboard.view'), async (req: Request, res: Response) => {
     try {
         const db = await getReadPool();
-        const currentUser = (req as any).user;
+        const currentUser = (req as AuthenticatedRequest).user;
         // RLS: usuario CAS siempre ve solo su propia empresa, ignorando query params
         const casId: string = currentUser.casId ?? (req.query.casId as string);
         const zone: string | undefined = currentUser.casId ? undefined : (req.query.zone as string);
@@ -198,7 +199,7 @@ router.get('/api/dashboard/technician/:name/metrics', verifyToken, checkPermissi
         `;
 
         const result = await sqlReq.query(techQuery);
-        const recordsets = result.recordsets as any;
+        const recordsets = result.recordsets as sql.IRecordSet<Record<string, unknown>>[];
         res.json({ monthly_trend: recordsets[0], services: recordsets[1], materials: recordsets[2] });
     } catch (err: unknown) {
         res.status(500).json({ error: safeError(err) });

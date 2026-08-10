@@ -9,9 +9,9 @@ import { exchangeCodeForToken, getCasdoorAuthorizeUrl, getCasdoorUserInfo } from
 import { dominioCookie } from '../lib/dominioCookie';
 import { sendSsoFinalRetryEmail, sendSsoFirstRetryEmail, sendSsoPendingEmail } from '../lib/mailer';
 import { safeError, sanitizeLog } from '../lib/security';
+import { JWT_SECRET } from '../lib/env.js';
 
 // JWT_SECRET: su comprobacion fatal se queda en index.ts, aqui solo se lee el valor.
-const JWT_SECRET = process.env.JWT_SECRET;
 
 // Este router se monta en `/` conservando las rutas completas y en la misma posicion en que se
 // definian en index.ts. Express resuelve por orden de registro, asi que esa posicion es parte

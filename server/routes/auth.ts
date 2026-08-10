@@ -11,11 +11,11 @@ import { dominioCookie } from '../lib/dominioCookie';
 import { blacklistToken, invalidateAllUserSessions, isSessionInvalidated, isTokenBlacklisted } from '../lib/redis';
 import { safeError } from '../lib/security';
 import { clearSharedCookie, verifyToken } from '../middleware/auth';
+import { JWT_SECRET } from '../lib/env.js';
 
 // La escritura de la cookie compartida NO depende de NODE_ENV: se decide por el dominio derivado
 // del Host de cada peticion (ver dominioCookie). Antes dependia de una constante de modulo
 // IS_PRODUCTION, que ademas se evaluaba antes que dotenv.config(). Ver server/lib/env.ts.
-const JWT_SECRET = process.env.JWT_SECRET;
 
 // Este router se monta en `/` conservando las rutas completas y en la misma posicion en que se
 // definian en index.ts.

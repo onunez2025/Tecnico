@@ -5,11 +5,11 @@ import sql from 'mssql';
 import { getWritePool } from '../db';
 import { dominioCookie } from '../lib/dominioCookie';
 import { isTokenBlacklisted, isSessionInvalidated } from '../lib/redis';
+import { JWT_SECRET } from '../lib/env.js';
 
 // La comprobacion fatal de JWT_SECRET sigue en index.ts, en su sitio original: moverla aqui la
 // adelantaria al momento del import y cambiaria cual de los dos FATAL de arranque se ve primero.
 // Aqui solo se lee el valor; si faltara, el proceso ya habria terminado antes de atender nada.
-const JWT_SECRET = process.env.JWT_SECRET;
 
 // --- TIPOS TIPADOS PARA REQUESTS AUTENTICADOS ---
 /** Campos del JWT que esta app lee, ademas de los estandar de jsonwebtoken. */

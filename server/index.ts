@@ -1,5 +1,5 @@
+import './lib/env.js';   // PRIMERO: carga el .env y valida los secretos antes que nada
 import { mensajeError } from './lib/security.js';
-import './lib/env';   // PRIMERO: carga el .env antes de que ningun modulo lea process.env
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
@@ -24,6 +24,7 @@ import dashboardRouter from './routes/dashboard';
 import ticketsRouter from './routes/tickets';
 import { syncPaymentCache } from './lib/pagosSync';
 import { APP_IDENTIFIER, APPSHEET_PDF_PATH } from './lib/config';
+import { JWT_SECRET } from './lib/env.js';
 
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
@@ -66,7 +67,6 @@ if (!process.env.AZURE_STORAGE_CONNECTION_STRING) {
 const app = express();
 const port = process.env.PORT || 3000;
 // [SECURITY] El servidor se niega a iniciar si JWT_SECRET no está definido en el entorno.
-const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
     console.error('❌ FATAL: JWT_SECRET no está definido en las variables de entorno.');
     process.exit(1);

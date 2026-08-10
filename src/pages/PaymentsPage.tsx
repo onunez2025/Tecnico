@@ -44,13 +44,13 @@ const getStatusConfig = (status: string | undefined) => {
 
 export default function PaymentsPage() {
     const { t } = useTranslation();
-    const { hasPermission, user } = useAuth();
     const { alert } = useDialog();
     const [payments, setPayments] = useState<EnrichedTicketPago[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
+    const { hasPermission } = useAuth();
     const limit = 20;
 
     const canViewAll = hasPermission('tec.payments.view.all');
@@ -105,6 +105,7 @@ export default function PaymentsPage() {
         } catch { /* silent */ } finally { setIsLoading(false); }
     };
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga de datos: marcar "cargando" al arrancar la peticion no es derivable
     useEffect(() => { fetchData(); }, [page, search]);
 
     const handleAddTicket = (ticketId: string) => {

@@ -3,28 +3,14 @@ import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import sql from 'mssql';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
-import multer from 'multer';
-import fs from 'fs';
-import { BlobServiceClient } from '@azure/storage-blob';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import Redis from 'ioredis';
-import { createHash } from 'crypto';
 import { RedisStore } from 'rate-limit-redis';
-import axios from 'axios';
-import { z } from 'zod';
-import { exchangeCodeForToken, getCasdoorUserInfo, getCasdoorAuthorizeUrl } from './lib/casdoorClient';
-import { sendSsoPendingEmail, sendSsoFirstRetryEmail, sendSsoFinalRetryEmail } from './lib/mailer';
-import { dominioCookie } from './lib/dominioCookie';
-import { safeError, sanitizeLog } from './lib/security';
+import { safeError } from './lib/security';
 import { getDb, getReadPool, getWritePool } from './db';
-import { getRedisClient, isTokenBlacklisted, blacklistToken, invalidateAllUserSessions, isSessionInvalidated } from './lib/redis';
-import type { AuthenticatedRequest } from './middleware/auth';
-import { clearSharedCookie, verifyToken, isAdminRole, checkPermission } from './middleware/auth';
+import { getRedisClient } from './lib/redis';
+import { verifyToken } from './middleware/auth';
 import sapRouter from './routes/sap';
 import configRouter from './routes/config';
 import profileRouter from './routes/profile';
@@ -36,7 +22,6 @@ import authRouter from './routes/auth';
 import dashboardRouter from './routes/dashboard';
 import ticketsRouter from './routes/tickets';
 import { syncPaymentCache } from './lib/pagosSync';
-import { logAudit } from './lib/audit';
 import { APP_IDENTIFIER, APPSHEET_PDF_PATH } from './lib/config';
 
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
@@ -87,7 +72,6 @@ if (!JWT_SECRET) {
 }
 const distPath = path.join(process.cwd(), 'dist');
 
-const cleanApps = (str: string) => [...new Set((str || '').split(',').map(s => s.trim()).filter(Boolean))].join(', ');
 
 // Nota: la ruta /api/images se registra más abajo, después de verifyToken, para protegerla con autenticación.
 
@@ -139,7 +123,6 @@ app.use(express.static(distPath));
 
 
 // --- ESTADO DE IMPORTACIÓN ---
-const importProgress: { [key: string]: { current: number; total: number } } = {};
 
 
 

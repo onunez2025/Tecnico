@@ -125,6 +125,7 @@ export default function TicketsCalendarPage() {
 
     useEffect(() => {
         if (activeTicket?.id) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- carga de datos: marcar "cargando" al arrancar la peticion no es derivable
             fetchPaymentsForActiveTicket(activeTicket.id);
         } else {
             setActiveTicketPayments([]);

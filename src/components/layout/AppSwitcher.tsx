@@ -4,7 +4,7 @@ import { Grid, Info, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { SIATC_THEME } from '../../utils/siatc-theme';
 import { useAuth } from '../../hooks/useAuth';
-import { useAppConfig, Application } from '../../context/AppConfigContext';
+import { Application } from '../../context/AppConfigContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { ApiClient } from '../../services/apiClient';
 

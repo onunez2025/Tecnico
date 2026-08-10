@@ -54,11 +54,6 @@ export default function TodayTicketsPage() {
         t.Distrito.toLowerCase().includes(search.toLowerCase())
     );
 
-    const formatTime = (dateStr: string) => {
-        if (!dateStr) return '--:--';
-        const date = new Date(dateStr);
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    };
 
     return (
         <div className="flex flex-col h-full bg-background text-foreground">

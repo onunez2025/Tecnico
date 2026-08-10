@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { ThreeDBar } from './ThreeDBar';
 import { DashboardService } from '../../services/dashboardService';
-import { ChevronLeft, Maximize2, Minimize2, ArrowLeft } from 'lucide-react';
+import { Maximize2, Minimize2, ArrowLeft } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 interface CASPerformanceChartProps {
     className?: string;
 }
 
-export const CASPerformanceChart: React.FC<CASPerformanceChartProps> = ({ className }) => {
+export const CASPerformanceChart: React.FC<CASPerformanceChartProps> = ({ className: _className }) => {
     const [data, setData] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [viewLevel, setViewLevel] = useState<'zones' | 'companies' | 'monthly'>('zones');
@@ -22,9 +21,6 @@ export const CASPerformanceChart: React.FC<CASPerformanceChartProps> = ({ classN
         '#6366f1', '#3b82f6', '#0ea5e9', '#10b981', '#84cc16', '#eab308', '#f59e0b', '#f97316'
     ];
 
-    useEffect(() => {
-        fetchData();
-    }, [viewLevel, selectedZone, selectedCasId]);
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -37,6 +33,13 @@ export const CASPerformanceChart: React.FC<CASPerformanceChartProps> = ({ classN
             setIsLoading(false);
         }
     };
+
+    // El efecto va DESPUES de fetchData: llamarla antes de su declaracion `const` es fragil
+    // (react-hooks/immutability), aunque funcione porque el efecto corre tras el render.
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- carga de datos: marcar "cargando" al arrancar la peticion no es derivable
+        fetchData();
+    }, [viewLevel, selectedZone, selectedCasId]);
 
     const handleBarClick = (item: any) => {
         if (viewLevel === 'zones') {

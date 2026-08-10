@@ -16,7 +16,7 @@ interface ThreeDBarProps {
 }
 
 export const ThreeDBar: React.FC<ThreeDBarProps> = ({ 
-    x, y, width, height, color, label, value, count, percentage, delay = 0, onClick 
+    x, y, width, height, color, label: _label, value, count, percentage, delay = 0, onClick 
 }) => {
     // Definimos los puntos para el efecto isométrico/3D
     // Cara Frontal: Rectángulo principal

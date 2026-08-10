@@ -63,6 +63,7 @@ export default function ProfilePage() {
 
     useEffect(() => {
         if (user) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- carga de datos: marcar "cargando" al arrancar la peticion no es derivable
             setFormData({
                 username: user.username,
                 email: user.email,

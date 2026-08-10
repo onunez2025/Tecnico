@@ -3,7 +3,6 @@ import type { Request, Response } from 'express';
 import sql from 'mssql';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import path from 'path';
 import { z } from 'zod';
 import { getReadPool, getWritePool } from '../db';
 import { APP_IDENTIFIER } from '../lib/config';

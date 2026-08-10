@@ -19,9 +19,6 @@ export default function DashboardPage() {
     const [isLoading, setIsLoading] = useState(true);
     const { user } = useAuth();
 
-    useEffect(() => {
-        loadData();
-    }, []);
 
     const loadData = async () => {
         setIsLoading(true);
@@ -34,6 +31,13 @@ export default function DashboardPage() {
             setIsLoading(false);
         }
     };
+
+    // El efecto va DESPUES de loadData: llamarla antes de su declaracion `const` es fragil
+    // (react-hooks/immutability), aunque funcione porque el efecto corre tras el render.
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- carga de datos: marcar "cargando" al arrancar la peticion no es derivable
+        loadData();
+    }, []);
 
     const cards = [
         {

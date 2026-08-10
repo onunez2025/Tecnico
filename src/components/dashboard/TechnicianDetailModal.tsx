@@ -14,11 +14,6 @@ export const TechnicianDetailModal: React.FC<TechnicianDetailModalProps> = ({ is
     const [metrics, setMetrics] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        if (isOpen && techName) {
-            loadMetrics();
-        }
-    }, [isOpen, techName]);
 
     const loadMetrics = async () => {
         setIsLoading(true);
@@ -31,6 +26,15 @@ export const TechnicianDetailModal: React.FC<TechnicianDetailModalProps> = ({ is
             setIsLoading(false);
         }
     };
+
+    // El efecto va DESPUES de loadMetrics: llamarla antes de su declaracion `const` es fragil
+    // (react-hooks/immutability), aunque funcione porque el efecto corre tras el render.
+    useEffect(() => {
+        if (isOpen && techName) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- carga de datos: marcar "cargando" al arrancar la peticion no es derivable
+            loadMetrics();
+        }
+    }, [isOpen, techName]);
 
     if (!isOpen) return null;
 

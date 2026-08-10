@@ -40,7 +40,7 @@ export function DateChipScroller({ selectedDate, onSelectDate, ticketDates, wind
 
     useEffect(() => {
         activeChipRef.current?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, [selectedDate]);
 
     return (

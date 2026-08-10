@@ -9,7 +9,6 @@ import { exchangeCodeForToken, getCasdoorAuthorizeUrl, getCasdoorUserInfo } from
 import { dominioCookie } from '../lib/dominioCookie';
 import { sendSsoFinalRetryEmail, sendSsoFirstRetryEmail, sendSsoPendingEmail } from '../lib/mailer';
 import { safeError, sanitizeLog } from '../lib/security';
-import { verifyToken } from '../middleware/auth';
 
 // JWT_SECRET: su comprobacion fatal se queda en index.ts, aqui solo se lee el valor.
 const JWT_SECRET = process.env.JWT_SECRET;

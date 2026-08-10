@@ -122,6 +122,9 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     );
 }
 
+// Exportar el hook junto al Provider es el patron habitual de React Context; solo afecta al
+// refresco rapido de Vite en desarrollo, no al build.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useDialog() {
     const context = useContext(DialogContext);
     if (context === undefined) {

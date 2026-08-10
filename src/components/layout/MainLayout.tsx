@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Menu, X, Sun, Moon, Settings, Calendar, User, DollarSign, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useInactivityTimer } from '../../hooks/useInactivityTimer';
-import { NavLink, Navigate, Outlet } from 'react-router-dom';
+import { NavLink, Navigate, Outlet } from 'react-router';
 import { Sidebar } from './Sidebar';
 import { AppSwitcher } from './AppSwitcher';
 import { AuthTransitionOverlay } from '../common/AuthTransitionOverlay';

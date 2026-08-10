@@ -1,5 +1,5 @@
 import type { Permission } from '../../types';
-import { NavLink, Outlet, useLocation, Navigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, Navigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Sliders, ChevronRight, Settings2, ShieldAlert } from 'lucide-react';
 import { cn } from '../../utils/cn';

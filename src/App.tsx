@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { ThemeProvider } from './context/ThemeContext';
 import { DialogProvider } from './context/DialogContext';

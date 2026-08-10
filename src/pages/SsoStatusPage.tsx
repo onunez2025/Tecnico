@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Clock, XCircle, AlertTriangle } from 'lucide-react';
 import { cn } from '../utils/cn';

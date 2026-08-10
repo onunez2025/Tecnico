@@ -1,6 +1,6 @@
 import { mensajeError } from '../utils/errores';
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { useAppConfig } from '../context/AppConfigContext';

@@ -1,3 +1,4 @@
+import { mensajeError } from '../utils/errores';
 import React, { useState } from 'react';
 import {
     Clock,
@@ -54,8 +55,8 @@ export default function TimeRangePage() {
             setTicket('');
             setSelectedRango('');
             setTimeout(() => setIsSuccess(false), 5000);
-        } catch (err: any) {
-            setError(err.message || t('timerange.errors.updateFailed'));
+        } catch (err: unknown) {
+            setError(mensajeError(err) || t('timerange.errors.updateFailed'));
         } finally {
             setIsSubmitting(false);
         }

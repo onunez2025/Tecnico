@@ -1,3 +1,4 @@
+import { nombreError } from '../lib/security.js';
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import sql from 'mssql';
@@ -52,8 +53,8 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
         }
         (req as AuthenticatedRequest).user = decoded;
         next();
-    } catch (err: any) {
-        if (err.name === 'TokenExpiredError') return res.status(401).json({ error: 'Token expirado', code: 'TOKEN_EXPIRED' });
+    } catch (err: unknown) {
+        if (nombreError(err) === 'TokenExpiredError') return res.status(401).json({ error: 'Token expirado', code: 'TOKEN_EXPIRED' });
         res.status(403).json({ error: 'Token inválido' });
     }
 };

@@ -1,3 +1,4 @@
+import { mensajeError } from './lib/security.js';
 import './lib/env';   // PRIMERO: carga el .env antes de que ningun modulo lea process.env
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
@@ -311,8 +312,8 @@ async function runMigrations() {
     for (const step of steps) {
         try {
             await db.request().query(step.sql);
-        } catch (err: any) {
-            console.warn(`⚠️ Migration step skipped [${step.name}]:`, err.message);
+        } catch (err: unknown) {
+            console.warn(`⚠️ Migration step skipped [${step.name}]:`, mensajeError(err));
         }
     }
     console.log('✅ SQL Migrations complete');
@@ -476,7 +477,7 @@ app.get('/api/applications', verifyToken, async (req: Request, res: Response) =>
         }));
         
         res.json(apps);
-    } catch (err: any) {
+    } catch (err: unknown) {
         res.status(500).json({ error: safeError(err) });
     }
 });

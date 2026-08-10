@@ -1,3 +1,4 @@
+import { mensajeError } from '../lib/security.js';
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import sql from 'mssql';
@@ -101,8 +102,8 @@ router.get('/api/dashboard/stats', verifyToken, checkPermission('tec.dashboard.v
 
         const stats = await sqlReq.query(query);
         res.json(stats.recordset[0]);
-    } catch (err: any) {
-        console.error('❌ ERROR DASHBOARD STATS:', err.message);
+    } catch (err: unknown) {
+        console.error('❌ ERROR DASHBOARD STATS:', mensajeError(err));
         res.status(500).json({ error: safeError(err) });
     }
 });
@@ -132,8 +133,8 @@ router.get('/api/dashboard/technicians', verifyToken, checkPermission('tec.dashb
             ORDER BY total_cobros DESC
         `);
         res.json(result.recordset);
-    } catch (err: any) { 
-        console.error('❌ ERROR SQL (technicians):', err.message);
+    } catch (err: unknown) { 
+        console.error('❌ ERROR SQL (technicians):', mensajeError(err));
         res.status(500).json({ error: safeError(err) }); 
     }
 });
@@ -178,8 +179,8 @@ router.get('/api/dashboard/cas-performance', verifyToken, checkPermission('tec.d
         
         const result = await sqlReq.query(statsQuery);
         res.json(result.recordset);
-    } catch (err: any) {
-        console.error('❌ ERROR CAS PERFORMANCE:', err.message);
+    } catch (err: unknown) {
+        console.error('❌ ERROR CAS PERFORMANCE:', mensajeError(err));
         res.status(500).json({ error: safeError(err) });
     }
 });
@@ -199,7 +200,7 @@ router.get('/api/dashboard/technician/:name/metrics', verifyToken, checkPermissi
         const result = await sqlReq.query(techQuery);
         const recordsets = result.recordsets as any;
         res.json({ monthly_trend: recordsets[0], services: recordsets[1], materials: recordsets[2] });
-    } catch (err: any) {
+    } catch (err: unknown) {
         res.status(500).json({ error: safeError(err) });
     }
 });

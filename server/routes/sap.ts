@@ -40,7 +40,7 @@ router.get('/api/sap/tickets/search', verifyToken, checkPermission('tec.payments
                 ORDER BY CASE WHEN F.Ticket = @qExact THEN 0 ELSE 1 END, F.Ticket DESC
             `);
         res.json(result.recordset);
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('Error en /api/sap/tickets/search:', err);
         res.status(500).json({ error: safeError(err) });
     }

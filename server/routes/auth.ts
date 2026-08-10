@@ -125,7 +125,7 @@ router.post('/api/auth/login', async (req: Request, res: Response) => {
             },
             sessionConfig: { timeoutMinutes, warningMinutes }
         });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('❌ Error en Login:', err);
         res.status(500).json({ error: safeError(err) });
     }
@@ -228,7 +228,7 @@ router.get('/api/auth/me', verifyToken, async (req: Request, res: Response) => {
                 management_name: user.management_name || null
             }
         });
-    } catch (err: any) { res.status(500).json({ error: safeError(err) }); }
+    } catch (err: unknown) { res.status(500).json({ error: safeError(err) }); }
 });
 
 router.post('/api/auth/refresh', async (req: Request, res: Response) => {

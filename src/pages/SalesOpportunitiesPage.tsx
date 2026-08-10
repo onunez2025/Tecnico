@@ -1,3 +1,4 @@
+import { mensajeError } from '../utils/errores';
 import React, { useState } from 'react';
 import {
     ShoppingBag,
@@ -36,8 +37,8 @@ export default function SalesOpportunitiesPage() {
             setIsSuccess(true);
             setFormData({ ticket: '', pedido: '', observacion: '', comentarioTecnico: '' });
             setTimeout(() => setIsSuccess(false), 5000);
-        } catch (err: any) {
-            setError(err.message || t('sales.errors.default'));
+        } catch (err: unknown) {
+            setError(mensajeError(err) || t('sales.errors.default'));
         } finally {
             setIsSubmitting(false);
         }

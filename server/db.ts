@@ -1,3 +1,4 @@
+import { mensajeError } from './lib/security.js';
 import sql from 'mssql';
 
 // IS_PRODUCTION se recalcula aqui con la misma expresion que en index.ts en vez de importarse:
@@ -27,8 +28,8 @@ async function getDb() {
                 pool = null;
             });
             console.log('✅ Conectado a Azure SQL: ' + dbConfig.database);
-        } catch (err: any) {
-            console.error('❌ Error de conexión DB:', err.message);
+        } catch (err: unknown) {
+            console.error('❌ Error de conexión DB:', mensajeError(err));
             pool = null;
             throw err;
         }
@@ -63,8 +64,8 @@ async function getReadPool() {
                 console.error('❌ DB Read Pool error:', err.message);
                 readPool = null;
             });
-        } catch (err: any) {
-            console.error('❌ Error de conexión DB (read pool):', err.message);
+        } catch (err: unknown) {
+            console.error('❌ Error de conexión DB (read pool):', mensajeError(err));
             readPool = null;
             throw err;
         }
@@ -81,8 +82,8 @@ async function getWritePool() {
                 console.error('❌ DB Write Pool error:', err.message);
                 writePool = null;
             });
-        } catch (err: any) {
-            console.error('❌ Error de conexión DB (write pool):', err.message);
+        } catch (err: unknown) {
+            console.error('❌ Error de conexión DB (write pool):', mensajeError(err));
             writePool = null;
             throw err;
         }

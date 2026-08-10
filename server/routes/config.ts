@@ -22,7 +22,7 @@ router.get('/api/config/rango-horario-limit', verifyToken, checkPermission('tec.
         const data = { limit: result.recordset[0]?.Valor || '09:30', description: result.recordset[0]?.Descripcion || '' };
         cacheSet('rango-horario-limit', data, 5 * 60 * 1000);
         res.json(data);
-    } catch (err: any) { res.status(500).json({ error: safeError(err) }); }
+    } catch (err: unknown) { res.status(500).json({ error: safeError(err) }); }
 });
 
 router.post('/api/config/rango-horario-limit', verifyToken, checkPermission('tec.config.parameters'), async (req: Request, res: Response) => {
@@ -37,7 +37,7 @@ router.post('/api/config/rango-horario-limit', verifyToken, checkPermission('tec
         cacheInvalidate('rango-horario-limit');
         await logAudit(req, 'TEC:UPDATE_CONFIG_LIMIT', 'SystemConfig', 'HORA_MAXIMA_RANGO_HORARIO', { limit });
         res.json({ message: 'Configuración actualizada' });
-    } catch (err: any) { res.status(500).json({ error: safeError(err) }); }
+    } catch (err: unknown) { res.status(500).json({ error: safeError(err) }); }
 });
 
 export default router;

@@ -41,7 +41,7 @@ router.get('/api/tickets-pagos/:ticketId/details', verifyToken, checkPermission(
                         AND TRY_CAST(@ticket AS BIGINT) IS NOT NULL)
             `);
         res.json({ sap: { header: result.recordset[0] || null } });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('Error en /api/tickets-pagos/:ticketId/details:', err);
         res.status(500).json({ error: safeError(err) });
     }
@@ -98,7 +98,7 @@ router.get('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.view
 
         const recordsets = data.recordsets as any;
         res.json({ data: recordsets[0], total: recordsets[1][0]?.total ?? 0 });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('Error en GET /api/tickets-pagos:', err);
         res.status(500).json({ error: safeError(err) });
     }
@@ -142,7 +142,7 @@ router.post('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.reg
         await logAudit(req, 'TEC:CREATE_PAGO_MULTI', 'TicketPago', idTransaccion, { tickets, canal, importe });
         setImmediate(() => syncPaymentCache(idTransaccion));
         res.status(201).json({ message: 'Pago registrado', id: idTransaccion });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('Error en POST /api/tickets-pagos:', err);
         res.status(500).json({ error: safeError(err) });
     }
@@ -182,7 +182,7 @@ router.get('/api/tickets-pagos/:id/pdf', verifyToken, checkPermission('tec.payme
         }
 
         res.download(filePath, targetFile);
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('Error in GET /api/tickets-pagos/:id/pdf:', err);
         res.status(500).json({ error: safeError(err) });
     }

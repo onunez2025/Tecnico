@@ -1,3 +1,9 @@
+/** Forma de un error de axios con respuesta del servidor. */
+interface ErrorConRespuesta {
+    response?: { status?: number; data?: { error?: { message?: { value?: string } } } };
+}
+
+import { mensajeError } from '../lib/security.js';
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import sql from 'mssql';
@@ -86,9 +92,9 @@ router.get('/api/tec/tickets/:ticketId/informe', verifyToken, checkPermission('t
         res.setHeader('Content-Disposition', `inline; filename="${report.Name}"`);
         res.send(pdfResp.data);
 
-    } catch (err: any) {
-        const status = err?.response?.status || 500;
-        const detail = err?.response?.data?.error?.message?.value || err.message || 'Error desconocido';
+    } catch (err: unknown) {
+        const status = (err as ErrorConRespuesta)?.response?.status || 500;
+        const detail = (err as ErrorConRespuesta)?.response?.data?.error?.message?.value || mensajeError(err) || 'Error desconocido';
         console.error(`[C4C Informe] Error ticket ${sanitizeLog(req.params.ticketId)}:`, detail);
         res.status(status).json({ error: 'No se pudo obtener el informe desde C4C', details: detail });
     }
@@ -117,8 +123,8 @@ router.get('/api/tec/tickets/calendar-summary', verifyToken, checkPermission('te
         const summary: Record<string, number> = {};
         for (const row of result.recordset) { summary[row.date] = row.count; }
         res.json(summary);
-    } catch (err: any) {
-        console.error('❌ Error in /api/tec/tickets/calendar-summary:', err.message);
+    } catch (err: unknown) {
+        console.error('❌ Error in /api/tec/tickets/calendar-summary:', mensajeError(err));
         res.status(500).json({ error: safeError(err) });
     }
 });
@@ -162,8 +168,8 @@ router.get('/api/tec/tickets', verifyToken, checkPermission('tec.tickets.view'),
 
         const result = await sqlReq.query(query);
         res.json(result.recordset);
-    } catch (err: any) {
-        console.error('❌ Error in /api/tec/tickets:', err.message);
+    } catch (err: unknown) {
+        console.error('❌ Error in /api/tec/tickets:', mensajeError(err));
         res.status(500).json({ error: safeError(err) });
     }
 });
@@ -209,8 +215,8 @@ router.post('/api/tec/tickets/rango-horario', verifyToken, checkPermission('tec.
         }
         await logAudit(req, 'TEC:ASSIGN_RANGO_HORARIO', 'TicketRangoHorario', ticketId, { tickets: ticketsToUpdate });
         res.json({ message: 'Rango horario asignado correctamente', updatedTickets: ticketsToUpdate });
-    } catch (err: any) {
-        console.error('❌ Error in POST /api/tec/tickets/rango-horario:', err.message);
+    } catch (err: unknown) {
+        console.error('❌ Error in POST /api/tec/tickets/rango-horario:', mensajeError(err));
         res.status(500).json({ error: safeError(err) });
     }
 });
@@ -226,7 +232,7 @@ router.get('/api/tec/tickets/:ticketId/pagos', verifyToken, checkPermission('tec
         }
         const paymentsResult = await db.request().input('ticketId', sql.VarChar(255), ticketId).query(`SELECT ID_transaccion, Fecha_creacion, Ticket, Fecha_transaccion, Voucher, Lote, Codigo_Izipay, Importe, Estado, Canal, Observacion, CodigoAutorizacion, Folio, Adjunto FROM [dbo].[GAC_APP_TB_TICKETS_PAGOS] WHERE EXISTS (SELECT 1 FROM STRING_SPLIT(Ticket, ',') WHERE LTRIM(RTRIM(value)) = @ticketId) ORDER BY Fecha_creacion DESC`);
         res.json(paymentsResult.recordset);
-    } catch (err: any) { res.status(500).json({ error: safeError(err) }); }
+    } catch (err: unknown) { res.status(500).json({ error: safeError(err) }); }
 });
 
 router.post('/api/tec/tickets/:ticketId/pago', verifyToken, checkPermission('tec.tickets.view'), upload.single('adjunto'), async (req: Request, res: Response) => {
@@ -287,7 +293,7 @@ router.get('/api/tec/today-tickets', verifyToken, checkPermission('tec.tickets.v
         if (!isAdminRole(role)) { query += " AND CodigoTecnico = @techCode"; sqlReq.input('techCode', sql.VarChar(255), codigo_tecnico); }
         const result = await sqlReq.query(query);
         res.json(result.recordset);
-    } catch (err: any) { res.status(500).json({ error: safeError(err) }); }
+    } catch (err: unknown) { res.status(500).json({ error: safeError(err) }); }
 });
 
 router.get('/api/tec/schedule', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
@@ -296,7 +302,7 @@ router.get('/api/tec/schedule', verifyToken, checkPermission('tec.tickets.view')
         const db = await getReadPool();
         const result = await db.request().input('user', sql.NVarChar(sql.MAX), full_name).query(`SELECT ID_empleado_calendario_labores as id, Fecha_Labor as date, Labor as title, 'Taller/Reunión' as type FROM [dbo].[GAC_APP_TB_EMPLEADOS_CALENDARIO_LABORES] WHERE Empleado = @user AND Fecha_Labor >= CONVERT(DATE, GETDATE()) ORDER BY Fecha_Labor ASC`);
         res.json(result.recordset);
-    } catch (err: any) { res.status(500).json({ error: safeError(err) }); }
+    } catch (err: unknown) { res.status(500).json({ error: safeError(err) }); }
 });
 
 router.post('/api/tec/sales', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
@@ -314,7 +320,7 @@ router.post('/api/tec/sales', verifyToken, checkPermission('tec.tickets.view'), 
             .input('user', sql.NVarChar(sql.MAX), full_name)
             .query(`INSERT INTO [dbo].[GAC_APP_TB_VENTAS] (ID_Venta, Ticket, Nro_pedido_venta, Observacion, Comentario_tecnico, Venta_registrada_por, Venta_registrada_el, Venta_realizada) VALUES (@id, @ticket, @pedido, @obs, @coment, @user, GETDATE(), 'SI')`);
         res.json({ message: 'Oportunidad de venta registrada', id: idVenta });
-    } catch (err: any) { res.status(500).json({ error: safeError(err) }); }
+    } catch (err: unknown) { res.status(500).json({ error: safeError(err) }); }
 });
 
 router.patch('/api/tec/time-range', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
@@ -329,7 +335,7 @@ router.patch('/api/tec/time-range', verifyToken, checkPermission('tec.tickets.vi
             .input('bloque', sql.NVarChar(sql.MAX), bloqueHorario)
             .query(`UPDATE [dbo].[GAC_APP_TB_RANGO_HORARIO] SET Bloque_horario = @bloque WHERE ID_ticket = @ticket`);
         res.json({ message: 'Rango horario actualizado' });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('[PATCH /api/tec/time-range]', err);
         res.status(500).json({ error: safeError(err) });
     }

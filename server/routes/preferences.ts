@@ -45,7 +45,7 @@ router.post('/api/user/preferences', verifyToken, async (req: Request, res: Resp
                     INSERT INTO [dbo].[GAC_APP_TB_USER_PREFS] (UsuarioId, Clave, Valor, CreatedAt, UpdatedAt) VALUES (@uid, @c, @v, GETDATE(), GETDATE())
             `);
         res.json({ ok: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('[POST /api/user/preferences]', err);
         res.status(500).json({ error: safeError(err) });
     }

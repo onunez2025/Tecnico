@@ -1,3 +1,4 @@
+import { mensajeError } from '../utils/errores';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     Calendar as CalendarIcon,
@@ -84,8 +85,8 @@ export default function TicketsCalendarPage() {
             const url = URL.createObjectURL(blob);
             window.open(url, '_blank');
             setTimeout(() => URL.revokeObjectURL(url), 60000);
-        } catch (err: any) {
-            alert(err?.message || 'No se pudo obtener el informe técnico desde C4C.');
+        } catch (err: unknown) {
+            alert(mensajeError(err) || 'No se pudo obtener el informe técnico desde C4C.');
         } finally {
             setIsLoadingInforme(false);
         }
@@ -186,9 +187,9 @@ export default function TicketsCalendarPage() {
             await fetchPaymentsForActiveTicket(activeTicket.id);
             setRefreshKey(k => k + 1);
             setIsPaymentModalOpen(false);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Error saving payment:", err);
-            setPaymentError(err.message || "Ocurrió un error al registrar el pago.");
+            setPaymentError(mensajeError(err) || "Ocurrió un error al registrar el pago.");
             setPaymentSyncStatus('error');
         } finally {
             setIsSavingPayment(false);
@@ -288,9 +289,9 @@ export default function TicketsCalendarPage() {
             setRefreshKey(k => k + 1);
             setIsAssignModalOpen(false);
             setAssignTicket(null);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Error saving rango horario:", err);
-            setModalError(err.message || "Ocurrió un error al guardar el rango horario.");
+            setModalError(mensajeError(err) || "Ocurrió un error al guardar el rango horario.");
             setRangoSyncStatus('error');
         } finally {
             setIsSubmitting(false);
@@ -322,9 +323,9 @@ export default function TicketsCalendarPage() {
                         setActiveTicket(updated);
                     }
                 }
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error("Error fetching tickets:", err);
-                setErrorMsg(err.message || "Error al cargar los tickets de la base de datos.");
+                setErrorMsg(mensajeError(err) || "Error al cargar los tickets de la base de datos.");
             } finally {
                 setIsLoading(false);
             }

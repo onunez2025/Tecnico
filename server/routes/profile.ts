@@ -59,7 +59,7 @@ router.put('/api/profile', verifyToken, async (req: Request, res: Response) => {
             avatar_url: updated?.AvatarUrl || '',
             requires_password_change: updated?.RequiresPasswordChange === true || updated?.RequiresPasswordChange === 1
         });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('[PUT /api/profile]', err);
         res.status(500).json({ error: safeError(err) });
     }

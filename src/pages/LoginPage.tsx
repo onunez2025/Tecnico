@@ -1,3 +1,4 @@
+import { mensajeError } from '../utils/errores';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -59,9 +60,9 @@ export default function LoginPage() {
             }
             navigate('/');
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Login error:', err);
-            setError(err.message || t('auth.errors.invalid'));
+            setError(mensajeError(err) || t('auth.errors.invalid'));
         } finally {
             setLoading(false);
         }

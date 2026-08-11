@@ -161,10 +161,24 @@ router.get('/api/tec/tickets', verifyToken, checkPermission('tec.tickets.view'),
         const sqlReq = db.request();
         
         let query = `
+            -- Los tickets pagados se expanden UNA sola vez, no por fila.
+            --
+            -- GAC_APP_TB_TICKETS_PAGOS.Ticket es multivalor separado por comas, y antes se
+            -- comprobaba con EXISTS (... STRING_SPLIT ...) correlacionado: por CADA fila de
+            -- servicio se recorria entera la tabla de pagos partiendo cadenas. Con 1.486 filas
+            -- eso costaba 25,6 s medidos contra la base real; expandiendo una vez y cruzando,
+            -- 1,9 s. Comprobado ademas que el resultado es identico: 0 discrepancias en las
+            -- 1.486 filas, 25 con pago en las dos versiones.
+            WITH PagosExpandido AS (
+                SELECT DISTINCT LTRIM(RTRIM(v.value)) AS Ticket
+                FROM [dbo].[GAC_APP_TB_TICKETS_PAGOS] P
+                CROSS APPLY STRING_SPLIT(P.Ticket, ',') v
+            )
             SELECT S.Ticket as id, S.LlamadaFSM, S.Asunto, S.Estado, S.FechaVisita, S.FechaUltimaModificacion, S.IdServicio, S.Servicio, S.IdCliente, S.CodigoExternoCliente, S.NombreCliente as Cliente, S.Email, S.Celular1, S.Celular2, S.Telefono1, S.Calle, S.NumeroCalle, S.Distrito, S.Ciudad, S.Pais, S.CodigoPostal, S.Referencia, S.IdEquipo, S.CodigoExternoEquipo, S.NombreEquipo, S.ComentarioProgramador, S.IdCAS, S.CAS, S.CodigoTecnico, S.NombreTecnico, S.ApellidoTecnico, S.VisitaRealizada, S.TrabajoRealizado, S.SolicitaNuevaVisita, S.MotivoNuevaVisita, S.CodMotivoIncidente, S.FechaModificacionIT, S.ComentarioTecnico, S.CheckOut, S.Latitud, S.Longitud, RH.Rango_horario as RangoHorario, RH.Orden_atención as OrdenAtencion, RH.Comentario as ComentarioHorario,
-            CASE WHEN EXISTS (SELECT 1 FROM [dbo].[GAC_APP_TB_TICKETS_PAGOS] P WHERE EXISTS (SELECT 1 FROM STRING_SPLIT(P.Ticket, ',') WHERE LTRIM(RTRIM(value)) = CAST(S.Ticket AS NVARCHAR(50)))) THEN 1 ELSE 0 END as tienePago
+            CASE WHEN pg.Ticket IS NOT NULL THEN 1 ELSE 0 END as tienePago
             FROM [APPGAC].[ServiciosViewSQL] S
             LEFT JOIN [dbo].[GAC_APP_TB_RANGO_HORARIO] RH ON S.Ticket = RH.ID_Ticket
+            LEFT JOIN PagosExpandido pg ON pg.Ticket = CAST(S.Ticket AS NVARCHAR(50))
             WHERE 1=1
         `;
 

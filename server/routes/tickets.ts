@@ -111,11 +111,21 @@ router.get('/api/tec/tickets/calendar-summary', verifyToken, checkPermission('te
         }
         const db = await getReadPool();
         const sqlReq = db.request().input('month', sql.VarChar(255), month);
-        // El filtro va por RANGO y no por `FORMAT(FechaVisita, 'yyyy-MM') = @month`.
-        // Envolver la columna en una funcion la vuelve no-sargable: SQL Server no puede usar
-        // ningun indice sobre FechaVisita y recorre la tabla entera (>1.000.000 de filas) en
-        // cada carga de la pantalla. `FORMAT` ademas es de las funciones mas lentas del motor,
-        // porque va por CLR. Comparar contra un rango deja la columna intacta.
+        // Filtro por RANGO en vez de `FORMAT(FechaVisita, 'yyyy-MM') = @month`.
+        //
+        // OJO, NO ES UNA OPTIMIZACION: se midio contra la base real y NO mejora. `FechaVisita`
+        // es `nvarchar(40)` con textos como "Nov 12 2025  1:00PM", asi que comparar contra una
+        // fecha convierte igualmente la columna fila a fila. Medido con el orden invertido para
+        // descartar cache: 2,9 s por rango contra 2,6 s con FORMAT — equivalentes.
+        //
+        // Se conserva porque expresa mejor la intencion y porque es la forma que SI aprovecharia
+        // un indice el dia que la columna sea una fecha de verdad (o exista una columna calculada
+        // persistida). Un indice sobre el `nvarchar` NO sirve: el orden alfabetico del texto
+        // (Apr, Aug, Dec, Feb...) no es el cronologico, asi que las filas de un mes no quedan
+        // contiguas.
+        //
+        // El cuello de botella de esta pantalla NO es el SQL: estas consultas tardan entre 0,5 y
+        // 3 s, y la pantalla tardaba mas de 40. Por eso se deja el cronometro de abajo.
         // El formato de @month ya viene validado como YYYY-MM por la regex de arriba.
         let query = `SELECT CONVERT(VARCHAR(10), FechaVisita, 23) as date, COUNT(*) as count
                      FROM [APPGAC].[ServiciosViewSQL]
@@ -158,10 +168,10 @@ router.get('/api/tec/tickets', verifyToken, checkPermission('tec.tickets.view'),
             WHERE 1=1
         `;
 
-        // Mismo motivo que en calendar-summary: `CONVERT(DATE, S.FechaVisita)` envuelve la
-        // COLUMNA y anula los indices. El rango medio abierto (>= dia, < dia siguiente) cubre
-        // exactamente las mismas filas —todo el dia natural, con hora incluida— pero deja la
-        // columna libre para que el motor pueda buscar por indice.
+        // Mismo caso que en calendar-summary: el rango medio abierto (>= dia, < dia siguiente)
+        // cubre exactamente las mismas filas, pero NO es mas rapido hoy —medido: 0,7 s por rango
+        // contra 0,5 s con CONVERT—, porque la columna es `nvarchar` y se convierte igual.
+        // Se mantiene por claridad y de cara a un futuro cambio de tipo de la columna.
         if (dateStr) {
             query += " AND S.FechaVisita >= CAST(@date AS DATE) AND S.FechaVisita < DATEADD(day, 1, CAST(@date AS DATE))";
             sqlReq.input('date', sql.VarChar(255), dateStr);

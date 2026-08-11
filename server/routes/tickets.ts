@@ -111,7 +111,16 @@ router.get('/api/tec/tickets/calendar-summary', verifyToken, checkPermission('te
         }
         const db = await getReadPool();
         const sqlReq = db.request().input('month', sql.VarChar(255), month);
-        let query = `SELECT CONVERT(VARCHAR(10), FechaVisita, 23) as date, COUNT(*) as count FROM [APPGAC].[ServiciosViewSQL] WHERE FORMAT(FechaVisita, 'yyyy-MM') = @month`;
+        // El filtro va por RANGO y no por `FORMAT(FechaVisita, 'yyyy-MM') = @month`.
+        // Envolver la columna en una funcion la vuelve no-sargable: SQL Server no puede usar
+        // ningun indice sobre FechaVisita y recorre la tabla entera (>1.000.000 de filas) en
+        // cada carga de la pantalla. `FORMAT` ademas es de las funciones mas lentas del motor,
+        // porque va por CLR. Comparar contra un rango deja la columna intacta.
+        // El formato de @month ya viene validado como YYYY-MM por la regex de arriba.
+        let query = `SELECT CONVERT(VARCHAR(10), FechaVisita, 23) as date, COUNT(*) as count
+                     FROM [APPGAC].[ServiciosViewSQL]
+                     WHERE FechaVisita >= CAST(@month + '-01' AS DATE)
+                       AND FechaVisita <  DATEADD(month, 1, CAST(@month + '-01' AS DATE))`;
         if (!isAdmin) {
             query += ' AND CodigoTecnico = @techCode';
             sqlReq.input('techCode', sql.VarChar(255), codigo_tecnico);
@@ -120,7 +129,9 @@ router.get('/api/tec/tickets/calendar-summary', verifyToken, checkPermission('te
             sqlReq.input('techCode', sql.VarChar(255), req.query.techCode as string);
         }
         query += ' GROUP BY CONVERT(VARCHAR(10), FechaVisita, 23)';
+        const t0 = Date.now();
         const result = await sqlReq.query(query);
+        console.log(`[TEC] /calendar-summary — ${result.recordset.length} dias en ${((Date.now() - t0) / 1000).toFixed(1)} s`);
         const summary: Record<string, number> = {};
         for (const row of result.recordset) { summary[row.date] = row.count; }
         res.json(summary);
@@ -147,11 +158,15 @@ router.get('/api/tec/tickets', verifyToken, checkPermission('tec.tickets.view'),
             WHERE 1=1
         `;
 
+        // Mismo motivo que en calendar-summary: `CONVERT(DATE, S.FechaVisita)` envuelve la
+        // COLUMNA y anula los indices. El rango medio abierto (>= dia, < dia siguiente) cubre
+        // exactamente las mismas filas —todo el dia natural, con hora incluida— pero deja la
+        // columna libre para que el motor pueda buscar por indice.
         if (dateStr) {
-            query += " AND CONVERT(DATE, S.FechaVisita) = CONVERT(DATE, @date)";
+            query += " AND S.FechaVisita >= CAST(@date AS DATE) AND S.FechaVisita < DATEADD(day, 1, CAST(@date AS DATE))";
             sqlReq.input('date', sql.VarChar(255), dateStr);
         } else {
-            query += " AND CONVERT(DATE, S.FechaVisita) = CONVERT(DATE, GETDATE())";
+            query += " AND S.FechaVisita >= CAST(GETDATE() AS DATE) AND S.FechaVisita < DATEADD(day, 1, CAST(GETDATE() AS DATE))";
         }
 
         if (isAdmin) {
@@ -167,7 +182,9 @@ router.get('/api/tec/tickets', verifyToken, checkPermission('tec.tickets.view'),
 
         query += " ORDER BY S.FechaVisita ASC";
 
+        const t0 = Date.now();
         const result = await sqlReq.query(query);
+        console.log(`[TEC] /tec/tickets — ${result.recordset.length} tickets en ${((Date.now() - t0) / 1000).toFixed(1)} s`);
         res.json(result.recordset);
     } catch (err: unknown) {
         console.error('❌ Error in /api/tec/tickets:', mensajeError(err));

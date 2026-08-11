@@ -80,7 +80,11 @@ const limiter = rateLimit({
 // keyGenerator: IP + username — cada usuario tiene su propio contador (evita que IP compartida de oficina bloquee a todos)
 const authKeyGenerator = (req: Request) => {
     const username = String(req.body?.username || '').toLowerCase().trim().substring(0, 50);
-    return `${req.ip}:${username}`;
+    // La IP pasa por `ipKeyGenerator`, que normaliza IPv6 a su subred /56. Con la IP en
+    // crudo, un usuario con IPv6 estrena contador con solo cambiar de direccion dentro de su
+    // propio bloque —y los bloques domesticos tienen billones—, asi que el limite de intentos
+    // de login no le afectaba. Con IPv4 no se nota porque la direccion es una sola.
+    return `${ipKeyGenerator(req.ip ?? '')}:${username}`;
 };
 let authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,

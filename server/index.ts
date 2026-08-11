@@ -72,6 +72,8 @@ const limiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     store: new RedisStore({ sendCommand: (...args: string[]) => (getRedisClient() as unknown as { call: (...a: string[]) => Promise<unknown> }).call(...args) as Promise<number>, prefix: 'rl:tec:' }),
+
+    passOnStoreError: true,   // si Redis cae, la app sigue sirviendo (sin limitar) en vez de dar 500
 });
 
 // Auth rate limiter — starts with safe defaults, overwritten from EBM.AppSessionConfig at startup
@@ -89,6 +91,8 @@ let authLimiter = rateLimit({
     keyGenerator: authKeyGenerator,
     handler: avisoLimite('limite de login'),
     store: new RedisStore({ sendCommand: (...args: string[]) => (getRedisClient() as unknown as { call: (...a: string[]) => Promise<unknown> }).call(...args) as Promise<number>, prefix: 'rl:tec:auth:' }),
+
+    passOnStoreError: true,   // si Redis cae, la app sigue sirviendo (sin limitar) en vez de dar 500
 });
 
 // --- CONFIGURACIÓN DE AZURE STORAGE BLOB ---
@@ -561,6 +565,8 @@ app.listen(port, () => {
             keyGenerator: authKeyGenerator,
             message: { error: `Demasiados intentos de inicio de sesión. Espera ${cfg.rateLimitWindowMinutes} minutos.` },
             store: new RedisStore({ sendCommand: (...args: string[]) => (getRedisClient() as unknown as { call: (...a: string[]) => Promise<unknown> }).call(...args) as Promise<number>, prefix: 'rl:tec:auth:' }),
+
+            passOnStoreError: true,   // si Redis cae, la app sigue sirviendo (sin limitar) en vez de dar 500
         });
         console.log(`[SessionConfig] Auth limiter: ${cfg.rateLimitMaxAttempts} intentos / ${cfg.rateLimitWindowMinutes} min`);
     }).catch(err => console.error('[SessionConfig] Failed to load rate limit config:', err));

@@ -5,37 +5,15 @@ import sql from 'mssql';
 // es una lectura de env var, no un estado compartido, y asi este modulo no depende del arranque.
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
+// Base comun de los dos pools reales. SIN credenciales: cada pool pone las suyas. El usuario
+// administrador ya no lo usa el servidor — ver server/migraciones-ddl.ts.
 const dbConfig: sql.config = {
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
     server: process.env.DB_SERVER || '',
     port: 1433,
     pool: { max: 30, min: 0, idleTimeoutMillis: 30000 },
     options: { encrypt: true, trustServerCertificate: !IS_PRODUCTION, requestTimeout: 60000 }
 };
-
-let pool: sql.ConnectionPool | null = null;
-
-// Etapa 6 -- pool admin, reservado para operaciones DDL (runMigrations) que ni siatc_reader
-// ni siatc_writer pueden ejecutar (ninguno tiene permiso de modificar esquema).
-async function getDb() {
-    if (!pool || !pool.connected) {
-        try {
-            pool = await new sql.ConnectionPool(dbConfig).connect();
-            pool.on('error', (err: Error) => {
-                console.error('❌ DB Pool error:', err.message);
-                pool = null;
-            });
-            console.log('✅ Conectado a Azure SQL: ' + dbConfig.database);
-        } catch (err: unknown) {
-            console.error('❌ Error de conexión DB:', mensajeError(err));
-            pool = null;
-            throw err;
-        }
-    }
-    return pool;
-}
 
 // Etapa 6 -- usuarios de BD de privilegio minimo (siatc_reader/siatc_writer).
 //
@@ -96,4 +74,4 @@ async function getWritePool() {
     return writePool;
 }
 
-export { getDb, getReadPool, getWritePool };
+export { getReadPool, getWritePool };

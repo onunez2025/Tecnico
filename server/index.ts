@@ -10,7 +10,7 @@ import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import { RedisStore } from 'rate-limit-redis';
 import { safeError } from './lib/security';
-import { getDb, getReadPool, getWritePool } from './db';
+import { getReadPool, getWritePool } from './db';
 import { getRedisClient } from './lib/redis';
 import { verifyToken } from './middleware/auth';
 import sapRouter from './routes/sap';
@@ -236,30 +236,14 @@ if (!APPSHEET_PDF_PATH) {
 app.use(dashboardRouter);     // /api/dashboard (4 rutas)
 
 
-async function runMigrations() {
-    const db = await getDb();
+// Los cinco pasos que cambiaban el ESQUEMA se movieron a server/migraciones-ddl.ts: ya
+// estaban aplicados y obligaban a conectarse como administrador en cada arranque. Aqui quedan
+// los de datos, que son DML y puede ejecutarlos siatc_writer.
+async function sincronizarDatos() {
+    const db = await getWritePool();
 
     const steps: Array<{ name: string; sql: string }> = [
-        {
-            name: 'Add Apps to EBM.Roles',
-            sql: `IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('EBM.Roles') AND name = 'Apps')
-                  BEGIN ALTER TABLE EBM.Roles ADD Apps NVARCHAR(200) NOT NULL DEFAULT 'EBM'; END`
-        },
-        {
-            name: 'Add Apps to EBM.Users',
-            sql: `IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('EBM.Users') AND name = 'Apps')
-                  BEGIN ALTER TABLE EBM.Users ADD Apps NVARCHAR(200) NULL DEFAULT 'TEC'; END`
-        },
-        {
-            name: 'Add RequiresPasswordChange to EBM.Users',
-            sql: `IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('EBM.Users') AND name = 'RequiresPasswordChange')
-                  BEGIN ALTER TABLE EBM.Users ADD RequiresPasswordChange BIT NOT NULL DEFAULT 0; END`
-        },
-        {
-            name: 'Add CreatedAt to EBM.Users',
-            sql: `IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('EBM.Users') AND name = 'CreatedAt')
-                  BEGIN ALTER TABLE EBM.Users ADD CreatedAt DATETIME NULL DEFAULT GETDATE(); END`
-        },
+
         {
             name: 'Update Apps in EBM.Roles for TEC',
             sql: `UPDATE EBM.Roles
@@ -307,19 +291,7 @@ async function runMigrations() {
                         WHERE rp2.RoleId = r.Id AND rp2.Permission = 'tec.tickets.view'
                     )`
         },
-        {
-            name: 'Create GAC_APP_TB_CONFIG table',
-            sql: `IF OBJECT_ID('dbo.GAC_APP_TB_CONFIG', 'U') IS NULL
-                  BEGIN
-                    CREATE TABLE [dbo].[GAC_APP_TB_CONFIG] (
-                      [Clave] NVARCHAR(100) PRIMARY KEY,
-                      [Valor] NVARCHAR(255) NOT NULL,
-                      [Descripcion] NVARCHAR(500) NULL,
-                      [Actualizado_el] DATETIME DEFAULT GETDATE(),
-                      [Actualizado_por] NVARCHAR(100) NULL
-                    );
-                  END`
-        },
+        
         {
             name: 'Insert default HORA_MAXIMA_RANGO_HORARIO config',
             sql: `IF NOT EXISTS (SELECT 1 FROM [dbo].[GAC_APP_TB_CONFIG] WHERE [Clave] = 'HORA_MAXIMA_RANGO_HORARIO')
@@ -557,7 +529,7 @@ async function fetchSessionConfig(): Promise<SessionConfig> {
 // --- INICIO DEL SERVIDOR ---
 app.listen(port, () => {
     console.log(`🚀 Servidor Gestión Técnica escuchando en puerto ${port}`);
-    runMigrations().catch(err => console.error('❌ Migration failed:', err.message));
+    sincronizarDatos().catch(err => console.error('❌ Migration failed:', err.message));
     setTimeout(() => syncAllMissingTickets(), 15000);
     fetchSessionConfig().then(cfg => {
         authLimiter = rateLimit({

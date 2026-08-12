@@ -1,10 +1,6 @@
 import { mensajeError } from './lib/security.js';
 import sql from 'mssql';
 
-// IS_PRODUCTION se recalcula aqui con la misma expresion que en index.ts en vez de importarse:
-// es una lectura de env var, no un estado compartido, y asi este modulo no depende del arranque.
-const IS_PRODUCTION = process.env.NODE_ENV === 'production';
-
 // Base comun de los dos pools reales. SIN credenciales: cada pool pone las suyas. El usuario
 // administrador ya no lo usa el servidor — ver server/migraciones-ddl.ts.
 const dbConfig: sql.config = {
@@ -12,7 +8,7 @@ const dbConfig: sql.config = {
     server: process.env.DB_SERVER || '',
     port: 1433,
     pool: { max: 30, min: 0, idleTimeoutMillis: 30000 },
-    options: { encrypt: true, trustServerCertificate: !IS_PRODUCTION, requestTimeout: 60000 }
+    options: { encrypt: true, trustServerCertificate: false, requestTimeout: 60000 }
 };
 
 // Etapa 6 -- usuarios de BD de privilegio minimo (siatc_reader/siatc_writer).

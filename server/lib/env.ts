@@ -36,3 +36,29 @@ if (!process.env.JWT_SECRET) {
 }
 
 export const JWT_SECRET: string = process.env.JWT_SECRET;
+
+/**
+ * Credenciales de base de datos de privilegio minimo (Etapa 6).
+ *
+ * `siatc_reader` solo lee y `siatc_writer` lee y escribe. La idea es que una inyeccion SQL en un
+ * endpoint de consulta no pueda escribir nada, porque la conexion que usa no tiene permiso ni
+ * para intentarlo.
+ *
+ * Hasta ahora `db.ts` hacia `process.env.DB_USER_READ || process.env.DB_USER`: si faltaba
+ * cualquiera de las cuatro variables, la aplicacion **volvia al usuario administrador anterior
+ * sin decir nada**. Ese respaldo tenia sentido mientras se desplegaba la Etapa 6 y las variables
+ * todavia no estaban en Dokploy. Ya lo estan en las once, asi que ahora es solo una puerta
+ * abierta: un despliegue al que se le olvide una variable perderia la separacion de privilegios
+ * y nadie se enteraria, porque todo seguiria funcionando igual.
+ *
+ * No arrancar es preferible a arrancar como administrador creyendo que no lo eres.
+ */
+const CREDENCIALES_BD = ['DB_USER_READ', 'DB_PASS_READ', 'DB_USER_WRITE', 'DB_PASS_WRITE'] as const;
+const credencialesQueFaltan = CREDENCIALES_BD.filter(v => !process.env[v]);
+if (credencialesQueFaltan.length > 0) {
+    throw new Error(
+        `CRITICAL: faltan las variables de entorno ${credencialesQueFaltan.join(', ')}. La ` +
+        'aplicacion no arranca sin los usuarios de privilegio minimo de la Etapa 6; continuar ' +
+        'significaria conectarse a la base con el usuario administrador antiguo.'
+    );
+}

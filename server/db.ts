@@ -37,19 +37,24 @@ async function getDb() {
     return pool;
 }
 
-// Etapa 6 -- usuarios de BD de privilegio minimo (siatc_reader/siatc_writer). Si las env
-// vars DB_USER_READ/DB_USER_WRITE todavia no estan configuradas en Dokploy, caen de vuelta
-// al usuario admin original -- permite desplegar este codigo antes de agregar esas env vars,
-// y revertir a admin-only con solo quitarlas, sin tocar codigo.
+// Etapa 6 -- usuarios de BD de privilegio minimo (siatc_reader/siatc_writer).
+//
+// Aqui habia un respaldo `|| process.env.DB_USER` para poder desplegar este codigo antes de
+// tener las variables en Dokploy. Ya estan en las once apps, y mantenerlo solo dejaba una
+// puerta abierta: un despliegue al que se le olvidara una variable volveria al usuario
+// administrador antiguo sin avisar de nada, funcionando igual de bien. Retirado.
+//
+// Ahora la ausencia de cualquiera de las cuatro se detecta al arrancar, en lib/env.ts, con un
+// mensaje que dice cual falta.
 const readDbConfig: sql.config = {
     ...dbConfig,
-    user: process.env.DB_USER_READ || process.env.DB_USER,
-    password: process.env.DB_PASS_READ || process.env.DB_PASSWORD,
+    user: process.env.DB_USER_READ,
+    password: process.env.DB_PASS_READ,
 };
 const writeDbConfig: sql.config = {
     ...dbConfig,
-    user: process.env.DB_USER_WRITE || process.env.DB_USER,
-    password: process.env.DB_PASS_WRITE || process.env.DB_PASSWORD,
+    user: process.env.DB_USER_WRITE,
+    password: process.env.DB_PASS_WRITE,
 };
 
 let readPool: sql.ConnectionPool | null = null;

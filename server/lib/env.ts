@@ -62,3 +62,27 @@ if (credencialesQueFaltan.length > 0) {
         'significaria conectarse a la base con el usuario administrador antiguo.'
     );
 }
+
+/**
+ * ¿Esta aplicacion esta desplegada, o corriendo en la maquina de alguien?
+ *
+ * Antes esto se decidia con `NODE_ENV === 'production'`, y esa pregunta no es la misma: no
+ * comprueba donde corre la aplicacion, comprueba si existe una variable. El 2026-08-12 se
+ * confirmo que **ninguna app de QA tiene NODE_ENV en Dokploy**, asi que las once se estaban
+ * comportando como si fueran el portatil de un desarrollador: el atajo de CORS aceptaba
+ * cualquier origen, HSTS quedaba apagado y los errores salian al cliente con su detalle. Sin un
+ * solo aviso, porque el aviso tambien dependia de NODE_ENV.
+ *
+ * `ALLOWED_ORIGINS` es una senal mejor porque **es la lista de dominios desde los que se sirve
+ * la aplicacion**: existe precisamente cuando esta publicada, y no existe en un entorno local.
+ * Si algun dia falta en un despliegue, el efecto es el contrario al anterior: CORS se cierra en
+ * vez de abrirse, y eso se nota de inmediato en lugar de pasar inadvertido durante meses.
+ */
+export const ES_DESPLIEGUE: boolean = Boolean((process.env.ALLOWED_ORIGINS || '').trim());
+
+if (!ES_DESPLIEGUE) {
+    console.warn(
+        '⚠️  CORS ABIERTO — no hay ALLOWED_ORIGINS configurado, asi que se aceptara cualquier ' +
+        'origen. Es lo correcto en local; si ves esto en Dokploy, falta la variable.'
+    );
+}

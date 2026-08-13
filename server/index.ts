@@ -28,7 +28,6 @@ import { syncPaymentCache } from './lib/pagosSync';
 import { APP_IDENTIFIER, APPSHEET_PDF_PATH } from './lib/config';
 import { JWT_SECRET } from './lib/env.js';
 
-const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 
 // --- RATE LIMITING ---
@@ -123,10 +122,6 @@ const distPath = path.join(process.cwd(), 'dist');
 // [SECURITY] Proxy de confianza para que express-rate-limit vea la IP real
 app.set('trust proxy', 1);
 
-// [SECURITY] CORS — múltiples orígenes desde env, con guard de producción
-if (IS_PRODUCTION && !(process.env.ALLOWED_ORIGINS || '').trim()) {
-    console.warn('WARNING: ALLOWED_ORIGINS no configurado en producción.');
-}
 app.use(cors({
     origin: (origin, callback) => {
         if (!ES_DESPLIEGUE) return callback(null, true);  // sin ALLOWED_ORIGINS = entorno local

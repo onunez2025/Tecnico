@@ -395,6 +395,30 @@
     cursor: url('/cursor-text-light.svg') 6 13, text;
   }
 
+
+  /*
+     Botones del azul corporativo — MODO CLARO.
+
+     El cursor de mano claro tiene su cuerpo en rgb(76,95,128), que es exactamente
+     `--primary` (#4C5F80). Sobre un boton primario el contraste es de 1,00:1: el
+     puntero desaparece del todo. Medido, no estimado.
+
+     Se usa la variante de modo oscuro, cuyo cuerpo es rgb(148,159,177) y da 2,41:1
+     sobre ese azul (3,49:1 el brillo). No es un contraste brillante, pero es la
+     diferencia entre ver el cursor y no verlo.
+
+     `:not(:disabled)` cumple dos funciones: sube la especificidad a (0,2,0) para
+     ganarle a `button:not(:disabled)` —que es (0,1,1) y va antes—, y respeta el
+     `not-allowed` de los botones deshabilitados, como el resto del archivo.
+
+     No se toca el modo oscuro: ahi el boton es #707F99 y NINGUNO de los dos
+     cursores contrasta (1,51:1 el actual, 1,59:1 el otro). Cambiarlo no arreglaria
+     nada; haria falta un SVG nuevo.
+  */
+  .bg-primary:not(:disabled) {
+    cursor: url('/cursor-pointer-dark.svg') 9 1, pointer;
+  }
+
   .dark body {
     cursor: url('/cursor-dark.svg') 1 1, auto;
   }

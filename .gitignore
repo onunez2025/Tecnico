@@ -10,3 +10,6 @@ npm-debug.log
 # Cache de Python (scripts/verificar-orden-rutas.py)
 __pycache__/
 *.pyc
+
+# Cache incremental de TypeScript: se regenera en cada `tsc -b`.
+*.tsbuildinfo

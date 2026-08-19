@@ -53,6 +53,7 @@
     }
   },
   "nav": {
+    "dashboard": "Dashboard",
     "menuTitle": "Main Menu",
     "tickets": "My Tickets",
     "payments": "My Payments",

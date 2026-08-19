@@ -6,8 +6,7 @@ import {
     ChevronRight,
     DollarSign,
     Building2,
-    Globe
-} from 'lucide-react';
+    Globe, LayoutDashboard} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../../utils/cn';
 import { useAuth } from '../../hooks/useAuth';
@@ -32,6 +31,12 @@ export function Sidebar({ className, onNavigate, isEffectivelyExpanded = true }:
     const showFull = isEffectivelyExpanded;
 
     const navItems = [
+        {
+            to: '/dashboard',
+            icon: LayoutDashboard,
+            label: t('nav.dashboard'),
+            permission: 'tec.dashboard.view' as const
+        },
         {
             to: '/tickets',
             icon: Calendar,

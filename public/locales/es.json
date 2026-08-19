@@ -53,6 +53,7 @@
     }
   },
   "nav": {
+    "dashboard": "Panel",
     "menuTitle": "Menú Principal",
     "tickets": "Mis Tickets",
     "payments": "Mis Pagos",

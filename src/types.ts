@@ -43,7 +43,6 @@ export type Permission =
   | 'tec.config.audit'
   | 'tec.config.parameters'
   | 'tec.tickets.view'
-  | 'tec.dashboard.view'
   | 'tec.payments.view'
   | 'tec.payments.view.all'
   | 'tec.payments.register';

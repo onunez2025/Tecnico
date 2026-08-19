@@ -22,7 +22,6 @@ import preferencesRouter from './routes/preferences';
 import ssoAuthRouter from './routes/ssoAuth';
 import ticketsPagosRouter from './routes/ticketsPagos';
 import authRouter from './routes/auth';
-import dashboardRouter from './routes/dashboard';
 import ticketsRouter from './routes/tickets';
 import { syncPaymentCache } from './lib/pagosSync';
 import { APP_IDENTIFIER, APPSHEET_PDF_PATH } from './lib/config';
@@ -229,7 +228,6 @@ if (!APPSHEET_PDF_PATH) {
     console.warn('⚠️  APPSHEET_PDF_PATH no configurado. El endpoint de PDF de cotizaciones no funcionará.');
 }
 
-app.use(dashboardRouter);     // /api/dashboard (4 rutas)
 
 
 // Los cinco pasos que cambiaban el ESQUEMA se movieron a server/migraciones-ddl.ts: ya

@@ -53,33 +53,11 @@
     }
   },
   "nav": {
-    "dashboard": "Dashboard",
     "menuTitle": "Main Menu",
     "tickets": "My Tickets",
     "payments": "My Payments",
     "audit": "Audit Logs",
     "casLabel": "Assigned CAS"
-  },
-  "dashboard": {
-    "greeting": "Hello, {{name}}",
-    "summary": "Here is your activity and services summary.",
-    "updatedAt": "Updated",
-    "stats": {
-      "total": "My Total Collection",
-      "settled": "Settled Payments",
-      "pending": "Pending",
-      "observed": "Observed",
-      "subs": {
-        "total": "Accumulated amount",
-        "settled": "Confirmed payments",
-        "pending": "In settlement process",
-        "observed": "Require attention"
-      }
-    },
-    "registerPayment": {
-      "title": "Register Payment",
-      "desc": "Enter the payment for your completed services."
-    }
   },
   "today": {
     "title": "Today's Tickets",

@@ -14,7 +14,6 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SystemConfigPage = lazy(() => import('./pages/config/SystemConfigPage'));
 const TicketsCalendarPage = lazy(() => import('./pages/TicketsCalendarPage'));
 const PaymentsPage = lazy(() => import('./pages/PaymentsPage'));
-const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 import { PermissionGuard } from './components/auth/PermissionGuard';
 
 const consoleUrl = import.meta.env.VITE_CONSOLE_URL || (import.meta.env.PROD ? 'https://console.siatc.cloud' : 'http://localhost:3008');
@@ -77,23 +76,7 @@ function App() {
                   </PermissionGuard>
                 } />
 
-                {/*
-                  Panel de indicadores. Existia completo —pagina, servicio y las 4 rutas del
-                  backend— pero nunca estuvo enrutado, asi que no lo veia nadie. Diego pidio
-                  activarlo el 2026-08-19 para revisar el trabajo de Oscar.
-
-                  Se protege con `tec.dashboard.view`, que HOY no tiene ningun rol: como
-                  `hasPermission` y `checkPermission` dan paso a los administradores sin mirar la
-                  lista, el efecto es "solo administradores" sin cablear el rol en el codigo. Para
-                  abrirlo a otro rol basta con concederle el permiso en Console.
-                */}
-                <Route path="dashboard" element={
-                  <PermissionGuard permission="tec.dashboard.view" asRoute>
-                    <DashboardPage />
-                  </PermissionGuard>
-                } />
-
-                <Route path="payments" element={
+                                <Route path="payments" element={
                   <PermissionGuard permission="tec.payments.view" asRoute>
                     <PaymentsPage />
                   </PermissionGuard>

@@ -53,33 +53,11 @@
     }
   },
   "nav": {
-    "dashboard": "Panel",
     "menuTitle": "Menú Principal",
     "tickets": "Mis Tickets",
     "payments": "Mis Pagos",
     "audit": "Logs de Auditoría",
     "casLabel": "CAS Asignado"
-  },
-  "dashboard": {
-    "greeting": "Hola, {{name}}",
-    "summary": "Este es tu resumen de actividades y servicios.",
-    "updatedAt": "Actualizado",
-    "stats": {
-      "total": "Mi Recaudación Total",
-      "settled": "Pagos Liquidados",
-      "pending": "Pendientes",
-      "observed": "Observados",
-      "subs": {
-        "total": "Monto acumulado",
-        "settled": "Pagos confirmados",
-        "pending": "En proceso de liquidación",
-        "observed": "Requieren atención"
-      }
-    },
-    "registerPayment": {
-      "title": "Registrar Pago",
-      "desc": "Ingresa el pago de tus servicios finalizados."
-    }
   },
   "today": {
     "title": "Tickets de Hoy",

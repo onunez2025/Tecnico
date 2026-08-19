@@ -1,5 +1,5 @@
 import './lib/env.js';   // PRIMERO: carga el .env y valida los secretos antes que nada
-import { ES_DESPLIEGUE } from './lib/env.js';
+import { ES_DESPLIEGUE, SYNC_PAGOS_PERIODICA } from './lib/env.js';
 import { mensajeError, sanitizeLog} from './lib/security.js';
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
@@ -524,7 +524,15 @@ async function fetchSessionConfig(): Promise<SessionConfig> {
 app.listen(port, () => {
     console.log(`🚀 Servidor Gestión Técnica escuchando en puerto ${port}`);
     sincronizarDatos().catch(err => console.error('❌ Migration failed:', err.message));
-    setTimeout(() => syncAllMissingTickets(), 15000);
+    // Solo donde toca: esta pasada escribe en GAC_PAGOS_CACHE, la misma tabla que sincroniza
+    // Liquidaciones, y QA comparte base con produccion (ver SYNC_PAGOS_PERIODICA en lib/env.ts).
+    // La sincronizacion al registrar un pago sigue viva en los dos entornos.
+    if (SYNC_PAGOS_PERIODICA) {
+        console.log('🔄 [Sync] Sincronizacion del cache de pagos al arrancar: ACTIVA');
+        setTimeout(() => syncAllMissingTickets(), 15000);
+    } else {
+        console.log('⏸️  [Sync] Sincronizacion del cache de pagos al arrancar: DESACTIVADA (PAGOS_SYNC_ENABLED=false)');
+    }
     fetchSessionConfig().then(cfg => {
         authLimiter = rateLimit({
             windowMs: cfg.rateLimitWindowMinutes * 60 * 1000,

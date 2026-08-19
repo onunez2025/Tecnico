@@ -86,3 +86,28 @@ if (!ES_DESPLIEGUE) {
         'origen. Es lo correcto en local; si ves esto en Dokploy, falta la variable.'
     );
 }
+
+/**
+ * ¿Este contenedor debe ejecutar la sincronizacion del cache de pagos al arrancar?
+ *
+ * Technical escribe en `GAC_PAGOS_CACHE` —la MISMA tabla que Liquidaciones— a los 15 segundos de
+ * cada arranque, y ademas la lee: "Mis Pagos" sale de ahi. La tabla es compartida a proposito.
+ *
+ * El problema es quien escribe: QA y produccion son aplicaciones distintas de Dokploy pero
+ * **comparten la base de datos**, asi que con esto sin condicionar hay CUATRO escritores sobre una
+ * sola tabla (Liquidaciones y Technical, cada uno en sus dos entornos).
+ *
+ * El 2026-08-19 esa concurrencia dejo 1.170 filas duplicadas en el cache. Se corrigio con un
+ * indice unico —que protege contra los cuatro— y apagando los temporizadores fuera de produccion.
+ * Aqui no hay temporizador periodico, pero **cada redespliegue dispara una pasada**, y ese dia
+ * Technical se redesplego cuatro veces.
+ *
+ * Misma bandera y mismo criterio que en Liquidaciones: **activada por defecto**, apagada
+ * explicitamente en QA. Olvidarla en QA solo cuesta trabajo duplicado —el indice unico ya impide
+ * el duplicado real—; olvidarla en produccion congelaria el cache en silencio.
+ *
+ * ⚠️ NO apaga la sincronizacion bajo demanda: `syncPaymentCache` al registrar un pago sigue
+ * corriendo en los dos entornos. Solo apaga la pasada masiva del arranque.
+ */
+export const SYNC_PAGOS_PERIODICA: boolean =
+    (process.env.PAGOS_SYNC_ENABLED ?? 'true').trim().toLowerCase() !== 'false';

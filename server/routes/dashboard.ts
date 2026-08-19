@@ -150,6 +150,23 @@ router.get('/api/dashboard/cas-performance', verifyToken, checkPermission('tec.d
         
         let statsQuery = '';
         const sqlReq = db.request();
+        /*
+         * Los espacios se colapsan con el idioma <>/>< , NO con REPLACE(x, '  ', ' ').
+         *
+         * REPLACE(x, '  ', ' ') no colapsa una serie de espacios: la reparte. Recorre de izquierda a
+         * derecha consumiendo pares, asi que TRES espacios quedan en DOS. Y aqui salen tres solos:
+         * NombreTecnico llega de FSM con espacios al final —"SNT JHONY JAVIER  "— y al concatenarle
+         * ' ' + apellido se juntan tres.
+         *
+         * Medido contra la base el 2026-08-19: el tecnico SNT JHONY JAVIER SANTAMARIA BANCES no casaba
+         * con su ficha de Colaboradores CAS y desaparecia con sus 1.060 tickets, en silencio.
+         *
+         * El idioma de abajo si colapsa cualquier serie: cambia cada espacio por '<>', borra los '><'
+         * que quedan entre espacios consecutivos, y deshace el cambio. Mas LTRIM/RTRIM en los extremos.
+         * Comprobado que el cambio suma exactamente esos tickets y no crea ninguna coincidencia nueva.
+         *
+         * ⚠️ Este comentario va FUERA de la plantilla: dentro, sus acentos graves la cerrarian.
+         */
         const setupQuery = `
             SET NOCOUNT ON;
             DECLARE @Pagos TABLE (Ticket varchar(MAX), ImporteValido decimal(18,2));
@@ -159,12 +176,12 @@ router.get('/api/dashboard/cas-performance', verifyToken, checkPermission('tec.d
             WHERE Fecha_transaccion >= '2025-01-01' AND Ticket IS NOT NULL;
             DECLARE @ColabMapping TABLE (NombreNormal varchar(200), ID_cas varchar(50));
             INSERT INTO @ColabMapping (NombreNormal, ID_cas)
-            SELECT DISTINCT REPLACE(Nombre_FSM, '  ', ' '), CAS FROM [dbo].[GAC_APP_TB_COLABORADORES_CAS] WHERE Nombre_FSM IS NOT NULL;
+            SELECT DISTINCT REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(Nombre_FSM)),' ','<>'),'><',''),'<>',' '), CAS FROM [dbo].[GAC_APP_TB_COLABORADORES_CAS] WHERE Nombre_FSM IS NOT NULL;
             DECLARE @Tickets2026 TABLE (Ticket varchar(50), FechaVisita datetime, ID_cas varchar(50));
             INSERT INTO @Tickets2026 (Ticket, FechaVisita, ID_cas)
             SELECT s.Ticket, s.FechaVisita, colab.ID_cas
             FROM [SIATC].[Dashboard_FSM] s
-            INNER JOIN @ColabMapping colab ON REPLACE(s.NombreTecnico + ' ' + s.ApellidoTecnico, '  ', ' ') = colab.NombreNormal
+            INNER JOIN @ColabMapping colab ON REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(s.NombreTecnico + ' ' + ISNULL(s.ApellidoTecnico, ''))),' ','<>'),'><',''),'<>',' ') = colab.NombreNormal
             WHERE YEAR(s.FechaVisita) = YEAR(GETDATE());
         `;
 

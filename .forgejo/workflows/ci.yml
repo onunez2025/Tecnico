@@ -1,9 +1,18 @@
 name: CI — SIATC Security Check
 
+# ⚠️ Este repo usa **pnpm**, no npm.
+#
+# Hasta el 2026-08-20 este flujo hacia `npm ci`, que exige un `package-lock.json` que aqui no
+# existe: `packageManager` declara pnpm y lo que hay es `pnpm-lock.yaml`. Resultado, el CI fallaba
+# en el primer paso de TODOS los repos desde la migracion a pnpm, y nadie lo veia porque el aspa
+# roja solo sale en la lista de repositorios de Forgejo.
+#
+# Se alinea con el Dockerfile, que ya funciona: Node 22 y pnpm activado con corepack.
+
 on:
   push: {}
   schedule:
-    - cron: '0 3 * * 1'   # Lunes 3am UTC — npm audit semanal
+    - cron: '0 3 * * 1'   # Lunes 3am UTC — auditoria de dependencias semanal
 
 jobs:
   ci:
@@ -14,23 +23,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: '22'
+
+      # corepack DESPUES de setup-node: activa la version de pnpm que declara
+      # `packageManager` en package.json, sin fijarla en dos sitios distintos.
+      - name: Activar pnpm
+        run: corepack enable
 
       - name: Instalar dependencias
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: C6 — TypeScript / ESLint
-        run: npm run lint
+        run: pnpm run lint
 
       - name: C8 — Build (CRÍTICO)
-        run: npm run build
+        run: pnpm run build
 
-      - name: C7 — npm audit high/critical (advertencia)
-        run: npm audit --audit-level=high
+      - name: C7 — audit high/critical (advertencia)
+        run: pnpm audit --audit-level high
         continue-on-error: true
 
       - name: Chequeo de seguridad completo (check-security.sh)

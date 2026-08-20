@@ -14,6 +14,49 @@ ERRORS=0
 WARNINGS=0
 RED='\033[0;31m'; YELLOW='\033[1;33m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; NC='\033[0m'
 
+# ─── C0: a que rama se esta empujando ────────────────────────────────────────
+# Este repo tiene un flujo acordado: el trabajo va a `feature/casdoor-sso-pilot`
+# (QA), se valida ahi, y desde ESA rama se promueve a `main`. Empujar a `main`
+# desde otro sitio se salta la validacion y, peor, divide el historial: el
+# 2026-08-20 dos personas trabajaron a la vez sobre `main` y Forgejo rechazo un
+# push con "remote contains work that you do not have". Aquella vez no se perdio
+# nada por suerte —los ficheros no se solapaban—, pero pudo perderse.
+#
+# La regla es sencilla: a `main` solo se llega desde casdoor.
+#
+#     git push origin origin/feature/casdoor-sso-pilot:refs/heads/main   ✅
+#     git push origin main                                              ❌
+#
+# ⚠️ Esto es una RED, no una cerradura: un `git push --no-verify` se la salta, y
+# solo protege a quien tenga el hook instalado (`bash install-hooks.sh`). La
+# proteccion de verdad es la de rama en Forgejo, que no depende de cada maquina.
+#
+# Para un caso excepcional:  SIATC_PERMITIR_MAIN=1 git push ...
+if [ ! -t 0 ] && [ "${SIATC_PERMITIR_MAIN:-0}" != "1" ]; then
+    # 2>/dev/null: con la entrada cerrada (ejecucion manual) `read` se queja, y no
+    # es un error: simplemente no hay refs que revisar.
+    while read -r ref_local _ ref_remoto _ 2>/dev/null; do
+        [ -z "$ref_remoto" ] && continue
+        case "$ref_remoto" in
+            refs/heads/main|refs/heads/master)
+                case "$ref_local" in
+                    *casdoor*) ;;   # promocion desde la rama de QA: es el camino bueno
+                    *)
+                        echo -e "\n${RED}❌ Push a ${ref_remoto#refs/heads/} BLOQUEADO${NC}"
+                        echo -e "   Origen: ${YELLOW}${ref_local:-(desconocido)}${NC}"
+                        echo    "   A main solo se llega desde feature/casdoor-sso-pilot:"
+                        echo -e "     ${CYAN}git push origin feature/casdoor-sso-pilot${NC}                              # 1) a QA"
+                        echo -e "     ${CYAN}git push origin origin/feature/casdoor-sso-pilot:refs/heads/main${NC}       # 2) promover"
+                        echo    "   Si de verdad hace falta saltarselo: SIATC_PERMITIR_MAIN=1 git push ..."
+                        exit 1
+                        ;;
+                esac
+                ;;
+        esac
+    done
+fi
+
+
 # ─── Cache: evitar re-ejecutar el chequeo completo para el mismo commit ──────
 # Cuando un remoto tiene mas de una pushurl (ej. origin -> GitHub + Forgejo),
 # git invoca este hook una vez por cada URL dentro de un solo "git push origin",

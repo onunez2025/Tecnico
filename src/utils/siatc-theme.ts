@@ -85,10 +85,41 @@ export const SIATC_THEME = {
         TABLE_ELEMENT: "w-full text-sm text-left border-collapse min-w-[1000px]",
         HEADER_ROW: "sticky top-0 z-20 bg-card border-b border-cb-border shadow-sm",
         HEADER_TH: "px-6 py-2.5 font-sans font-semibold text-[11px] uppercase tracking-[0.06em] text-cb-slate text-left",
-        BODY_ROW: "h-[64px] group hover:bg-cb-bg transition-colors border-b border-cb-border/60",
+        /*
+         * El alto de fila lo manda `--table-row-height`, que AppConfigContext escribe con lo
+         * configurado en SIATC Console (`theme.layout.tableRowHeight`). El 64px es el respaldo
+         * para cuando la aplicación no tenga nada configurado.
+         *
+         * Antes estaba escrito a mano como `h-[64px]` y la variable no la leía nadie: se podía
+         * cambiar el alto en Console y no pasaba nada.
+         */
+        BODY_ROW: "h-[var(--table-row-height,64px)] group hover:bg-cb-bg transition-colors border-b border-cb-border/60",
         CELL: "px-6 py-4 align-middle font-sans text-cb-text-primary",
         SCROLL_AREA: "flex-1 overflow-auto relative custom-scrollbar",
         FOOTER: "px-6 py-2 border-t border-cb-border bg-cb-bg/30 flex items-center justify-between shrink-0",
+    },
+
+    /*
+     * 4-bis. TABLA DENSA — para el detalle DENTRO de un modal, no para listados.
+     *
+     * Un listado se recorre con la vista y necesita aire: fila alta, celda holgada. Un detalle
+     * dentro de un modal es lo contrario — se consulta de un vistazo, cabe poco alto y compite con
+     * el resto del contenido del modal. Forzarle el ritmo del listado obliga a hacer scroll para
+     * ver cuatro materiales.
+     *
+     * Estas medidas NO son inventadas: salen de las tablas de detalle que ya existian escritas a
+     * mano en Liquidaciones (letra de 11px, cabecera de 9px, celda de 20x14px). Se suben aqui para
+     * que dejen de reescribirse en cada modal.
+     *
+     * A diferencia del listado, la fila densa NO fija alto: la manda el contenido.
+     */
+    TABLE_DENSA: {
+        TABLE_ELEMENT: "w-full text-left border-collapse text-[11px]",
+        HEADER_ROW: "sticky top-0 z-10 bg-muted/30 backdrop-blur-sm border-b border-cb-border text-muted-foreground",
+        HEADER_TH: "px-5 py-4 font-sans font-bold text-[9px] uppercase tracking-widest text-left",
+        BODY_ROW: "group hover:bg-primary/[0.04] transition-colors border-b border-cb-border/40",
+        CELL: "px-5 py-3.5 align-middle font-sans text-cb-text-primary",
+        SCROLL_AREA: "overflow-auto custom-scrollbar",
     },
 
     // 5. COMPONENTES DE INTERACCIÓN

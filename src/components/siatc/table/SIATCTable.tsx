@@ -29,34 +29,49 @@ const ContextoDensidad = React.createContext(false);
 const useEstilos = () =>
     React.useContext(ContextoDensidad) ? SIATC_THEME.TABLE_DENSA : SIATC_THEME.TABLE;
 
-export const SIATCTableCell: React.FC<React.TdHTMLAttributes<HTMLTableCellElement>> = ({ className, children, ...props }) => (
-    <td className={cn(useEstilos().CELL, className)} {...props}>
-        {children}
-    </td>
+/*
+ * Celda, fila y cabecera reenvian la `ref`. No es un adorno: una lista virtualizada necesita medir
+ * la fila para saber su alto, y sin `ref` la pantalla no puede usar el componente de la casa —
+ * tendria que volver a un <tr> suelto, que es justo lo que queremos evitar.
+ */
+export const SIATCTableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<HTMLTableCellElement>>(
+    ({ className, children, ...props }, ref) => (
+        <td ref={ref} className={cn(useEstilos().CELL, className)} {...props}>
+            {children}
+        </td>
+    )
 );
+SIATCTableCell.displayName = 'SIATCTableCell';
 
 interface RowProps extends React.HTMLAttributes<HTMLTableRowElement> {
     isActive?: boolean;
 }
 
-export const SIATCTableRow: React.FC<RowProps> = ({ className, children, isActive, ...props }) => (
-    <tr
-        className={cn(
-            useEstilos().BODY_ROW,
-            isActive && "bg-primary/10 border-l-4 border-l-primary shadow-sm",
-            className
-        )}
-        {...props}
-    >
-        {children}
-    </tr>
+export const SIATCTableRow = React.forwardRef<HTMLTableRowElement, RowProps>(
+    ({ className, children, isActive, ...props }, ref) => (
+        <tr
+            ref={ref}
+            className={cn(
+                useEstilos().BODY_ROW,
+                isActive && "bg-primary/10 border-l-4 border-l-primary shadow-sm",
+                className
+            )}
+            {...props}
+        >
+            {children}
+        </tr>
+    )
 );
+SIATCTableRow.displayName = 'SIATCTableRow';
 
-export const SIATCTableHeader: React.FC<React.ThHTMLAttributes<HTMLTableCellElement>> = ({ className, children, ...props }) => (
-    <th className={cn(useEstilos().HEADER_TH, className)} {...props}>
-        {children}
-    </th>
+export const SIATCTableHeader = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<HTMLTableCellElement>>(
+    ({ className, children, ...props }, ref) => (
+        <th ref={ref} className={cn(useEstilos().HEADER_TH, className)} {...props}>
+            {children}
+        </th>
+    )
 );
+SIATCTableHeader.displayName = 'SIATCTableHeader';
 
 /**
  * El `<thead>`. Existe para que la cabecera pegajosa no haya que recordarla a mano en cada

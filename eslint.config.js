@@ -73,6 +73,11 @@ const DEFINICIONES_DE_COLOR = [
   '**/utils/lottie-carga.ts',
   '**/components/common/LogosProveedores.tsx',
   '**/components/common/EtiquetaImpresion.tsx',
+  // Convencion: un fichero cuyo nombre lleva "paleta" NO usa colores, los DEFINE. Series de un
+  // grafico, presets de color para tipos de labor, valores por defecto de la marca. Si el color
+  // acaba en una de estas listas, ponerlo aqui — no repartirlo por las pantallas.
+  '**/*[Pp]aleta*.ts',
+  '**/*[Pp]aleta*.tsx',
 ]
 
 export default defineConfig([
@@ -121,6 +126,19 @@ export default defineConfig([
   {
     // El servidor: ni JSX, ni tema, ni apiClient.
     files: ['server/**'],
+    rules: { 'no-restricted-syntax': 'off' },
+  },
+  {
+    /*
+     * Scripts sueltos en la raiz del repo (`fix_algo.ts`, `test_algo.ts`). Se ejecutan a mano con
+     * `npx tsx` desde la terminal, no en el navegador: ahi `fetch` es el de Node y `apiClient` —que
+     * lee el token del almacenamiento del navegador— sencillamente no existe. Tampoco pintan nada,
+     * asi que ni colores ni tablas.
+     *
+     * El patron `*.ts` de la configuracion plana solo casa con los ficheros que estan JUNTO al
+     * propio eslint.config.js, no con los de `src/`.
+     */
+    files: ['*.ts', '*.tsx'],
     rules: { 'no-restricted-syntax': 'off' },
   },
 ])

@@ -60,6 +60,13 @@
   --color-cb-error: #DF2935;
   --color-cb-warning: #F0AD4E;
 
+
+  /* Fondos suaves de estado: el relleno claro que acompaña al color fuerte en avisos, paneles y
+     resaltados. Estaban escritos a mano como #E6F6EF / #FDECEE / #FFF4E5 en cada pantalla que los
+     necesitaba, que es justo lo que un token evita. */
+  --color-cb-success-suave: #E6F6EF;
+  --color-cb-error-suave: #FDECEE;
+  --color-cb-warning-suave: #FFF4E5;
   /* SIATC — colores dinámicos (apuntan a CSS vars en :root) */
   --color-cb-bg: var(--cb-bg);
   --color-cb-text-primary: var(--cb-text-primary);

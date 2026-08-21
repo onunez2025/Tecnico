@@ -85,7 +85,7 @@ export function MainLayout() {
 
     if (mostrandoCarga) {
         return (
-            <div className="min-h-screen bg-[#F9FAFB] dark:bg-[#050F1A] flex flex-col justify-center items-center">
+            <div className="min-h-screen bg-cb-bg flex flex-col justify-center items-center">
                 <div className="w-40 h-40 flex items-center justify-center">
                     <LottiePlayer
                         src={cargarAnimacionCarga}
@@ -105,7 +105,7 @@ export function MainLayout() {
     }
 
     return (
-        <div className="h-screen bg-[#F8FAFC] dark:bg-[#020617] text-foreground flex overflow-hidden font-sans relative">
+        <div className="h-screen bg-cb-bg text-foreground flex overflow-hidden font-sans relative">
             {isLoggingOut && (
                 <AuthTransitionOverlay
                     variant="farewell"

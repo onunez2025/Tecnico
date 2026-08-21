@@ -272,6 +272,45 @@ if [ -n "$RLS_FILES" ]; then
     fi
 fi
 
+# ─── C13-RESPONSIVE: pantalla nueva sin un solo punto de ruptura ─────────────────────────
+#
+# Hay usuarios —los tecnicos en campo— que usan el movil y NADA MAS. Una pantalla escrita solo
+# para escritorio no es que se vea peor en el movil: es que no se puede usar.
+#
+# Esto NO se puede expresar en ESLint. `no-restricted-syntax` mira nodos sueltos, y aqui la
+# pregunta es sobre el fichero ENTERO: "no contiene ni un `sm:` en ninguna parte". Por eso vive
+# aqui y no en el lint.
+#
+# Es una ADVERTENCIA, no un bloqueo, y a proposito: hay pantallas que legitimamente no lo
+# necesitan —un modal diminuto, una pagina de error— y no queremos que nadie se acostumbre a
+# saltarse el verificador. Lo que se busca es que quien escriba una pantalla nueva se acuerde.
+#
+# Solo mira lo que trae ESTE push, no todo el repo: avisar de las 200 pantallas que ya existen
+# seria ruido que se aprende a ignorar en dos dias.
+RANGO=""
+if git rev-parse --abbrev-ref '@{u}' >/dev/null 2>&1; then
+    RANGO="$(git rev-parse --abbrev-ref '@{u}')..HEAD"
+elif git rev-parse HEAD~1 >/dev/null 2>&1; then
+    RANGO="HEAD~1..HEAD"
+fi
+
+if [ -n "$RANGO" ]; then
+    # ACMR: añadidos, copiados, modificados y renombrados. Los borrados no interesan.
+    PAGINAS=$(git diff --name-only --diff-filter=ACMR "$RANGO" -- 'src/pages/*.tsx' 'src/pages/**/*.tsx' 2>/dev/null)
+    SIN_RESPONSIVE=""
+    for pagina in $PAGINAS; do
+        [ -f "$pagina" ] || continue
+        if ! grep -qE '\b(sm|md|lg|xl|2xl):' "$pagina" 2>/dev/null; then
+            SIN_RESPONSIVE="${SIN_RESPONSIVE}${pagina}\n"
+        fi
+    done
+    if [ -n "$SIN_RESPONSIVE" ]; then
+        echo -e "${YELLOW}[C13-RESPONSIVE-ADVERTENCIA]${NC} Pantalla sin ningun punto de ruptura (sm:/md:/lg:) — compruebala en movil"
+        echo -e "$SIN_RESPONSIVE" | grep -v '^$' | head -5 | sed 's/^/     /'
+        WARNINGS=$((WARNINGS+1))
+    fi
+fi
+
 # ─── Build TypeScript ─────────────────────────────────────────────────────────
 echo -e "\n📐 Verificando TypeScript..."
 LINT_CMD=$(node -e "try{const p=require('./package.json');const s=(p.scripts||{}).lint||'';console.log(s.split(/\s+/)[0]);}catch(e){}" 2>/dev/null)

@@ -24,7 +24,11 @@ fi
 # script bloqueaba pushes con un hallazgo ya corregido en el archivo trackeado).
 cat > "$HOOK_DST" << 'HOOK_EOF'
 #!/bin/bash
-exec "$(git rev-parse --show-toplevel)/check-security.sh" "$@"
+# `bash` delante a proposito: si el script perdiera el permiso de ejecucion —y lo pierde
+# solo, porque cualquier checkout, stash o reset lo reescribe con el modo que diga el
+# indice— el hook seguiria funcionando. Sin `bash`, git aborta el push con un
+# "Permission denied" que no dice de donde viene.
+exec bash "$(git rev-parse --show-toplevel)/check-security.sh" "$@"
 HOOK_EOF
 chmod +x "$HOOK_DST"
 

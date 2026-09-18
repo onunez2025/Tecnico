@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { ConfidentialClientApplication } from '@azure/msal-node';
+import { plantillaCorreo, type VarianteCorreo } from './correo/plantillaCorreo.js';
 
 const SMTP_HOST = process.env.SMTP_HOST || '';
 const SMTP_PORT = Number(process.env.SMTP_PORT) || 587;
@@ -101,24 +102,13 @@ async function sendMail(to: string, subject: string, html: string): Promise<void
     console.warn('[Mailer] Ni Graph ni SMTP están configurados/disponibles — correo no enviado:', subject, 'para', to);
 }
 
-const SOLE_LOGO_URL = 'https://res.cloudinary.com/dvfljye2u/image/upload/v1781643958/Logo_-_Grupo_Sole_-_Transparente_blanco-_of11va.png';
-
-const FOOTER_SIGNATURE = 'Gerencia de Atención al Cliente - Grupo Sole Rinnai Corporation';
-
-function wrapEmail(title: string, accentColor: string, bodyHtml: string, footerText: string): string {
-    return `
-    <div style="font-family: Arial, Helvetica, sans-serif; max-width: 480px; margin: 0 auto; color: #1f2937;">
-        <div style="background: ${accentColor}; padding: 16px 28px; border-radius: 10px 10px 0 0;">
-            <img src="${SOLE_LOGO_URL}" alt="Grupo Sole" height="28" style="height: 28px; width: auto; display: block;" />
-        </div>
-        <div style="border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px; padding: 28px;">
-            <h1 style="font-size: 18px; margin: 0 0 16px;">${title}</h1>
-            ${bodyHtml}
-            <p style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #6b7280;">
-                ${footerText}<br><br>${FOOTER_SIGNATURE}
-            </p>
-        </div>
-    </div>`;
+/**
+ * Diseño de los correos del SSO: la plantilla compartida del ecosistema (`./correo/plantillaCorreo.ts`, copia
+ * vigilada de SIATC-App-Template; `check-security.sh` C14 bloquea el push si difiere del original). Cada color
+ * antiguo pasa a su variante por intención; los textos no cambian. `plantillaCorreo` escapa título y pie.
+ */
+function wrapEmail(title: string, variante: VarianteCorreo, bodyHtml: string, footerText: string): string {
+    return plantillaCorreo({ variante, titulo: title, cuerpoHtml: bodyHtml, pie: footerText });
 }
 
 // Nota: los correos de aprobación/rechazo se envían desde SIATC Console — la
@@ -130,7 +120,7 @@ export async function sendSsoPendingEmail(to: string, appLabel: string): Promise
         to,
         `Solicitud recibida — ${appLabel}`,
         wrapEmail(
-            'Solicitud de acceso recibida', '#64748b',
+            'Solicitud de acceso recibida', 'neutro',
             `<p style="margin: 0 0 12px;">Hola,</p>
              <p style="margin: 0 0 12px;">Recibimos tu solicitud de acceso a la plataforma SIATC usando tu cuenta de Google/Microsoft.</p>
              <p style="margin: 0;">Un administrador debe revisarla y aprobarla antes de que puedas ingresar. Te avisaremos por este mismo correo apenas se resuelva.</p>`,
@@ -144,7 +134,7 @@ export async function sendSsoFirstRetryEmail(to: string, appLabel: string): Prom
         to,
         `Reintento de solicitud registrado — ${appLabel}`,
         wrapEmail(
-            'Volviste a solicitar acceso', '#a16207',
+            'Volviste a solicitar acceso', 'advertencia',
             `<p style="margin: 0 0 12px;">Hola,</p>
              <p style="margin: 0 0 12px;">Registramos tu nueva solicitud de acceso a la plataforma SIATC. Es tu <strong>primer reintento</strong> tras un rechazo anterior.</p>
              <p style="margin: 0;">Un administrador debe revisarla de nuevo. Te avisaremos por este mismo correo apenas se resuelva. Te queda <strong>1 reintento más</strong> si esta también fuera rechazada.</p>`,
@@ -158,7 +148,7 @@ export async function sendSsoFinalRetryEmail(to: string, appLabel: string): Prom
         to,
         `Último reintento de solicitud registrado — ${appLabel}`,
         wrapEmail(
-            'Volviste a solicitar acceso (último intento)', '#ea580c',
+            'Volviste a solicitar acceso (último intento)', 'urgente',
             `<p style="margin: 0 0 12px;">Hola,</p>
              <p style="margin: 0 0 12px;">Registramos tu nueva solicitud de acceso a la plataforma SIATC. Es tu <strong>último reintento</strong> disponible.</p>
              <p style="margin: 0;">Un administrador debe revisarla de nuevo. Si esta solicitud también fuera rechazada, no podrás volver a solicitar acceso por este medio — deberás comunicarte directamente con el administrador de tu área.</p>`,

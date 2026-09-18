@@ -311,6 +311,40 @@ if [ -n "$RANGO" ]; then
     fi
 fi
 
+# ─── C14: copias de ficheros compartidos del ecosistema ──────────────────────
+# Algunos ficheros son COMPARTIDOS: el original vive en SIATC-App-Template y cada app lleva una
+# copia identica (la «copia vigilada», opcion A elegida el 2026-09-18; mas adelante pasaran a un
+# paquete privado en Forgejo). Si alguien edita la copia de una app en vez del original, las apps
+# se separan en silencio —justo lo que paso con siatc-theme.ts, que hoy tiene 11 versiones
+# distintas—. Por eso esto BLOQUEA: la solucion es siempre copiar el original.
+#
+# Se compara contra el checkout local de SIATC-App-Template, buscandolo hacia arriba desde este
+# repo (el hook corre en la maquina de quien hace push). Asi no hay que tocar este script cada
+# vez que cambia el original. Si no se encuentra la plantilla, solo se avisa.
+COMPARTIDOS="server/lib/correo/plantillaCorreo.ts"
+PLANTILLA_DIR=""
+dir="$(pwd)"
+for _ in 1 2 3 4; do
+    dir="$(dirname "$dir")"
+    if [ -d "$dir/SIATC-App-Template/.git" ]; then PLANTILLA_DIR="$dir/SIATC-App-Template"; break; fi
+done
+if [ "$(basename "$(pwd)")" != "SIATC-App-Template" ]; then
+    for compartido in $COMPARTIDOS; do
+        [ -f "$compartido" ] || continue
+        if [ -z "$PLANTILLA_DIR" ]; then
+            echo -e "${YELLOW}[C14-COMPARTIDO-ADVERTENCIA]${NC} No se encontro SIATC-App-Template junto a este repo: no se pudo comprobar $compartido"
+            WARNINGS=$((WARNINGS+1))
+        elif [ ! -f "$PLANTILLA_DIR/$compartido" ]; then
+            echo -e "${YELLOW}[C14-COMPARTIDO-ADVERTENCIA]${NC} $compartido no existe en SIATC-App-Template (¿rama distinta?)"
+            WARNINGS=$((WARNINGS+1))
+        elif ! cmp -s "$compartido" "$PLANTILLA_DIR/$compartido"; then
+            echo -e "${RED}[C14-COMPARTIDO-CRÍTICO]${NC} $compartido difiere del original de SIATC-App-Template"
+            echo "     Se edita en la plantilla y se copia: cp \"$PLANTILLA_DIR/$compartido\" $compartido"
+            ERRORS=$((ERRORS+1))
+        fi
+    done
+fi
+
 # ─── Build TypeScript ─────────────────────────────────────────────────────────
 echo -e "\n📐 Verificando TypeScript..."
 LINT_CMD=$(node -e "try{const p=require('./package.json');const s=(p.scripts||{}).lint||'';console.log(s.split(/\s+/)[0]);}catch(e){}" 2>/dev/null)

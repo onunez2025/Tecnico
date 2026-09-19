@@ -123,7 +123,7 @@ export function MainLayout() {
             {/* Mobile Sidebar Overlay */}
             <div
                 className={cn(
-                    "fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-md lg:hidden transition-all duration-500",
+                    "fixed inset-0 z-[44] bg-slate-900/60 backdrop-blur-md lg:hidden transition-all duration-500",
                     sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
                 )}
                 onClick={() => setSidebarOpen(false)}
@@ -138,7 +138,8 @@ export function MainLayout() {
             {/* Sidebar — fixed, overlays on hover-expand */}
             <aside
                 className={cn(
-                    "fixed inset-y-0 left-0 z-[70] transition-[transform,width] duration-300 ease-in-out",
+                    // z-[45]: encima de la cabecera (z-40) y DEBAJO de modales y diálogos (z-50+). Con z-[70] tapaba el borde de los modales (2026-09-19).
+                    "fixed inset-y-0 left-0 z-[45] transition-[transform,width] duration-300 ease-in-out",
                     sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
                 )}
                 style={{ width: sidebarOpen ? expandedWidth : sidebarPanelWidth }}

@@ -26,7 +26,6 @@ const router = Router();
 const loginSchema = z.object({
     username: z.string().min(1, 'Usuario requerido').max(255),
     password: z.string().min(1, 'Contraseña requerida').max(255),
-    remember: z.boolean().optional(),
 });
 
 router.post('/api/auth/login', async (req: Request, res: Response) => {
@@ -34,7 +33,7 @@ router.post('/api/auth/login', async (req: Request, res: Response) => {
     if (!parseResult.success) {
         return res.status(400).json({ error: 'Datos de login inválidos', details: parseResult.error.issues });
     }
-    const { username, password, remember } = parseResult.data;
+    const { username, password } = parseResult.data;
     try {
         const db = await getWritePool();
         const result = await db.request().input('u', sql.NVarChar(sql.MAX), username).input('app', sql.NVarChar(sql.MAX), APP_IDENTIFIER).query(`
@@ -63,7 +62,11 @@ router.post('/api/auth/login', async (req: Request, res: Response) => {
         const warningMinutes: number = user.role_warning ?? appCfg?.DefaultWarningBeforeMinutes ?? 2;
 
         // [SECURITY] Token "Recuérdame" reducido de 30d a 7d para limitar ventana de compromiso
-        const expiresIn = remember ? '7d' : '12h';
+        // Duración fija de 12 h, se marque o no «Recordarme» (decisión de Diego, 2026-09-21). Esa casilla solo recuerda
+        // el nombre de usuario en el navegador: no alarga la sesión. Antes daba 7 días marcándola, y como cada app del
+        // ecosistema reescribe la misma cookie de `.siatc.cloud` con su propio plazo, la última visitada decidía cuánto
+        // duraba la sesión de todas.
+        const expiresIn = '12h';
 
         const token = jwt.sign(
             {
@@ -98,7 +101,7 @@ router.post('/api/auth/login', async (req: Request, res: Response) => {
         if (dominioCompartido) {
             res.cookie('token', ssoToken, {
                 domain: dominioCompartido,
-                maxAge: (remember ? 7 * 24 * 60 * 60 : 12 * 60 * 60) * 1000,
+                maxAge: 12 * 60 * 60 * 1000,
                 httpOnly: false,
                 secure: true,
                 sameSite: 'lax',

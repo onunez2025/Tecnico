@@ -3,6 +3,7 @@ interface ErrorConRespuesta {
     response?: { status?: number; data?: { error?: { message?: { value?: string } } } };
 }
 
+import { igualA } from '../lib/odata.js';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
 import { mensajeError } from '../lib/security.js';
 import { Router } from 'express';
@@ -40,7 +41,7 @@ router.get('/api/tec/tickets/:ticketId/informe', verifyToken, checkPermission('t
         }
 
         // 1. Buscar el Service Request en C4C
-        const searchUrl = `${C4C_BASE_URL}/ServiceRequestCollection?$filter=ID eq '${safeId}'&$select=ID,ObjectID`;
+        const searchUrl = `${C4C_BASE_URL}/ServiceRequestCollection?$filter=${encodeURIComponent(igualA('ID', safeId))}&$select=ID,ObjectID`;
         const searchResp = await axios.get(searchUrl, {
             headers: { 'Authorization': `Basic ${C4C_AUTH}` },
             timeout: 15000

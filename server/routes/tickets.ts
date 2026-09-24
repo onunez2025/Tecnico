@@ -1,9 +1,11 @@
-/** Forma de un error de axios con respuesta del servidor. */
-interface ErrorConRespuesta {
-    response?: { status?: number; data?: { error?: { message?: { value?: string } } } };
-}
-
-import { igualA } from '../lib/odata.js';
+import {
+    ErrorC4C,
+    adjuntosDeTicket,
+    descargarAdjuntoPorId,
+    estaConfigurado,
+    mensajePublico,
+    soloPdf,
+} from '@siatc/c4c-client';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
 import { mensajeError } from '../lib/security.js';
 import { Router } from 'express';
@@ -12,11 +14,9 @@ import sql from 'mssql';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import path from 'path';
-import axios from 'axios';
 import { getReadPool, getWritePool } from '../db';
 import { logAudit } from '../lib/audit';
 import { getContainerClient } from '../lib/blob';
-import { C4C_AUTH, C4C_BASE_URL } from '../lib/config';
 import { syncPaymentCache } from '../lib/pagosSync';
 import { safeError, sanitizeLog } from '../lib/security';
 import { upload, validateFileMagicBytes } from '../lib/upload';
@@ -30,75 +30,42 @@ import { checkPermission, isAdminRole, verifyToken } from '../middleware/auth';
 const router = Router();
 
 // --- INFORME TÉCNICO (C4C OData) ---
+// Usa el cliente compartido `@siatc/c4c-client`: antes este endpoint tenía su propia copia de la
+// autenticación, la búsqueda del ticket, la carpeta de adjuntos y la descarga del binario.
 router.get('/api/tec/tickets/:ticketId/informe', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
     try {
-        const { ticketId } = req.params;
-        const safeId = String(ticketId).replace(/[^a-zA-Z0-9_-]/g, '');
+        const safeId = String(req.params.ticketId).replace(/[^a-zA-Z0-9_-]/g, '');
         if (!safeId) return res.status(400).json({ error: 'Ticket inválido' });
 
-        if (!C4C_BASE_URL || !process.env.C4C_USER || !process.env.C4C_PASSWORD) {
+        if (!estaConfigurado()) {
             return res.status(503).json({ error: 'Integración C4C no configurada en el servidor.' });
         }
 
-        // 1. Buscar el Service Request en C4C
-        const searchUrl = `${C4C_BASE_URL}/ServiceRequestCollection?$filter=${encodeURIComponent(igualA('ID', safeId))}&$select=ID,ObjectID`;
-        const searchResp = await axios.get(searchUrl, {
-            headers: { 'Authorization': `Basic ${C4C_AUTH}` },
-            timeout: 15000
-        });
-
-        const ticket = searchResp.data?.d?.results?.[0];
-        if (!ticket) return res.status(404).json({ error: `Ticket ${safeId} no encontrado en C4C` });
-
-        // 2. Buscar adjuntos del ticket
-        let attachments = ticket.ServiceRequestAttachmentFolder?.results;
-        if (!attachments || attachments.length === 0) {
-            const attUrl = `${C4C_BASE_URL}/ServiceRequestCollection('${ticket.ObjectID}')/ServiceRequestAttachmentFolder`;
-            try {
-                const attResp = await axios.get(attUrl, {
-                    headers: { 'Authorization': `Basic ${C4C_AUTH}` },
-                    timeout: 15000
-                });
-                attachments = attResp.data?.d?.results;
-            } catch {
-                attachments = [];
-            }
+        const { adjuntos } = await adjuntosDeTicket(safeId);
+        const pdfs = soloPdf(adjuntos);
+        if (pdfs.length === 0) {
+            return res.status(404).json({ error: `El ticket ${safeId} no tiene ningún PDF adjunto en C4C.` });
         }
 
-        if (!attachments || attachments.length === 0) {
-            return res.status(404).json({ error: `El ticket ${safeId} no tiene adjuntos en C4C.` });
-        }
+        // Preferencia propia de Technical: el PDF que se llama «informe» o «report». Si ninguno lo lleva,
+        // vale el más reciente, que es el primero porque `adjuntosDeTicket` los devuelve ordenados.
+        const esInforme = (nombre: string) => /informe|report/i.test(nombre);
+        const informe = pdfs.find((a) => esInforme(a.nombre)) ?? pdfs[0];
 
-        // 3. Buscar el PDF del informe (prioriza nombre "informe" o "report")
-        type Attachment = { MimeType: string; Name: string; ObjectID: string };
-        let report: Attachment | undefined = attachments.find((a: Attachment) =>
-            a.MimeType === 'application/pdf' &&
-            (a.Name.toLowerCase().includes('informe') || a.Name.toLowerCase().includes('report'))
-        );
-        if (!report) {
-            report = attachments.find((a: Attachment) => a.MimeType === 'application/pdf');
-        }
-        if (!report) {
-            return res.status(404).json({ error: `No se encontró un PDF de informe para el ticket ${safeId}` });
-        }
-
-        // 4. Descargar el binario del PDF
-        const downloadUrl = `${C4C_BASE_URL}/ServiceRequestAttachmentFolderCollection('${report.ObjectID}')/Binary/$value`;
-        const pdfResp = await axios.get(downloadUrl, {
-            headers: { 'Authorization': `Basic ${C4C_AUTH}` },
-            responseType: 'arraybuffer',
-            timeout: 30000
-        });
+        // Technical descarga por la colección de adjuntos, no navegando desde el ticket. Son dos rutas
+        // distintas y las dos funcionan; se conserva la que este endpoint ya usaba.
+        const pdf = await descargarAdjuntoPorId(informe.objectId);
 
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="${report.Name}"`);
-        res.send(pdfResp.data);
+        res.setHeader('Content-Disposition', `inline; filename="${informe.nombre.replace(/["\r\n]/g, '')}"`);
+        res.send(pdf);
 
     } catch (err: unknown) {
-        const status = (err as ErrorConRespuesta)?.response?.status || 500;
-        const detail = (err as ErrorConRespuesta)?.response?.data?.error?.message?.value || mensajeError(err) || 'Error desconocido';
-        console.error(`[C4C Informe] Error ticket ${sanitizeLog(req.params.ticketId)}:`, detail);
-        res.status(status).json({ error: 'No se pudo obtener el informe desde C4C', details: detail });
+        // El status de C4C NO se reenvía al navegador: un 401 suyo llegaría como sesión caducada nuestra
+        // y echaría al técnico de la aplicación sin motivo.
+        const status = err instanceof ErrorC4C && err.clase === 'NO_ENCONTRADO' ? 404 : 502;
+        console.error(`[C4C Informe] Error ticket ${sanitizeLog(req.params.ticketId)}:`, mensajeError(err));
+        res.status(status).json({ error: mensajePublico(err) });
     }
 });
 

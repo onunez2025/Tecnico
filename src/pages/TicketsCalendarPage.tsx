@@ -29,11 +29,13 @@ import { useAuth } from '../hooks/useAuth';
 import { AssignedTicket, TicketPago } from '../types';
 import { useTranslation } from 'react-i18next';
 import { SIATC_THEME } from '../utils/siatc-theme';
+import { useDialog } from '../context/DialogContext';
 import { SyncStatusChip, SyncStatus } from '../components/common/SyncStatusChip';
 import { DateChipScroller } from '../components/common/DateChipScroller';
 import { LottiePlayer } from '../components/common/LottiePlayer';
 
 export default function TicketsCalendarPage() {
+    const { alert } = useDialog();
     const { t } = useTranslation();
     const { user } = useAuth();
     const isAdmin = ['administrador', 'admin', 'console.administrador'].includes(user?.role_name?.toLowerCase() || '');
@@ -86,7 +88,13 @@ export default function TicketsCalendarPage() {
             window.open(url, '_blank');
             setTimeout(() => URL.revokeObjectURL(url), 60000);
         } catch (err: unknown) {
-            alert(mensajeError(err) || 'No se pudo obtener el informe técnico desde C4C.');
+            // El diálogo de la casa, no el `alert()` del navegador: ese sale sin estilos, con el aspecto
+            // del sistema operativo y no el de la aplicación.
+            alert({
+                title: 'Informe técnico',
+                message: mensajeError(err) || 'No se pudo obtener el informe técnico desde SAP C4C.',
+                type: 'warning',
+            });
         } finally {
             setIsLoadingInforme(false);
         }

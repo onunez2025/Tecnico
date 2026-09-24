@@ -21,8 +21,8 @@ importers:
         specifier: ^12.32.0
         version: 12.33.0(supports-color@7.2.0)
       '@siatc/c4c-client':
-        specifier: git+ssh://git@git.siatc.cloud:MT_Ind/SIATC-C4C-Client.git#v0.3.0
-        version: git+ssh://git@git.siatc.cloud/MT_Ind/SIATC-C4C-Client.git#e8b7eb55af2e288750209602e7cbc7f6cd9a4c32
+        specifier: ^0.5.0
+        version: 0.5.0
       '@types/multer':
         specifier: ^2.1.0
         version: 2.2.0
@@ -889,9 +889,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@siatc/c4c-client@git+ssh://git@git.siatc.cloud/MT_Ind/SIATC-C4C-Client.git#e8b7eb55af2e288750209602e7cbc7f6cd9a4c32':
-    resolution: {commit: e8b7eb55af2e288750209602e7cbc7f6cd9a4c32, repo: ssh://git@git.siatc.cloud/MT_Ind/SIATC-C4C-Client.git, type: git}
-    version: 0.3.0
+  '@siatc/c4c-client@0.5.0':
+    resolution: {integrity: sha512-PkgZklldthR+29fDUlay9V5X9IjaDUX2CFDyRJxnsB0S5pChoDYx9hynSA7sk8Aau4A3k9m1O5hxYF6cWusQcg==, tarball: https://git.siatc.cloud/api/packages/MT_Ind/npm/%40siatc%2Fc4c-client/-/0.5.0/c4c-client-0.5.0.tgz}
 
   '@tailwindcss/node@4.3.3':
     resolution: {integrity: sha512-/T8IKEsf9VTU6tLjgC7+sv2mOPtQxzE2jMw7u4Tt40Tx+QSZxpzh95/H6cMKoja9XuW7iMdLJYBB0o9G1CaAgg==}
@@ -3126,7 +3125,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.62.3':
     optional: true
 
-  '@siatc/c4c-client@git+ssh://git@git.siatc.cloud/MT_Ind/SIATC-C4C-Client.git#e8b7eb55af2e288750209602e7cbc7f6cd9a4c32': {}
+  '@siatc/c4c-client@0.5.0': {}
 
   '@tailwindcss/node@4.3.3':
     dependencies:

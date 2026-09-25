@@ -1,5 +1,6 @@
 import type { AuthenticatedRequest } from '../middleware/auth.js';
 import { Router } from 'express';
+import { z } from 'zod';
 import { APPSHEET_PDF_PATH } from '../lib/config';
 import type { Request, Response } from 'express';
 import sql from 'mssql';
@@ -10,6 +11,7 @@ import { getReadPool, getWritePool } from '../db';
 import { logAudit } from '../lib/audit';
 import { syncPaymentCache } from '../lib/pagosSync';
 import { safeError } from '../lib/security';
+import { validateBody } from '../lib/validate';
 import { checkPermission, isAdminRole, verifyToken } from '../middleware/auth';
 
 // Este router se monta en `/` conservando las rutas completas y en la misma posicion en que se
@@ -106,11 +108,48 @@ router.get('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.view
 });
 
 // Crear pago (soporta uno o varios tickets en una transacción)
-router.post('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.register'), async (req: Request, res: Response) => {
+/**
+ * Esquema del registro de un pago — el mismo criterio que ya usa Liquidaciones sobre esta misma tabla.
+ *
+ * Lo que había antes era `if (!importe)`, que comprueba presencia, no número: rechazaba un importe de 0
+ * pero dejaba pasar `"abc"`, un array o un objeto, y el valor se escribe en `Importe NVARCHAR(MAX)`, que
+ * acepta cualquier cosa sin quejarse. Los 28.625 pagos existentes son todos convertibles a decimal
+ * (comprobado con `TRY_CAST` el 2026-09-25), así que exigirlo no rompe nada y evita que entre el primero
+ * que no lo sea.
+ */
+const importeValido = z.union([z.string(), z.number()]).refine(
+    (v) => { const n = Number(String(v).trim().replace(',', '.')); return Number.isFinite(n) && n > 0; },
+    { message: 'El importe debe ser un número mayor que cero.' },
+);
+
+/**
+ * `canal` NO lleva lista cerrada, igual que en Liquidaciones y por lo mismo: el campo está sucio, con 12
+ * valores para 6 conceptos (`Transferencia` convive con `TRANSF` y `TRANFERENCIA`). Cerrarlo impediría
+ * editar los pagos viejos con erratas. Limpiar esos valores es otra tarea.
+ *
+ * `ticket` admite VARIOS tickets separados por coma, que es lo que el handler parte con `split(',')`: el
+ * valor más largo de la tabla ocupa 47 caracteres (cinco tickets), de ahí que el límite no sea 50.
+ */
+const registrarPagoSchema = z.object({
+    ticket: z.string().min(1).max(500),
+    fecha_transaccion: z.string().min(1).max(40)
+        .refine((v) => !Number.isNaN(new Date(v).getTime()), 'Fecha no interpretable.')
+        .nullish(),
+    voucher: z.string().max(50).nullish(),
+    lote: z.string().max(50).nullish(),
+    codigo_izipay: z.string().max(50).nullish(),
+    importe: importeValido,
+    canal: z.string().max(50).nullish(),
+    observacion: z.string().max(4000).nullish(),
+    folio: z.string().max(50).nullish(),
+    codigo_autorizacion: z.string().max(50).nullish(),
+});
+
+router.post('/api/tickets-pagos', verifyToken, checkPermission('tec.payments.register'), validateBody(registrarPagoSchema), async (req: Request, res: Response) => {
     try {
         const { ticket, fecha_transaccion, voucher, lote, codigo_izipay, codigo_autorizacion, folio, importe, canal, observacion } = req.body;
-        if (!ticket || String(ticket).trim() === '') return res.status(400).json({ error: 'Debe incluir al menos un ticket' });
-        if (!importe) return res.status(400).json({ error: 'Importe requerido' });
+        // La presencia y el tipo los comprueba ya `registrarPagoSchema`; aqui solo queda el caso de una
+        // cadena que trae comas pero ningun ticket util (por ejemplo ", ,").
 
         const tickets = String(ticket).split(',').map((t: string) => t.trim()).filter(Boolean);
         if (tickets.length === 0) return res.status(400).json({ error: 'Ticket inválido' });

@@ -9,12 +9,14 @@ import {
 import type { AuthenticatedRequest } from '../middleware/auth.js';
 import { mensajeError } from '../lib/security.js';
 import { Router } from 'express';
+import { z } from 'zod';
 import type { Request, Response } from 'express';
 import sql from 'mssql';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import path from 'path';
 import { getReadPool, getWritePool } from '../db';
+import { validateBody } from '../lib/validate';
 import { logAudit } from '../lib/audit';
 import { getContainerClient } from '../lib/blob';
 import { syncPaymentCache } from '../lib/pagosSync';
@@ -184,13 +186,64 @@ router.get('/api/tec/tickets', verifyToken, checkPermission('tec.tickets.view'),
     }
 });
 
-router.post('/api/tec/tickets/rango-horario', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
+/**
+ * Esquemas de las tres escrituras que hace el tecnico desde la app.
+ *
+ * El importe del pago se exige numerico y mayor que cero, igual que en el endpoint hermano
+ * /api/tickets-pagos y que en Liquidaciones. Medido el 2026-09-25 sobre los 28.633 pagos de la tabla:
+ * ninguno tiene importe 0 ni negativo (el minimo es 1) y solo 8 lo tienen vacio, que son historicos que
+ * se decidio dejar como estan. Asi que exigirlo no rechaza nada de lo que hay.
+ *
+ * Ojo: este endpoint recibe multipart/form-data (lleva `upload.single('adjunto')`), asi que TODOS los
+ * campos llegan como texto aunque el navegador envie numeros. De ahi que el importe se valide como
+ * cadena numerica y no con z.number().
+ */
+const importeDeTexto = z.string().trim().refine((v) => {
+    const n = Number(v.replace(',', '.'));
+    return Number.isFinite(n) && n > 0;
+}, 'El importe debe ser un numero mayor que cero.');
+
+/** `canal` sin lista cerrada: el campo esta sucio (POS, Transferencia, TRANSF, TRANFERENCIA, DEPÓSITO...). */
+const registrarPagoTecnicoSchema = z.object({
+    fecha_transaccion: z.string().trim().max(40)
+        .refine((v) => v === '' || !Number.isNaN(new Date(v).getTime()), 'Fecha no interpretable.')
+        .optional(),
+    voucher: z.string().max(50).optional(),
+    lote: z.string().max(50).optional(),
+    codigo_izipay: z.string().max(50).optional(),
+    importe: importeDeTexto,
+    canal: z.string().max(50).optional(),
+    observacion: z.string().max(4_000).optional(),
+    folio: z.string().max(50).optional(),
+    codigo_autorizacion: z.string().max(50).optional(),
+});
+
+const rangoHorarioSchema = z.object({
+    ticketId: z.string().trim().min(1, 'ID de ticket es requerido').max(100),
+    rangoHorario: z.string().trim().max(100).nullish(),
+    ordenAtencion: z.union([z.string().trim().max(100), z.number()]).nullish(),
+    comentario: z.string().max(255).nullish(),
+    applyToAllClientTickets: z.union([z.boolean(), z.literal('true'), z.literal('false')]).nullish(),
+});
+
+const ventaSchema = z.object({
+    ticket: z.string().trim().min(1).max(100),
+    pedido: z.string().trim().max(100).nullish(),
+    observacion: z.string().max(4_000).nullish(),
+    comentarioTecnico: z.string().max(4_000).nullish(),
+});
+
+const bloqueHorarioSchema = z.object({
+    ticket: z.string().trim().min(1, 'Parametros requeridos: ticket, bloqueHorario').max(100),
+    bloqueHorario: z.string().trim().min(1, 'Parametros requeridos: ticket, bloqueHorario').max(100),
+});
+
+router.post('/api/tec/tickets/rango-horario', verifyToken, checkPermission('tec.tickets.view'), validateBody(rangoHorarioSchema), async (req: Request, res: Response) => {
     try {
         const { ticketId, rangoHorario, ordenAtencion, comentario, applyToAllClientTickets } = req.body;
         const { username, codigo_tecnico, role } = (req as AuthenticatedRequest).user;
         const isAdmin = isAdminRole(role);
 
-        if (!ticketId) return res.status(400).json({ error: 'ID de ticket es requerido' });
 
         const db = await getWritePool();
         const ticketResult = await db.request().input('ticketId', sql.VarChar(255), ticketId).query(`SELECT FechaVisita, IdCliente, CodigoTecnico FROM [APPGAC].[ServiciosViewSQL] WHERE Ticket = @ticketId`);
@@ -245,7 +298,7 @@ router.get('/api/tec/tickets/:ticketId/pagos', verifyToken, checkPermission('tec
     } catch (err: unknown) { res.status(500).json({ error: safeError(err) }); }
 });
 
-router.post('/api/tec/tickets/:ticketId/pago', verifyToken, checkPermission('tec.tickets.view'), upload.single('adjunto'), async (req: Request, res: Response) => {
+router.post('/api/tec/tickets/:ticketId/pago', verifyToken, checkPermission('tec.tickets.view'), upload.single('adjunto'), validateBody(registrarPagoTecnicoSchema), async (req: Request, res: Response) => {
     const { ticketId } = req.params;
     const { fecha_transaccion, voucher, lote, codigo_izipay, importe, canal, observacion, folio, codigo_autorizacion } = req.body;
     const { codigo_tecnico, role } = (req as AuthenticatedRequest).user;
@@ -315,7 +368,7 @@ router.get('/api/tec/schedule', verifyToken, checkPermission('tec.tickets.view')
     } catch (err: unknown) { res.status(500).json({ error: safeError(err) }); }
 });
 
-router.post('/api/tec/sales', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
+router.post('/api/tec/sales', verifyToken, checkPermission('tec.tickets.view'), validateBody(ventaSchema), async (req: Request, res: Response) => {
     try {
         const { ticket, pedido, observacion, comentarioTecnico } = req.body;
         const { full_name } = (req as AuthenticatedRequest).user;
@@ -333,12 +386,9 @@ router.post('/api/tec/sales', verifyToken, checkPermission('tec.tickets.view'), 
     } catch (err: unknown) { res.status(500).json({ error: safeError(err) }); }
 });
 
-router.patch('/api/tec/time-range', verifyToken, checkPermission('tec.tickets.view'), async (req: Request, res: Response) => {
+router.patch('/api/tec/time-range', verifyToken, checkPermission('tec.tickets.view'), validateBody(bloqueHorarioSchema), async (req: Request, res: Response) => {
     try {
         const { ticket, bloqueHorario } = req.body;
-        if (!ticket || !bloqueHorario) {
-            return res.status(400).json({ error: 'Parámetros requeridos: ticket, bloqueHorario' });
-        }
         const db = await getWritePool();
         await db.request()
             .input('ticket', sql.NVarChar(sql.MAX), ticket)

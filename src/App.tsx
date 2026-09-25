@@ -10,6 +10,7 @@ import { ConfigLayout } from './pages/config/ConfigLayout';
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const SsoLoginPage = lazy(() => import('./pages/SsoLoginPage'));
 const SsoStatusPage = lazy(() => import('./pages/SsoStatusPage'));
+const ForceChangePasswordPage = lazy(() => import('./pages/ForceChangePasswordPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SystemConfigPage = lazy(() => import('./pages/config/SystemConfigPage'));
 const TicketsCalendarPage = lazy(() => import('./pages/TicketsCalendarPage'));
@@ -67,6 +68,7 @@ function App() {
               <Route path="/sso-login" element={<SsoLoginPage />} />
               <Route path="/sso-status" element={<SsoStatusPage />} />
 
+              <Route path="/force-change-password" element={<ForceChangePasswordPage />} />
               <Route element={<MainLayout />}>
                 <Route path="/profile" element={<ProfilePage />} />
                 

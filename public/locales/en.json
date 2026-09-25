@@ -534,5 +534,28 @@
     },
     "noPermissionsTitle": "No configuration permissions",
     "noPermissionsMessage": "You don't have any permission assigned to view this module. Contact the system administrator if you believe this is an error."
+  },
+  "forcePassword": {
+    "title": "Change Password",
+    "subtitle": "You must update your password before continuing",
+    "labels": {
+      "current": "Current Password",
+      "new": "New Password",
+      "confirm": "Confirm Password"
+    },
+    "placeholders": {
+      "current": "Enter current password",
+      "new": "Minimum 8 characters",
+      "confirm": "Repeat new password"
+    },
+    "submit": "Update Password",
+    "submitting": "Updating...",
+    "errors": {
+      "required": "All fields are required",
+      "mismatch": "Passwords do not match",
+      "tooShort": "New password must be at least 8 characters",
+      "failed": "Error changing password",
+      "connection": "Server connection error"
+    }
   }
 }

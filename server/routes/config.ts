@@ -1,5 +1,6 @@
 import type { AuthenticatedRequest } from '../middleware/auth.js';
 import { Router } from 'express';
+import { z } from 'zod';
 import { cacheGet, cacheSet, cacheInvalidate } from '../lib/cache';
 import type { Request, Response } from 'express';
 import sql from 'mssql';
@@ -7,6 +8,7 @@ import { getReadPool, getWritePool } from '../db';
 import { logAudit } from '../lib/audit';
 import { safeError } from '../lib/security';
 import { checkPermission, verifyToken } from '../middleware/auth';
+import { validateBody } from '../lib/validate';
 
 // Este router se monta en `/` conservando las rutas completas y en la misma posicion en que se
 // definian en index.ts. Express resuelve por orden de registro, asi que esa posicion es parte del
@@ -26,12 +28,17 @@ router.get('/api/config/rango-horario-limit', verifyToken, checkPermission('tec.
     } catch (err: unknown) { res.status(500).json({ error: safeError(err) }); }
 });
 
-router.post('/api/config/rango-horario-limit', verifyToken, checkPermission('tec.config.parameters'), async (req: Request, res: Response) => {
+/**
+ * Hora limite para que el tecnico declare su rango horario. Se guarda como texto en GAC_APP_TB_CONFIG.
+ * El formato HH:mm ya se comprobaba a mano con la misma expresion; aqui solo queda formalizado.
+ */
+const limiteRangoHorarioSchema = z.object({
+    limit: z.string().trim().regex(/^\d{2}:\d{2}$/, 'Formato de hora invalido. Use HH:mm (ej: 09:30)'),
+});
+
+router.post('/api/config/rango-horario-limit', verifyToken, checkPermission('tec.config.parameters'), validateBody(limiteRangoHorarioSchema), async (req: Request, res: Response) => {
     try {
         const { limit } = req.body;
-        if (!limit || !/^\d{2}:\d{2}$/.test(limit)) {
-            return res.status(400).json({ error: 'Formato de hora inválido. Use HH:mm (ej: 09:30)' });
-        }
         const { username } = (req as AuthenticatedRequest).user;
         const db = await getWritePool();
         await db.request().input('limit', sql.VarChar(255), limit).input('user', sql.VarChar(255), username).query(`UPDATE [dbo].[GAC_APP_TB_CONFIG] SET Valor = @limit, Actualizado_el = GETDATE(), Actualizado_por = @user WHERE Clave = 'HORA_MAXIMA_RANGO_HORARIO'`);

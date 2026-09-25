@@ -19,7 +19,9 @@ import { verifyToken } from '../middleware/auth';
 // lectura en ProfilePage, gestionado por un administrador si hace falta cambiarlo).
 const updateProfileSchema = z.object({
     avatar_url: z.string().max(500000).optional(),
-    password_hash: z.string().min(6, 'Mínimo 6 caracteres').max(255).optional(),
+    // 8, no 6: es el mínimo que ya exigía SIATC Console al dar de alta, y el que se aplicó en las
+    // demás aplicaciones el 2026-09-25. Una política por puerta no es una política.
+    password_hash: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres.').max(255).optional(),
 });
 
 const router = Router();

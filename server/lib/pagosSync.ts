@@ -5,7 +5,29 @@ export async function syncPaymentCache(id_transaccion: string) {
     try {
         const db = await getWritePool();
         await db.request().input('id', sql.VarChar(50), id_transaccion).query(`
-            DELETE FROM [dbo].[GAC_PAGOS_CACHE] WHERE ID_transaccion = @id;
+            /*
+             * El borrar-e-insertar tiene que ser UNA sola operacion, no dos.
+             *
+             * Cuatro procesos escriben en esta tabla: Liquidaciones y Technical, cada una en QA y en
+             * produccion, y las cuatro contra la MISMA base. El mutex isSyncing solo protege a un
+             * proceso de si mismo. Si dos llegan a la vez a la misma transaccion, uno borra e
+             * inserta y el otro se encuentra la fila puesta:
+             *
+             *     Cannot insert duplicate key row in object 'dbo.GAC_PAGOS_CACHE'
+             *     with unique index 'UX_CACHE_Trans'
+             *
+             * Salio en produccion el 2026-09-28, al arrancar las cuatro instancias a la vez tras el
+             * pase a main. HOLDLOCK/UPDLOCK reservan el rango de esa clave hasta el COMMIT, asi que
+             * el segundo proceso espera y despues actualiza en vez de chocar.
+             *
+             * Aqui no hay transaccion del llamador, pero la comprobacion de @@TRANCOUNT se deja
+             * igual que en Liquidaciones: el fichero es gemelo y conviene que no divergan.
+             */
+            SET XACT_ABORT ON;
+            DECLARE @propia bit = CASE WHEN @@TRANCOUNT = 0 THEN 1 ELSE 0 END;
+            IF @propia = 1 BEGIN TRANSACTION;
+
+            DELETE FROM [dbo].[GAC_PAGOS_CACHE] WITH (HOLDLOCK, UPDLOCK) WHERE ID_transaccion = @id;
             
             INSERT INTO [dbo].[GAC_PAGOS_CACHE] (
                 ID_transaccion, Fecha_creacion, Fecha_transaccion, Estado, 
@@ -69,6 +91,8 @@ export async function syncPaymentCache(id_transaccion: string) {
                 ) SMat
             ) M
             WHERE P.ID_transaccion = @id;
+        
+            IF @propia = 1 COMMIT;
         `);
     } catch (err) {
         console.error('❌ Error syncing payment cache:', err);

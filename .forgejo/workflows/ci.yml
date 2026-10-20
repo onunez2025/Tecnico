@@ -33,8 +33,25 @@ jobs:
       - name: Activar pnpm
         run: corepack enable
 
+      # @siatc/c4c-client vive en el registro privado de Forgejo, que responde 401 a quien no se
+      # autentica. El Dockerfile ya lo resuelve con un argumento de construccion; el CI no hacia
+      # nada equivalente, asi que fallaba AQUI en cada push y nunca llegaba a ejecutar ni el lint,
+      # ni el build, ni check-security.sh. El aspa roja solo se ve en la lista de repositorios.
+      #
+      # El token se escribe y se borra en el mismo paso, como en el Dockerfile. El secreto
+      # NPM_REGISTRY_TOKEN se crea en Configuracion -> Acciones -> Secretos: token de SOLO LECTURA de
+      # paquetes. Si falta, el paso lo dice en claro en vez de dejar un 401 que no explica nada.
       - name: Instalar dependencias
-        run: pnpm install --frozen-lockfile
+        env:
+          NPM_REGISTRY_TOKEN: ${{ secrets.NPM_REGISTRY_TOKEN }}
+        run: |
+          if [ -z "$NPM_REGISTRY_TOKEN" ]; then
+            echo "Falta el secreto NPM_REGISTRY_TOKEN: sin el, el registro privado de @siatc responde 401." >&2
+            exit 1
+          fi
+          trap 'rm -f ~/.npmrc' EXIT
+          printf '//git.siatc.cloud/api/packages/MT_Ind/npm/:_authToken=%s\n' "$NPM_REGISTRY_TOKEN" > ~/.npmrc
+          pnpm install --frozen-lockfile
 
       - name: C6 — TypeScript / ESLint
         run: pnpm run lint
